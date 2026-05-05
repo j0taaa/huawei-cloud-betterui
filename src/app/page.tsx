@@ -21,13 +21,16 @@ import {
   UserRound,
   WalletCards,
 } from "lucide-react";
+import { redirect } from "next/navigation";
 
 import {
   CloudSidebar,
   CloudSidebarInset,
   CloudSidebarProvider,
 } from "@/components/cloud-sidebar";
+import { LogoutButton } from "@/components/logout-button";
 import { ServiceCommandSearch } from "@/components/service-command-search";
+import { getCurrentSession } from "@/lib/auth-session";
 
 const resourceCards = [
   {
@@ -92,7 +95,18 @@ const toneClasses = {
   orange: "bg-[#fff4e8] text-[#f97316]",
 };
 
-export default function Home() {
+export default async function Home() {
+  const session = await getCurrentSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  const accountName = session.accountName;
+  const projectName = session.projectName;
+  const region = session.region;
+  const username = session.username;
+
   return (
     <CloudSidebarProvider>
       <div className="min-h-screen bg-[#f4f7fb] text-[#101828]">
@@ -101,14 +115,14 @@ export default function Home() {
         <header className="sticky top-0 z-20 border-b border-[#e4e9f2] bg-white/90 backdrop-blur-xl">
           <div className="flex min-h-20 flex-col gap-3 px-4 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-8">
             <div className="flex flex-wrap items-center gap-3">
-              <button className="flex h-11 items-center gap-2 rounded-lg border border-[#d9e0eb] bg-white px-4 text-sm font-bold shadow-sm">
-                <Cloud className="size-4 text-[#2563eb]" />
-                Acme Project
+                <button className="flex h-11 items-center gap-2 rounded-lg border border-[#d9e0eb] bg-white px-4 text-sm font-bold shadow-sm">
+                  <Cloud className="size-4 text-[#2563eb]" />
+                {projectName}
                 <ChevronDown className="size-4 text-[#667085]" />
               </button>
               <button className="flex h-11 items-center gap-2 rounded-lg border border-[#d9e0eb] bg-white px-4 text-sm font-bold shadow-sm">
                 <MapPin className="size-4 text-[#d7000f]" />
-                AL-São Paulo1
+                {region}
                 <ChevronDown className="size-4 text-[#667085]" />
               </button>
             </div>
@@ -129,12 +143,13 @@ export default function Home() {
                   <UserRound className="size-5 text-[#667085]" />
                 </div>
                 <div>
-                  <p className="text-sm font-extrabold">g50047609</p>
+                  <p className="text-sm font-extrabold">{username}</p>
                   <p className="text-xs font-semibold text-[#667085]">
-                    Intl-Português
+                    {accountName}
                   </p>
                 </div>
               </div>
+              <LogoutButton />
             </div>
           </div>
         </header>
