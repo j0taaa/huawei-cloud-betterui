@@ -101,7 +101,7 @@ export default function CcePage() {
   return (
     <CloudSidebarProvider>
       <div className="min-h-screen bg-[#f4f7fb] text-[#101828]">
-        <CloudSidebar active="Compute" />
+        <CloudSidebar active="Containers" />
         <CloudSidebarInset>
           <header className="sticky top-0 z-20 border-b border-[#e4e9f2] bg-white/90 backdrop-blur-xl">
             <div className="flex min-h-20 flex-col gap-3 px-4 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-8">

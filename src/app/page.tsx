@@ -145,9 +145,6 @@ export default function Home() {
               <h1 className="text-3xl font-black tracking-tight">
                 Cloud Dashboard
               </h1>
-              <p className="mt-1 text-sm font-medium text-[#667085]">
-                A faster operational view of your Huawei Cloud resources.
-              </p>
             </div>
             <button className="flex h-11 items-center gap-2 rounded-lg border border-[#d9e0eb] bg-white px-4 text-sm font-bold shadow-sm hover:bg-[#f8fafc]">
               <Settings className="size-4" />

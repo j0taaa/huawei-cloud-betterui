@@ -17,9 +17,13 @@ import { ServiceCommandSearch } from "@/components/service-command-search";
 type ConsoleSection =
   | "Dashboard"
   | "Compute"
+  | "Containers"
   | "Storage"
   | "Networking"
-  | "Databases";
+  | "Databases"
+  | "Security"
+  | "Billing"
+  | "Monitoring";
 
 export function ConsoleShell({
   active,

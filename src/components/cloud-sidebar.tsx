@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createContext, type ReactNode, useContext, useState } from "react";
 import {
   Activity,
+  Boxes,
   ChevronLeft,
   CreditCard,
   Database,
@@ -30,13 +31,14 @@ const navigation: Array<{
   icon: LucideIcon;
 }> = [
   { label: "Dashboard", href: "/", icon: Grid2X2 },
-  { label: "Compute", href: "/services/ecs", icon: Server },
-  { label: "Storage", href: "/services/obs", icon: HardDrive },
-  { label: "Networking", href: "/services/network", icon: Network },
-  { label: "Databases", href: "/services/rds", icon: Database },
-  { label: "Security", href: "#", icon: ShieldCheck },
-  { label: "Billing", href: "#", icon: CreditCard },
-  { label: "Monitoring", href: "#", icon: Activity },
+  { label: "Compute", href: "/services/compute", icon: Server },
+  { label: "Containers", href: "/services/containers", icon: Boxes },
+  { label: "Storage", href: "/services/storage", icon: HardDrive },
+  { label: "Networking", href: "/services/networking", icon: Network },
+  { label: "Databases", href: "/services/databases", icon: Database },
+  { label: "Security", href: "/services/security", icon: ShieldCheck },
+  { label: "Billing", href: "/services/billing", icon: CreditCard },
+  { label: "Monitoring", href: "/services/monitoring", icon: Activity },
 ];
 
 export function CloudSidebarProvider({ children }: { children: ReactNode }) {
@@ -62,7 +64,16 @@ function useSidebar() {
 export function CloudSidebar({
   active,
 }: {
-  active: "Dashboard" | "Compute" | "Storage" | "Networking" | "Databases";
+  active:
+    | "Dashboard"
+    | "Compute"
+    | "Containers"
+    | "Storage"
+    | "Networking"
+    | "Databases"
+    | "Security"
+    | "Billing"
+    | "Monitoring";
 }) {
   const { collapsed, setCollapsed } = useSidebar();
 
