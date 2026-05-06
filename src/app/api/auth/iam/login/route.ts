@@ -5,13 +5,12 @@ import {
   getSessionCookieOptions,
   sessionCookieName,
 } from "@/lib/auth-session";
-import { createHuaweiIamToken } from "@/lib/huawei-iam";
+import { createHuaweiIamSession } from "@/lib/huawei-iam";
 
 const requiredFields = [
   "accountName",
   "username",
   "password",
-  "projectName",
 ] as const;
 
 function readString(value: unknown) {
@@ -25,7 +24,7 @@ export async function POST(request: Request) {
 
   if (!body) {
     return NextResponse.json(
-      { error: "Send account, IAM username, password, and project." },
+      { error: "Send account, IAM username, and password." },
       { status: 400 },
     );
   }
@@ -34,8 +33,6 @@ export async function POST(request: Request) {
     accountName: readString(body.accountName),
     iamEndpoint: readString(body.iamEndpoint),
     password: typeof body.password === "string" ? body.password : "",
-    projectName: readString(body.projectName),
-    region: readString(body.region) || readString(body.projectName),
     username: readString(body.username),
   };
 
@@ -49,16 +46,16 @@ export async function POST(request: Request) {
   }
 
   try {
-    const iamToken = await createHuaweiIamToken(fields);
+    const iamToken = await createHuaweiIamSession(fields);
     const sessionId = createSession({
       accountName: fields.accountName,
-      catalog: iamToken.catalog,
       createdAt: new Date().toISOString(),
       expiresAt: iamToken.expiresAt,
       iamEndpoint: iamToken.iamEndpoint,
       projectId: iamToken.projectId,
       projectName: iamToken.projectName,
-      region: fields.region,
+      projects: iamToken.projects,
+      region: iamToken.region,
       token: iamToken.token,
       userId: iamToken.userId,
       username: fields.username,

@@ -26,9 +26,11 @@ const actionMeta = {
 
 export function EcsInstanceActions({
   id,
+  projectId,
   status,
 }: {
   id: string;
+  projectId?: string;
   status: string;
 }) {
   const router = useRouter();
@@ -47,7 +49,7 @@ export function EcsInstanceActions({
     setMessage("");
 
     const response = await fetch(`/api/cloud/ecs/${id}/action`, {
-      body: JSON.stringify({ action }),
+      body: JSON.stringify({ action, projectId }),
       headers: {
         "Content-Type": "application/json",
       },

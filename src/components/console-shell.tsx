@@ -42,8 +42,11 @@ export async function ConsoleShell({
   }
 
   const accountName = session.accountName;
-  const projectName = session.projectName;
-  const region = session.region;
+  const projectName =
+    session.projects.length > 1
+      ? `${session.projects.length} projects`
+      : session.projectName;
+  const region = session.projects.length > 1 ? "All regions" : session.region;
   const username = session.username;
 
   return (

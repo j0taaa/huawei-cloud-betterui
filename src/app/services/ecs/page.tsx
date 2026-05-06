@@ -154,6 +154,7 @@ export default async function EcsPage() {
                       <td className="px-5 py-4">
                         <EcsInstanceActions
                           id={instance.id}
+                          projectId={instance.projectId}
                           status={instance.status}
                         />
                       </td>

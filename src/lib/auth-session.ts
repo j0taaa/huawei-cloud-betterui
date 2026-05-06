@@ -15,10 +15,19 @@ export type BetterUiSession = {
   iamEndpoint: string;
   projectId: string;
   projectName: string;
+  projects: HuaweiProjectSession[];
   region: string;
   token: string;
   userId?: string;
   username: string;
+};
+
+export type HuaweiProjectSession = {
+  expiresAt: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  token: string;
 };
 
 type SessionRecord = BetterUiSession & {

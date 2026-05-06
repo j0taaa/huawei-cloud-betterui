@@ -56,7 +56,11 @@ export default async function EcsInstancePage({
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <EcsInstanceActions id={instance.id} status={instance.status} />
+              <EcsInstanceActions
+                id={instance.id}
+                projectId={instance.projectId}
+                status={instance.status}
+              />
               <RefreshButton />
             </div>
           </div>

@@ -19,14 +19,11 @@ type LoginResult = {
 };
 
 const defaultIamEndpoint = "https://iam.myhuaweicloud.com";
-const defaultProjectName = "sa-brazil-1";
 
 export function LoginForm() {
   const [accountName, setAccountName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [projectName, setProjectName] = useState(defaultProjectName);
-  const [region, setRegion] = useState(defaultProjectName);
   const [iamEndpoint, setIamEndpoint] = useState(defaultIamEndpoint);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -51,8 +48,6 @@ export function LoginForm() {
         accountName,
         iamEndpoint,
         password,
-        projectName,
-        region,
         username,
       }),
       headers: {
@@ -200,20 +195,6 @@ export function LoginForm() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="grid gap-2 text-sm font-bold">
-                Project name
-                <input
-                  className="h-12 rounded-lg border border-[#d9e0eb] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10"
-                  onChange={(event) => {
-                    setProjectName(event.target.value);
-                    setRegion(event.target.value);
-                  }}
-                  placeholder="sa-brazil-1"
-                  required
-                  value={projectName}
-                />
-              </label>
-
-              <label className="grid gap-2 text-sm font-bold">
                 IAM endpoint
                 <input
                   className="h-12 rounded-lg border border-[#d9e0eb] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10"
@@ -225,8 +206,6 @@ export function LoginForm() {
                 />
               </label>
             </div>
-
-            <input name="region" type="hidden" value={region} />
 
             {error ? (
               <div className="rounded-xl border border-[#fecdd3] bg-[#fff1f2] p-4 text-sm font-bold leading-6 text-[#b42318]">

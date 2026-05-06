@@ -1,6 +1,10 @@
 import "server-only";
 
-import { getCurrentSession, type BetterUiSession } from "@/lib/auth-session";
+import {
+  getCurrentSession,
+  type BetterUiSession,
+  type HuaweiProjectSession,
+} from "@/lib/auth-session";
 
 type ServiceKey = "cce" | "ecs" | "elb" | "evs" | "rds" | "vpc";
 
@@ -31,6 +35,9 @@ export type EcsInstance = {
   privateIp: string;
   publicIp: string;
   status: string;
+  projectId: string;
+  projectName: string;
+  region: string;
 };
 
 export type EvsDisk = {
@@ -42,6 +49,9 @@ export type EvsDisk = {
   size: string;
   status: string;
   type: string;
+  projectId: string;
+  projectName: string;
+  region: string;
 };
 
 export type VpcItem = {
@@ -49,6 +59,9 @@ export type VpcItem = {
   id: string;
   name: string;
   status: string;
+  projectId: string;
+  projectName: string;
+  region: string;
 };
 
 export type SubnetItem = {
@@ -58,6 +71,9 @@ export type SubnetItem = {
   name: string;
   status: string;
   vpcId: string;
+  projectId: string;
+  projectName: string;
+  region: string;
 };
 
 export type SecurityGroupItem = {
@@ -65,6 +81,9 @@ export type SecurityGroupItem = {
   id: string;
   name: string;
   rules: number;
+  projectId: string;
+  projectName: string;
+  region: string;
 };
 
 export type ElbItem = {
@@ -73,6 +92,9 @@ export type ElbItem = {
   operatingStatus: string;
   provisioningStatus: string;
   vipAddress: string;
+  projectId: string;
+  projectName: string;
+  region: string;
 };
 
 export type CceCluster = {
@@ -81,6 +103,9 @@ export type CceCluster = {
   status: string;
   type: string;
   version: string;
+  projectId: string;
+  projectName: string;
+  region: string;
 };
 
 export type RdsInstance = {
@@ -90,6 +115,9 @@ export type RdsInstance = {
   privateIp: string;
   status: string;
   type: string;
+  projectId: string;
+  projectName: string;
+  region: string;
 };
 
 const emptySummary: CloudSummary = {
@@ -194,7 +222,7 @@ async function parseError(response: Response) {
 }
 
 async function huaweiFetch<T>(
-  session: BetterUiSession,
+  session: HuaweiProjectSession,
   service: ServiceKey,
   path: string,
   init?: RequestInit,
@@ -219,6 +247,33 @@ async function huaweiFetch<T>(
   return (await response.json().catch(() => ({}))) as T;
 }
 
+function sessionProjects(session: BetterUiSession) {
+  return session.projects?.length
+    ? session.projects
+    : [
+        {
+          expiresAt: session.expiresAt,
+          projectId: session.projectId,
+          projectName: session.projectName,
+          region: session.region,
+          token: session.token,
+        },
+      ];
+}
+
+async function loadAcrossProjects<T>(
+  session: BetterUiSession,
+  loader: (project: HuaweiProjectSession) => Promise<T[]>,
+) {
+  const results = await Promise.allSettled(
+    sessionProjects(session).map((project) => loader(project)),
+  );
+
+  return results.flatMap((result) =>
+    result.status === "fulfilled" ? result.value : [],
+  );
+}
+
 export async function withCloudResult<T>(
   fallback: T,
   loader: (session: BetterUiSession) => Promise<T>,
@@ -237,7 +292,7 @@ export async function withCloudResult<T>(
   }
 }
 
-export async function listEcsInstances(session: BetterUiSession) {
+async function listEcsInstancesForProject(session: HuaweiProjectSession) {
   const body = await huaweiFetch<{ servers?: unknown[] }>(
     session,
     "ecs",
@@ -260,51 +315,35 @@ export async function listEcsInstances(session: BetterUiSession) {
       image: firstString([image.name, image.id]),
       name: asString(item.name),
       privateIp: firstIp(item.addresses, "private"),
+      projectId: session.projectId,
+      projectName: session.projectName,
       publicIp: firstIp(item.addresses, "public"),
+      region: session.region,
       status: asString(item.status, "UNKNOWN"),
     };
   });
+}
+
+export async function listEcsInstances(session: BetterUiSession) {
+  return loadAcrossProjects(session, listEcsInstancesForProject);
 }
 
 export async function getEcsInstance(session: BetterUiSession, id: string) {
-  const body = await huaweiFetch<{ server?: unknown }>(
-    session,
-    "ecs",
-    `/v1/${session.projectId}/cloudservers/${id}`,
-  );
-
-  const [server] = asArray(body.server ? [body.server] : []);
-  return server ? listEcsInstancesFromRaw([server])[0] : null;
-}
-
-function listEcsInstancesFromRaw(servers: unknown[]) {
-  return servers.map((server): EcsInstance => {
-    const item = asRecord(server);
-    const flavor = asRecord(item.flavor);
-    const image = asRecord(item.image);
-
-    return {
-      availabilityZone: firstString([
-        item["OS-EXT-AZ:availability_zone"],
-        item.availability_zone,
-      ]),
-      createdAt: asString(item.created, "-"),
-      flavor: firstString([flavor.name, flavor.id]),
-      id: asString(item.id),
-      image: firstString([image.name, image.id]),
-      name: asString(item.name),
-      privateIp: firstIp(item.addresses, "private"),
-      publicIp: firstIp(item.addresses, "public"),
-      status: asString(item.status, "UNKNOWN"),
-    };
-  });
+  const instances = await listEcsInstances(session);
+  return instances.find((instance) => instance.id === id) ?? null;
 }
 
 export async function runEcsAction(
   session: BetterUiSession,
   id: string,
   action: "restart" | "start" | "stop",
+  projectId?: string,
 ) {
+  const project =
+    sessionProjects(session).find((item) => item.projectId === projectId) ??
+    sessionProjects(session).find((item) => item.projectId === session.projectId) ??
+    sessionProjects(session)[0];
+
   const payload =
     action === "start"
       ? { "os-start": { servers: [{ id }] } }
@@ -313,9 +352,9 @@ export async function runEcsAction(
         : { reboot: { servers: [{ id }], type: "SOFT" } };
 
   return huaweiFetch<{ job_id?: string }>(
-    session,
+    project,
     "ecs",
-    `/v1/${session.projectId}/cloudservers/action`,
+    `/v1/${project.projectId}/cloudservers/action`,
     {
       body: JSON.stringify(payload),
       method: "POST",
@@ -323,7 +362,7 @@ export async function runEcsAction(
   );
 }
 
-export async function listEvsDisks(session: BetterUiSession) {
+async function listEvsDisksForProject(session: HuaweiProjectSession) {
   const body = await huaweiFetch<{ cloudvolumes?: unknown[]; volumes?: unknown[] }>(
     session,
     "evs",
@@ -340,6 +379,9 @@ export async function listEvsDisks(session: BetterUiSession) {
       createdAt: asString(item.created_at),
       id: asString(item.id),
       name: firstString([item.name, item.id]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
       size: `${Number(item.size ?? 0)} GB`,
       status: asString(item.status, "UNKNOWN"),
       type: asString(item.volume_type),
@@ -352,7 +394,11 @@ export async function getEvsDisk(session: BetterUiSession, id: string) {
   return disks.find((disk) => disk.id === id) ?? null;
 }
 
-export async function listVpcs(session: BetterUiSession) {
+export async function listEvsDisks(session: BetterUiSession) {
+  return loadAcrossProjects(session, listEvsDisksForProject);
+}
+
+async function listVpcsForProject(session: HuaweiProjectSession) {
   const body = await huaweiFetch<{ vpcs?: unknown[] }>(
     session,
     "vpc",
@@ -365,12 +411,15 @@ export async function listVpcs(session: BetterUiSession) {
       cidr: firstString([item.cidr, item.cidr_v4]),
       id: asString(item.id),
       name: asString(item.name),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
       status: asString(item.status, "ACTIVE"),
     };
   });
 }
 
-export async function listSubnets(session: BetterUiSession) {
+async function listSubnetsForProject(session: HuaweiProjectSession) {
   const body = await huaweiFetch<{ subnets?: unknown[] }>(
     session,
     "vpc",
@@ -384,13 +433,24 @@ export async function listSubnets(session: BetterUiSession) {
       gateway: asString(item.gateway_ip),
       id: asString(item.id),
       name: asString(item.name),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
       status: asString(item.status, "ACTIVE"),
       vpcId: asString(item.vpc_id),
     };
   });
 }
 
-export async function listSecurityGroups(session: BetterUiSession) {
+export async function listVpcs(session: BetterUiSession) {
+  return loadAcrossProjects(session, listVpcsForProject);
+}
+
+export async function listSubnets(session: BetterUiSession) {
+  return loadAcrossProjects(session, listSubnetsForProject);
+}
+
+async function listSecurityGroupsForProject(session: HuaweiProjectSession) {
   const body = await huaweiFetch<{ security_groups?: unknown[] }>(
     session,
     "vpc",
@@ -403,12 +463,19 @@ export async function listSecurityGroups(session: BetterUiSession) {
       description: asString(item.description, ""),
       id: asString(item.id),
       name: asString(item.name),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
       rules: asArray(item.security_group_rules).length,
     };
   });
 }
 
-export async function listElbs(session: BetterUiSession) {
+export async function listSecurityGroups(session: BetterUiSession) {
+  return loadAcrossProjects(session, listSecurityGroupsForProject);
+}
+
+async function listElbsForProject(session: HuaweiProjectSession) {
   const body = await huaweiFetch<{ loadbalancers?: unknown[] }>(
     session,
     "elb",
@@ -421,7 +488,10 @@ export async function listElbs(session: BetterUiSession) {
       id: asString(item.id),
       name: asString(item.name),
       operatingStatus: asString(item.operating_status, "UNKNOWN"),
+      projectId: session.projectId,
+      projectName: session.projectName,
       provisioningStatus: asString(item.provisioning_status, "UNKNOWN"),
+      region: session.region,
       vipAddress: asString(item.vip_address),
     };
   });
@@ -432,7 +502,11 @@ export async function getElb(session: BetterUiSession, id: string) {
   return elbs.find((elb) => elb.id === id) ?? null;
 }
 
-export async function listCceClusters(session: BetterUiSession) {
+export async function listElbs(session: BetterUiSession) {
+  return loadAcrossProjects(session, listElbsForProject);
+}
+
+async function listCceClustersForProject(session: HuaweiProjectSession) {
   const body = await huaweiFetch<{ items?: unknown[] }>(
     session,
     "cce",
@@ -447,6 +521,9 @@ export async function listCceClusters(session: BetterUiSession) {
     return {
       id: asString(metadata.uid ?? metadata.id),
       name: asString(metadata.name),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
       status: asString(status.phase, "UNKNOWN"),
       type: asString(spec.type),
       version: asString(spec.version),
@@ -459,7 +536,11 @@ export async function getCceCluster(session: BetterUiSession, id: string) {
   return clusters.find((cluster) => cluster.id === id) ?? null;
 }
 
-export async function listRdsInstances(session: BetterUiSession) {
+export async function listCceClusters(session: BetterUiSession) {
+  return loadAcrossProjects(session, listCceClustersForProject);
+}
+
+async function listRdsInstancesForProject(session: HuaweiProjectSession) {
   const body = await huaweiFetch<{ instances?: unknown[] }>(
     session,
     "rds",
@@ -474,6 +555,9 @@ export async function listRdsInstances(session: BetterUiSession) {
       id: asString(item.id),
       name: asString(item.name),
       privateIp: firstString(asArray(item.private_ips), "-"),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
       status: asString(item.status, "UNKNOWN"),
       type: asString(item.type),
     };
@@ -483,6 +567,10 @@ export async function listRdsInstances(session: BetterUiSession) {
 export async function getRdsInstance(session: BetterUiSession, id: string) {
   const instances = await listRdsInstances(session);
   return instances.find((instance) => instance.id === id) ?? null;
+}
+
+export async function listRdsInstances(session: BetterUiSession) {
+  return loadAcrossProjects(session, listRdsInstancesForProject);
 }
 
 export async function loadCloudSummary() {

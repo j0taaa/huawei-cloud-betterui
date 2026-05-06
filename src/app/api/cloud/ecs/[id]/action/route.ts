@@ -17,6 +17,7 @@ export async function POST(
 
   const body = (await request.json().catch(() => null)) as {
     action?: unknown;
+    projectId?: unknown;
   } | null;
   const action = body?.action;
 
@@ -33,6 +34,7 @@ export async function POST(
       session,
       id,
       action as (typeof allowedActions)[number],
+      typeof body?.projectId === "string" ? body.projectId : undefined,
     );
 
     return NextResponse.json({ jobId: result.job_id ?? null, ok: true });

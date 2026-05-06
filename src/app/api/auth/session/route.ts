@@ -15,6 +15,11 @@ export async function GET() {
     expiresAt: session.expiresAt,
     projectId: session.projectId,
     projectName: session.projectName,
+    projects: session.projects.map((project) => ({
+      projectId: project.projectId,
+      projectName: project.projectName,
+      region: project.region,
+    })),
     region: session.region,
     userId: session.userId,
     username: session.username,
