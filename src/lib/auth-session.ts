@@ -91,3 +91,17 @@ export function getSessionCookieOptions(expiresAt?: string) {
     secure: process.env.NODE_ENV === "production",
   };
 }
+
+export function getSessionProjects(session: BetterUiSession) {
+  return session.projects?.length
+    ? session.projects
+    : [
+        {
+          expiresAt: session.expiresAt,
+          projectId: session.projectId,
+          projectName: session.projectName,
+          region: session.region,
+          token: session.token,
+        },
+      ];
+}

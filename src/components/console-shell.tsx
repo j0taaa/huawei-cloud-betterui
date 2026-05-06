@@ -15,7 +15,7 @@ import {
 } from "@/components/cloud-sidebar";
 import { LogoutButton } from "@/components/logout-button";
 import { ServiceCommandSearch } from "@/components/service-command-search";
-import { getCurrentSession } from "@/lib/auth-session";
+import { getCurrentSession, getSessionProjects } from "@/lib/auth-session";
 
 type ConsoleSection =
   | "Dashboard"
@@ -42,11 +42,12 @@ export async function ConsoleShell({
   }
 
   const accountName = session.accountName;
+  const projects = getSessionProjects(session);
   const projectName =
-    session.projects.length > 1
-      ? `${session.projects.length} projects`
+    projects.length > 1
+      ? `${projects.length} projects`
       : session.projectName;
-  const region = session.projects.length > 1 ? "All regions" : session.region;
+  const region = projects.length > 1 ? "All regions" : session.region;
   const username = session.username;
 
   return (

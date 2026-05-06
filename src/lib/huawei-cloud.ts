@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   getCurrentSession,
+  getSessionProjects,
   type BetterUiSession,
   type HuaweiProjectSession,
 } from "@/lib/auth-session";
@@ -248,17 +249,7 @@ async function huaweiFetch<T>(
 }
 
 function sessionProjects(session: BetterUiSession) {
-  return session.projects?.length
-    ? session.projects
-    : [
-        {
-          expiresAt: session.expiresAt,
-          projectId: session.projectId,
-          projectName: session.projectName,
-          region: session.region,
-          token: session.token,
-        },
-      ];
+  return getSessionProjects(session);
 }
 
 async function loadAcrossProjects<T>(
