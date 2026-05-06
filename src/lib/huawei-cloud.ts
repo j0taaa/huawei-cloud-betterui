@@ -374,7 +374,7 @@ export async function listSubnets(session: BetterUiSession) {
   const body = await huaweiFetch<{ subnets?: unknown[] }>(
     session,
     "vpc",
-    `/v3/${session.projectId}/vpc/subnets?limit=200`,
+    `/v1/${session.projectId}/subnets?limit=200`,
   );
 
   return asArray(body.subnets).map((subnet): SubnetItem => {
