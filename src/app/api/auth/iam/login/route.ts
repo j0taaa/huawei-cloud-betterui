@@ -56,6 +56,7 @@ export async function POST(request: Request) {
       createdAt: new Date().toISOString(),
       expiresAt: iamToken.expiresAt,
       iamEndpoint: iamToken.iamEndpoint,
+      projectId: iamToken.projectId,
       projectName: iamToken.projectName,
       region: fields.region,
       token: iamToken.token,

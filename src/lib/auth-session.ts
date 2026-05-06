@@ -13,6 +13,7 @@ export type BetterUiSession = {
   createdAt: string;
   expiresAt: string;
   iamEndpoint: string;
+  projectId: string;
   projectName: string;
   region: string;
   token: string;

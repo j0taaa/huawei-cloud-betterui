@@ -13,6 +13,7 @@ export async function GET() {
     accountName: session.accountName,
     authenticated: true,
     expiresAt: session.expiresAt,
+    projectId: session.projectId,
     projectName: session.projectName,
     region: session.region,
     userId: session.userId,

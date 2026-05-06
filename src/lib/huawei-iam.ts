@@ -112,8 +112,9 @@ export async function createHuaweiIamToken({
   const token = response.headers.get("x-subject-token");
   const tokenBody = isIamTokenBody(body) ? body.token : undefined;
   const expiresAt = tokenBody?.expires_at;
+  const projectId = tokenBody?.project?.id;
 
-  if (!token || !expiresAt) {
+  if (!token || !expiresAt || !projectId) {
     throw new Error("Huawei IAM did not return a usable token.");
   }
 
@@ -121,6 +122,7 @@ export async function createHuaweiIamToken({
     catalog: tokenBody?.catalog,
     expiresAt,
     iamEndpoint: endpoint,
+    projectId,
     projectName: tokenBody?.project?.name ?? projectName,
     token,
     userId: tokenBody?.user?.id,
