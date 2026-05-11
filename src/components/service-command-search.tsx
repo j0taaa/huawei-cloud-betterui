@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -22,6 +23,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { serviceLogos } from "@/lib/service-logos";
+
 type Service = {
   name: string;
   shortName: string;
@@ -30,6 +33,7 @@ type Service = {
   href: string;
   icon: LucideIcon;
   aliases: string[];
+  logo?: string;
 };
 
 const huaweiServices: Service[] = [
@@ -40,24 +44,27 @@ const huaweiServices: Service[] = [
     description: "Scalable virtual machines for general workloads.",
     href: "/services/ecs",
     icon: Server,
+    logo: serviceLogos.ECS,
     aliases: ["vm", "virtual machine", "compute", "instance"],
   },
   {
     name: "Cloud Container Engine",
     shortName: "CCE",
-    category: "Compute",
+    category: "Containers",
     description: "Managed Kubernetes clusters and container workloads.",
     href: "/services/cce",
     icon: Layers3,
+    logo: serviceLogos.CCE,
     aliases: ["kubernetes", "k8s", "containers", "cluster"],
   },
   {
     name: "Software Repository for Container",
     shortName: "SWR",
-    category: "Container",
+    category: "Containers",
     description: "Container image repositories, tags, scans, and pull access.",
     href: "/services/swr",
     icon: Code2,
+    logo: serviceLogos.SWR,
     aliases: ["registry", "container registry", "image", "docker", "artifact"],
   },
   {
@@ -67,6 +74,7 @@ const huaweiServices: Service[] = [
     description: "Automatically adjust ECS capacity based on demand.",
     href: "/services/as",
     icon: Activity,
+    logo: serviceLogos.AS,
     aliases: ["scaling", "autoscale", "capacity"],
   },
   {
@@ -76,6 +84,7 @@ const huaweiServices: Service[] = [
     description: "Object buckets for files, backups, and static assets.",
     href: "/services/obs",
     icon: Box,
+    logo: serviceLogos.OBS,
     aliases: ["bucket", "object", "storage", "s3"],
   },
   {
@@ -85,6 +94,7 @@ const huaweiServices: Service[] = [
     description: "Block storage volumes for cloud servers.",
     href: "/services/evs",
     icon: HardDrive,
+    logo: serviceLogos.EVS,
     aliases: ["disk", "volume", "block storage"],
   },
   {
@@ -92,8 +102,9 @@ const huaweiServices: Service[] = [
     shortName: "SFS",
     category: "Storage",
     description: "Shared file storage for multiple cloud servers.",
-    href: "#sfs",
+    href: "/services/storage",
     icon: FileSearch,
+    logo: serviceLogos.SFS,
     aliases: ["file", "nfs", "shared storage"],
   },
   {
@@ -103,6 +114,7 @@ const huaweiServices: Service[] = [
     description: "Private networks, subnets, routes, and security groups.",
     href: "/services/network",
     icon: Network,
+    logo: serviceLogos.VPC,
     aliases: ["network", "subnet", "route", "security group"],
   },
   {
@@ -112,6 +124,7 @@ const huaweiServices: Service[] = [
     description: "Public IP addresses for internet-facing resources.",
     href: "/services/network",
     icon: Globe2,
+    logo: serviceLogos.EIP,
     aliases: ["public ip", "internet ip", "ipv4"],
   },
   {
@@ -121,6 +134,7 @@ const huaweiServices: Service[] = [
     description: "Distribute traffic across servers and services.",
     href: "/services/elb",
     icon: CloudCog,
+    logo: serviceLogos.ELB,
     aliases: ["load balancer", "traffic", "balancing"],
   },
   {
@@ -130,6 +144,7 @@ const huaweiServices: Service[] = [
     description: "Stateful virtual firewalls for ECS, CCE, and database traffic.",
     href: "/services/network",
     icon: ShieldCheck,
+    logo: serviceLogos.VPC,
     aliases: ["security group", "firewall", "inbound", "outbound", "rules"],
   },
   {
@@ -139,6 +154,7 @@ const huaweiServices: Service[] = [
     description: "IP ranges and gateway configuration inside VPC networks.",
     href: "/services/network",
     icon: Network,
+    logo: serviceLogos.VPC,
     aliases: ["cidr", "gateway", "ip range", "network segment"],
   },
   {
@@ -148,6 +164,7 @@ const huaweiServices: Service[] = [
     description: "Managed MySQL, PostgreSQL, and SQL Server databases.",
     href: "/services/rds",
     icon: Database,
+    logo: serviceLogos.RDS,
     aliases: ["mysql", "postgres", "sql", "database"],
   },
   {
@@ -155,17 +172,19 @@ const huaweiServices: Service[] = [
     shortName: "GaussDB",
     category: "Database",
     description: "Enterprise distributed database service.",
-    href: "#gaussdb",
+    href: "/services/databases",
     icon: Database,
+    logo: serviceLogos.GAUSSDB,
     aliases: ["distributed database", "enterprise database"],
   },
   {
     name: "Distributed Cache Service",
     shortName: "DCS",
-    category: "Application",
+    category: "Databases",
     description: "Managed Redis and Memcached instances.",
-    href: "#dcs",
+    href: "/services/databases",
     icon: Code2,
+    logo: serviceLogos.DCS,
     aliases: ["redis", "memcached", "cache"],
   },
   {
@@ -173,8 +192,9 @@ const huaweiServices: Service[] = [
     shortName: "IAM",
     category: "Security",
     description: "Users, groups, permissions, policies, and access keys.",
-    href: "#iam",
+    href: "/services/security",
     icon: KeyRound,
+    logo: serviceLogos.IAM,
     aliases: ["identity", "permission", "policy", "user", "access"],
   },
   {
@@ -182,8 +202,9 @@ const huaweiServices: Service[] = [
     shortName: "WAF",
     category: "Security",
     description: "Protect websites and APIs against common attacks.",
-    href: "#waf",
+    href: "/services/security",
     icon: ShieldCheck,
+    logo: serviceLogos.WAF,
     aliases: ["firewall", "web security", "api protection"],
   },
   {
@@ -191,8 +212,9 @@ const huaweiServices: Service[] = [
     shortName: "CES",
     category: "Monitoring",
     description: "Metrics, alarms, dashboards, and resource monitoring.",
-    href: "#cloud-eye",
+    href: "/services/monitoring",
     icon: Activity,
+    logo: serviceLogos.CES,
     aliases: ["monitoring", "alarm", "metric", "observability"],
   },
 ];
@@ -375,7 +397,17 @@ export function ServiceCommandSearch() {
                             : "grid size-11 place-items-center rounded-xl bg-[#eef4ff] text-[#2563eb]"
                         }
                       >
-                        <Icon className="size-5" />
+                        {service.logo ? (
+                          <Image
+                            alt={`${service.shortName} logo`}
+                            className="size-7 object-contain"
+                            height={28}
+                            src={service.logo}
+                            width={28}
+                          />
+                        ) : (
+                          <Icon className="size-5" />
+                        )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">

@@ -6,28 +6,50 @@ import {
   MapPin,
   UserRound,
 } from "lucide-react";
+import { redirect } from "next/navigation";
 
 import {
   CloudSidebar,
   CloudSidebarInset,
   CloudSidebarProvider,
 } from "@/components/cloud-sidebar";
+import { LogoutButton } from "@/components/logout-button";
 import { ServiceCommandSearch } from "@/components/service-command-search";
+import { getCurrentSession, getSessionProjects } from "@/lib/auth-session";
 
 type ConsoleSection =
   | "Dashboard"
   | "Compute"
+  | "Containers"
   | "Storage"
   | "Networking"
-  | "Databases";
+  | "Databases"
+  | "Security"
+  | "Billing"
+  | "Monitoring";
 
-export function ConsoleShell({
+export async function ConsoleShell({
   active,
   children,
 }: {
   active: ConsoleSection;
   children: React.ReactNode;
 }) {
+  const session = await getCurrentSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  const accountName = session.accountName;
+  const projects = getSessionProjects(session);
+  const projectName =
+    projects.length > 1
+      ? `${projects.length} projects`
+      : session.projectName;
+  const region = projects.length > 1 ? "All regions" : session.region;
+  const username = session.username;
+
   return (
     <CloudSidebarProvider>
       <div className="min-h-screen bg-[#f4f7fb] text-[#101828]">
@@ -38,12 +60,12 @@ export function ConsoleShell({
               <div className="flex flex-wrap items-center gap-3">
                 <button className="flex h-11 items-center gap-2 rounded-lg border border-[#d9e0eb] bg-white px-4 text-sm font-bold shadow-sm">
                   <Cloud className="size-4 text-[#2563eb]" />
-                  Acme Project
+                  {projectName}
                   <ChevronDown className="size-4 text-[#667085]" />
                 </button>
                 <button className="flex h-11 items-center gap-2 rounded-lg border border-[#d9e0eb] bg-white px-4 text-sm font-bold shadow-sm">
                   <MapPin className="size-4 text-[#d7000f]" />
-                  AL-Sao Paulo1
+                  {region}
                   <ChevronDown className="size-4 text-[#667085]" />
                 </button>
               </div>
@@ -63,12 +85,13 @@ export function ConsoleShell({
                     <UserRound className="size-5 text-[#667085]" />
                   </div>
                   <div>
-                    <p className="text-sm font-extrabold">g50047609</p>
+                    <p className="text-sm font-extrabold">{username}</p>
                     <p className="text-xs font-semibold text-[#667085]">
-                      Intl-Portugues
+                      {accountName}
                     </p>
                   </div>
                 </div>
+                <LogoutButton />
               </div>
             </div>
           </header>

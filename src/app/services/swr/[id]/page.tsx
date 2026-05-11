@@ -42,7 +42,7 @@ export default async function SwrRepositoryPage({
   const { id } = await params;
 
   return (
-    <ConsoleShell active="Compute">
+    <ConsoleShell active="Containers">
       <main className="grid gap-6 p-4 lg:p-8">
       <Link
         className="mb-3 inline-flex items-center gap-2 text-sm font-bold text-[#2563eb]"

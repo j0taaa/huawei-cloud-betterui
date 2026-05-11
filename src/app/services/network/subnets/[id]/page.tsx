@@ -1,56 +1,25 @@
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, Network, Route } from "lucide-react";
+import { notFound } from "next/navigation";
+import { ArrowLeft, Route } from "lucide-react";
 
+import { RefreshButton } from "@/components/cloud-action-buttons";
 import { ConsoleShell } from "@/components/console-shell";
+import { getCurrentSession } from "@/lib/auth-session";
+import { listSubnets } from "@/lib/huawei-cloud";
 
-export default async function SubnetDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function SubnetDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const session = await getCurrentSession();
   const { id } = await params;
-
+  if (!session) notFound();
+  const item = (await listSubnets(session).catch(() => [])).find((subnet) => subnet.id === id);
+  if (!item) notFound();
+  const facts = [["Name", item.name], ["ID", item.id], ["CIDR", item.cidr], ["Gateway", item.gateway], ["VPC ID", item.vpcId], ["Status", item.status]];
   return (
     <ConsoleShell active="Networking">
       <main className="grid gap-6 p-4 lg:p-8">
-      <Link
-        className="mb-3 inline-flex items-center gap-2 text-sm font-bold text-[#2563eb]"
-        href="/services/network"
-      >
-        <ArrowLeft className="size-4" />
-        Back to Networking
-      </Link>
-      <section className="rounded-xl border border-[#e4e9f2] bg-white p-6 shadow-[0_12px_36px_rgba(16,24,40,0.06)]">
-        <div className="flex items-center gap-4">
-          <div className="grid size-12 place-items-center rounded-xl bg-[#e9f8f1] text-[#16a34a]">
-            <Route className="size-6" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-black tracking-tight">{id}</h1>
-            <p className="mt-1 text-sm font-semibold text-[#667085]">
-              Subnet · vpc-commerce-core · 10.24.8.0/24
-            </p>
-          </div>
-        </div>
-      </section>
-      <section className="mt-6 grid gap-4 md:grid-cols-3">
-        {[
-          ["Gateway", "10.24.8.1", Network],
-          ["Used IPs", "186", Route],
-          ["Available IPs", "67", CheckCircle2],
-        ].map(([label, value, Icon]) => (
-          <article
-            className="rounded-xl border border-[#e4e9f2] bg-white p-5 shadow-[0_12px_36px_rgba(16,24,40,0.06)]"
-            key={label as string}
-          >
-            <Icon className="size-5 text-[#2563eb]" />
-            <p className="mt-4 text-sm font-bold text-[#667085]">
-              {label as string}
-            </p>
-            <p className="mt-1 text-2xl font-black">{value as string}</p>
-          </article>
-        ))}
-      </section>
+        <Link className="inline-flex w-fit items-center gap-2 text-sm font-bold text-[#2563eb]" href="/services/network"><ArrowLeft className="size-4" />Back to Networking</Link>
+        <section className="rounded-xl border border-[#e4e9f2] bg-white p-6 shadow-[0_12px_36px_rgba(16,24,40,0.06)]"><div className="flex items-center justify-between gap-4"><div className="flex items-center gap-4"><div className="grid size-12 place-items-center rounded-xl bg-[#eef4ff] text-[#2563eb]"><Route className="size-6" /></div><div><p className="text-sm font-black uppercase tracking-[0.14em] text-[#667085]">Subnet</p><h1 className="mt-1 text-3xl font-black tracking-tight">{item.name}</h1></div></div><RefreshButton /></div></section>
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{facts.map(([label, value]) => <article className="rounded-xl border border-[#e4e9f2] bg-white p-5 shadow-[0_12px_36px_rgba(16,24,40,0.06)]" key={label}><p className="text-sm font-bold text-[#667085]">{label}</p><p className="mt-2 break-words text-lg font-black">{value}</p></article>)}</section>
       </main>
     </ConsoleShell>
   );
