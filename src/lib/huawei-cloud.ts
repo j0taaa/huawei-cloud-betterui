@@ -12,21 +12,30 @@ import {
 } from "@/lib/auth-session";
 
 type ServiceKey =
+  | "apig"
   | "cbr"
+  | "cdn"
   | "cce"
   | "ces"
   | "cts"
+  | "dcs"
+  | "dew"
+  | "dms"
+  | "dns"
   | "ecs"
   | "eip"
   | "elb"
   | "evs"
   | "fg"
+  | "hss"
   | "ims"
   | "lts"
   | "nat"
   | "rds"
   | "sfs"
+  | "smn"
   | "vpn"
+  | "waf"
   | "vpc";
 
 export type CloudResult<T> =
@@ -255,6 +264,143 @@ export type RdsInstance = {
   region: string;
 };
 
+export type DnsZone = {
+  createdAt: string;
+  description: string;
+  id: string;
+  name: string;
+  projectId: string;
+  recordCount: number;
+  status: string;
+  ttl: string;
+  type: string;
+  updatedAt: string;
+};
+
+export type CdnDomain = {
+  businessType: string;
+  cname: string;
+  createdAt: string;
+  domainName: string;
+  id: string;
+  originHost: string;
+  region: string;
+  serviceArea: string;
+  status: string;
+  updatedAt: string;
+};
+
+export type ApigInstance = {
+  createdAt: string;
+  edition: string;
+  eipAddress: string;
+  id: string;
+  name: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  status: string;
+  subnetId: string;
+  version: string;
+  vpcId: string;
+};
+
+export type DmsKafkaInstance = {
+  availabilityZones: string;
+  brokerCount: number;
+  connectAddress: string;
+  createdAt: string;
+  engineVersion: string;
+  id: string;
+  name: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  status: string;
+  storage: string;
+  subnetId: string;
+  vpcId: string;
+};
+
+export type DcsRedisInstance = {
+  capacity: string;
+  createdAt: string;
+  engine: string;
+  engineVersion: string;
+  id: string;
+  ip: string;
+  mode: string;
+  name: string;
+  port: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  status: string;
+  usedMemory: string;
+  vpcId: string;
+};
+
+export type WafInstance = {
+  accessCode: string;
+  accessStatus: string;
+  createdAt: string;
+  hostname: string;
+  id: string;
+  policyId: string;
+  projectId: string;
+  projectName: string;
+  protectStatus: string;
+  proxy: string;
+  region: string;
+};
+
+export type DewKey = {
+  alias: string;
+  createdAt: string;
+  id: string;
+  keyId: string;
+  keyState: string;
+  keyType: string;
+  origin: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+};
+
+export type HssHost = {
+  agentStatus: string;
+  baselineRiskCount: number;
+  detectResult: string;
+  groupName: string;
+  id: string;
+  intrusionCount: number;
+  name: string;
+  os: string;
+  policyGroupName: string;
+  privateIp: string;
+  projectId: string;
+  projectName: string;
+  publicIp: string;
+  region: string;
+  riskCount: number;
+  version: string;
+  vulnerabilityCount: number;
+};
+
+export type SmnTopic = {
+  createdAt: string;
+  displayName: string;
+  enterpriseProjectId: string;
+  id: string;
+  name: string;
+  projectId: string;
+  projectName: string;
+  pushPolicy: string;
+  region: string;
+  topicUrn: string;
+  updatedAt: string;
+};
+
 export type CbrVault = {
   allocated: string;
   autoBind: string;
@@ -421,21 +567,30 @@ const emptySummary: CloudSummary = {
 };
 
 const endpointEnv: Record<ServiceKey, string> = {
+  apig: "HUAWEI_APIG_ENDPOINT",
   cbr: "HUAWEI_CBR_ENDPOINT",
+  cdn: "HUAWEI_CDN_ENDPOINT",
   cce: "HUAWEI_CCE_ENDPOINT",
   ces: "HUAWEI_CES_ENDPOINT",
   cts: "HUAWEI_CTS_ENDPOINT",
+  dcs: "HUAWEI_DCS_ENDPOINT",
+  dew: "HUAWEI_DEW_ENDPOINT",
+  dms: "HUAWEI_DMS_ENDPOINT",
+  dns: "HUAWEI_DNS_ENDPOINT",
   ecs: "HUAWEI_ECS_ENDPOINT",
   eip: "HUAWEI_EIP_ENDPOINT",
   elb: "HUAWEI_ELB_ENDPOINT",
   evs: "HUAWEI_EVS_ENDPOINT",
   fg: "HUAWEI_FUNCTIONGRAPH_ENDPOINT",
+  hss: "HUAWEI_HSS_ENDPOINT",
   ims: "HUAWEI_IMS_ENDPOINT",
   lts: "HUAWEI_LTS_ENDPOINT",
   nat: "HUAWEI_NAT_ENDPOINT",
   rds: "HUAWEI_RDS_ENDPOINT",
   sfs: "HUAWEI_SFS_ENDPOINT",
+  smn: "HUAWEI_SMN_ENDPOINT",
   vpn: "HUAWEI_VPN_ENDPOINT",
+  waf: "HUAWEI_WAF_ENDPOINT",
   vpc: "HUAWEI_VPC_ENDPOINT",
 };
 
@@ -466,10 +621,15 @@ type StoredCloudResult<T> = {
 };
 
 function serviceEndpoint(service: ServiceKey, region: string) {
+  const globalServiceEndpoint: Partial<Record<ServiceKey, string>> = {
+    cdn: "https://cdn.myhuaweicloud.com",
+    dns: "https://dns.myhuaweicloud.com",
+  };
   const defaultService = service === "fg" ? "functiongraph" : service;
 
   return (
     process.env[endpointEnv[service]] ??
+    globalServiceEndpoint[service] ??
     `https://${defaultService}.${region}.myhuaweicloud.com`
   ).replace(/\/+$/, "");
 }
@@ -2020,6 +2180,290 @@ export async function getRdsInstance(session: BetterUiSession, id: string) {
 
 export async function listRdsInstances(session: BetterUiSession) {
   return loadAcrossProjects(session, listRdsInstancesForProject);
+}
+
+export async function listDnsZones(session: BetterUiSession) {
+  const project = sessionProjects(session)[0];
+  const body = await huaweiFetch<{ zones?: unknown[] }>(
+    project,
+    "dns",
+    "/v2/zones?type=public&limit=500",
+  );
+
+  return asArray(body.zones).map((zone): DnsZone => {
+    const item = asRecord(zone);
+
+    return {
+      createdAt: firstString([item.created_at, item.createdAt]),
+      description: asString(item.description, ""),
+      id: asString(item.id),
+      name: asString(item.name),
+      projectId: asString(item.project_id, project.projectId),
+      recordCount: Number(item.record_num ?? 0),
+      status: asString(item.status, "UNKNOWN"),
+      ttl: String(item.ttl ?? "-"),
+      type: asString(item.zone_type, "public"),
+      updatedAt: firstString([item.updated_at, item.updatedAt]),
+    };
+  });
+}
+
+export async function listCdnDomains(session: BetterUiSession) {
+  const project = sessionProjects(session)[0];
+  const body = await huaweiFetch<{ domains?: unknown[] }>(
+    project,
+    "cdn",
+    "/v1.0/cdn/domains?page_size=100&page_number=1",
+  );
+
+  return asArray(body.domains).map((domain): CdnDomain => {
+    const item = asRecord(domain);
+    const originHost = asRecord(item.origin_host);
+
+    return {
+      businessType: asString(item.business_type, "-"),
+      cname: firstString([item.cname, item.cname_target], "-"),
+      createdAt: firstString([item.create_time, item.created_at, item.createdAt]),
+      domainName: firstString([item.domain_name, item.name]),
+      id: firstString([item.id, item.domain_id, item.domain_name]),
+      originHost: firstString([originHost.domain_name, item.origin_host, item.origin_host_name], "-"),
+      region: project.region,
+      serviceArea: asString(item.service_area, "-"),
+      status: asString(item.domain_status, "UNKNOWN"),
+      updatedAt: firstString([item.update_time, item.updated_at, item.updatedAt]),
+    };
+  });
+}
+
+async function listApigInstancesForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ instances?: unknown[] }>(
+    session,
+    "apig",
+    `/v2/${session.projectId}/apigw/instances?limit=100`,
+  );
+
+  return asArray(body.instances).map((instance): ApigInstance => {
+    const item = asRecord(instance);
+
+    return {
+      createdAt: firstString([item.create_time, item.created_at, item.createdAt]),
+      edition: firstString([item.edition, item.spec, item.instance_type], "-"),
+      eipAddress: firstString([item.eip_address, item.eip], "-"),
+      id: asString(item.id),
+      name: firstString([item.instance_name, item.name, item.id]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      status: asString(item.status, "UNKNOWN"),
+      subnetId: firstString([item.subnet_id, item.network_id], "-"),
+      version: firstString([item.version, item.enterprise_project_id], "-"),
+      vpcId: firstString([item.vpc_id, item.router_id], "-"),
+    };
+  });
+}
+
+export async function listApigInstances(session: BetterUiSession) {
+  return loadAcrossProjects(session, listApigInstancesForProject);
+}
+
+async function listDmsKafkaInstancesForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ instances?: unknown[] }>(
+    session,
+    "dms",
+    `/v2/${session.projectId}/instances?engine=kafka&limit=100`,
+  );
+
+  return asArray(body.instances).map((instance): DmsKafkaInstance => {
+    const item = asRecord(instance);
+    const storage = Number(item.storage_space ?? item.storage ?? 0);
+
+    return {
+      availabilityZones: asArray(item.available_zones ?? item.availability_zones).join(", ") || "-",
+      brokerCount: Number(item.broker_num ?? item.broker_count ?? 0),
+      connectAddress: firstString([item.connect_address, item.public_connect_address, item.management_connect_address], "-"),
+      createdAt: firstString([item.created_at, item.create_time, item.createdAt]),
+      engineVersion: firstString([item.engine_version, item.version], "-"),
+      id: asString(item.instance_id ?? item.id),
+      name: firstString([item.name, item.instance_name, item.id]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      status: asString(item.status, "UNKNOWN"),
+      storage: storage ? `${storage} GB` : "-",
+      subnetId: asString(item.subnet_id, "-"),
+      vpcId: asString(item.vpc_id, "-"),
+    };
+  });
+}
+
+export async function listDmsKafkaInstances(session: BetterUiSession) {
+  return loadAcrossProjects(session, listDmsKafkaInstancesForProject);
+}
+
+async function listDcsRedisInstancesForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ instances?: unknown[] }>(
+    session,
+    "dcs",
+    `/v2/${session.projectId}/instances?offset=0&limit=100`,
+  );
+
+  return asArray(body.instances).map((instance): DcsRedisInstance => {
+    const item = asRecord(instance);
+
+    return {
+      capacity: `${Number(item.capacity ?? item.max_memory ?? 0)} GB`,
+      createdAt: firstString([item.created_at, item.createdAt]),
+      engine: asString(item.engine, "Redis"),
+      engineVersion: firstString([item.engine_version, item.version], "-"),
+      id: asString(item.instance_id ?? item.id),
+      ip: firstString([item.ip, item.address, item.publicip_address], "-"),
+      mode: firstString([item.cache_mode, item.mode], "-"),
+      name: firstString([item.name, item.instance_name, item.id]),
+      port: String(item.port ?? "-"),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      status: asString(item.status, "UNKNOWN"),
+      usedMemory: item.used_memory ? `${item.used_memory} MB` : "-",
+      vpcId: asString(item.vpc_id, "-"),
+    };
+  });
+}
+
+export async function listDcsRedisInstances(session: BetterUiSession) {
+  return loadAcrossProjects(session, listDcsRedisInstancesForProject);
+}
+
+async function listWafInstancesForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ items?: unknown[] }>(
+    session,
+    "waf",
+    `/v1/${session.projectId}/waf/instance?page=1&pagesize=100`,
+  );
+
+  return asArray(body.items).map((host): WafInstance => {
+    const item = asRecord(host);
+
+    return {
+      accessCode: asString(item.access_code, "-"),
+      accessStatus: String(item.access_status ?? "-"),
+      createdAt: item.timestamp ? new Date(Number(item.timestamp)).toISOString() : "",
+      hostname: firstString([item.hostname, item.name]),
+      id: firstString([item.id, item.hostid, item.hostname]),
+      policyId: asString(item.policyid, "-"),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      protectStatus: String(item.protect_status ?? "-"),
+      proxy: String(item.proxy ?? "-"),
+      region: firstString([item.region, session.region]),
+    };
+  });
+}
+
+export async function listWafInstances(session: BetterUiSession) {
+  return loadAcrossProjects(session, listWafInstancesForProject);
+}
+
+async function listDewKeysForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ keys?: unknown[]; key_details?: unknown[] }>(
+    session,
+    "dew",
+    `/v1.0/${session.projectId}/kms/list-keys`,
+    {
+      body: JSON.stringify({ limit: "100" }),
+      method: "POST",
+    },
+  );
+
+  return asArray(body.key_details ?? body.keys).map((key): DewKey => {
+    const item = asRecord(key);
+
+    return {
+      alias: firstString([item.key_alias, item.alias], "-"),
+      createdAt: item.creation_date ? new Date(Number(item.creation_date)).toISOString() : firstString([item.created_at, item.createdAt]),
+      id: firstString([item.key_id, item.id]),
+      keyId: firstString([item.key_id, item.id]),
+      keyState: String(item.key_state ?? item.state ?? "-"),
+      keyType: firstString([item.key_type, item.type], "-"),
+      origin: firstString([item.origin, item.key_origin], "-"),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+    };
+  });
+}
+
+export async function listDewKeys(session: BetterUiSession) {
+  return loadAcrossProjects(session, listDewKeysForProject);
+}
+
+async function listHssHostsForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ data_list?: unknown[]; hosts?: unknown[] }>(
+    session,
+    "hss",
+    `/v5/${session.projectId}/host-management/hosts?limit=100`,
+  );
+
+  return asArray(body.data_list ?? body.hosts).map((host): HssHost => {
+    const item = asRecord(host);
+    const asset = asRecord(item.asset_info);
+    const risk = asRecord(item.risk_info);
+    const agent = asRecord(item.agent_info);
+
+    return {
+      agentStatus: firstString([item.agent_status, agent.agent_status, agent.status], "UNKNOWN"),
+      baselineRiskCount: Number(item.baseline_num ?? risk.baseline_num ?? risk.baseline_risk_count ?? 0),
+      detectResult: firstString([item.detect_result, item.risk_status, risk.detect_result], "-"),
+      groupName: firstString([item.group_name, asset.group_name], "-"),
+      id: firstString([item.host_id, item.id, item.server_id]),
+      intrusionCount: Number(item.intrusion_num ?? risk.intrusion_num ?? risk.intrusion_count ?? 0),
+      name: firstString([item.host_name, item.name, item.server_name, item.id]),
+      os: firstString([item.os_type, item.os_name, asset.os], "-"),
+      policyGroupName: firstString([item.policy_group_name, item.policy_name], "-"),
+      privateIp: firstString([item.private_ip, item.private_ip_address, asset.private_ip], "-"),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      publicIp: firstString([item.public_ip, item.public_ip_address, asset.public_ip], "-"),
+      region: session.region,
+      riskCount: Number(item.risk_num ?? risk.risk_num ?? risk.risk_count ?? 0),
+      version: firstString([item.version, item.edition, agent.version], "-"),
+      vulnerabilityCount: Number(item.vul_num ?? item.vulnerability_num ?? risk.vul_num ?? 0),
+    };
+  });
+}
+
+export async function listHssHosts(session: BetterUiSession) {
+  return loadAcrossProjects(session, listHssHostsForProject);
+}
+
+async function listSmnTopicsForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ topics?: unknown[] }>(
+    session,
+    "smn",
+    `/v2/${session.projectId}/notifications/topics?offset=0&limit=100`,
+  );
+
+  return asArray(body.topics).map((topic): SmnTopic => {
+    const item = asRecord(topic);
+
+    return {
+      createdAt: firstString([item.create_time, item.created_at, item.createdAt]),
+      displayName: asString(item.display_name, ""),
+      enterpriseProjectId: asString(item.enterprise_project_id, "-"),
+      id: firstString([item.topic_id, item.topic_urn, item.name]),
+      name: firstString([item.name, item.topic_urn]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      pushPolicy: String(item.push_policy ?? "-"),
+      region: session.region,
+      topicUrn: asString(item.topic_urn),
+      updatedAt: firstString([item.update_time, item.updated_at, item.updatedAt]),
+    };
+  });
+}
+
+export async function listSmnTopics(session: BetterUiSession) {
+  return loadAcrossProjects(session, listSmnTopicsForProject);
 }
 
 export async function listIamUsers(session: BetterUiSession) {

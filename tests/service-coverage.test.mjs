@@ -18,6 +18,15 @@ const services = [
   ["IAM", "iam", "listIamUsers"],
   ["CTS", "cts", "listCtsTrackers"],
   ["LTS", "lts", "listLtsLogGroups"],
+  ["DNS", "dns", "listDnsZones"],
+  ["CDN", "cdn", "listCdnDomains"],
+  ["APIG", "apig", "listApigInstances"],
+  ["DMS Kafka", "dms-kafka", "listDmsKafkaInstances"],
+  ["DCS", "dcs", "listDcsRedisInstances"],
+  ["WAF", "waf", "listWafInstances"],
+  ["DEW", "dew", "listDewKeys"],
+  ["HSS", "hss", "listHssHosts"],
+  ["SMN", "smn", "listSmnTopics"],
 ];
 
 test("new Huawei service routes are present and linked", () => {
