@@ -73,8 +73,9 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       name: "Cloud Phone Host",
       shortName: "CPH",
       description: "Cloud-hosted mobile device resources for mobile apps and testing.",
+      href: "/services/cph",
       logo: serviceLogos.CPH,
-      status: "Catalog",
+      status: "Available",
     },
   ],
   Containers: [
@@ -371,11 +372,19 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       status: "Available",
     },
     {
+      name: "Cloud Bastion Host",
+      shortName: "CBH",
+      description: "Bastion host instances, versions, access addresses, and upgrade posture.",
+      href: "/services/cbh",
+      status: "Available",
+    },
+    {
       name: "Cloud Firewall",
       shortName: "CFW",
       description: "Centralized traffic protection and access control.",
+      href: "/services/cfw",
       logo: serviceLogos.CFW,
-      status: "Catalog",
+      status: "Available",
     },
     {
       name: "Host Security Service",
@@ -391,6 +400,20 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description: "DDoS mitigation for public network services.",
       logo: serviceLogos.AAD,
       status: "Catalog",
+    },
+    {
+      name: "SecMaster",
+      shortName: "SecMaster",
+      description: "Security operations workspaces, views, and enterprise project boundaries.",
+      href: "/services/secmaster",
+      status: "Available",
+    },
+    {
+      name: "Workspace",
+      shortName: "Workspace",
+      description: "Cloud desktop tenant access, VPC placement, and security posture.",
+      href: "/services/workspace",
+      status: "Available",
     },
   ],
   Billing: [
@@ -424,8 +447,9 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       name: "Cloud Eye",
       shortName: "CES",
       description: "Metrics, alarms, dashboards, and resource monitoring.",
+      href: "/services/ces",
       logo: serviceLogos.CES,
-      status: "Catalog",
+      status: "Available",
     },
     {
       name: "Log Tank Service",

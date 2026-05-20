@@ -37,12 +37,18 @@ const services = [
   ["WAF", "waf", "listWafInstances"],
   ["DEW", "dew", "listDewKeys"],
   ["HSS", "hss", "listHssHosts"],
+  ["SecMaster", "secmaster", "listSecMasterWorkspaces"],
+  ["CFW", "cfw", "listCloudFirewalls"],
+  ["Workspace", "workspace", "listWorkspaceTenants"],
   ["SMN", "smn", "listSmnTopics"],
+  ["CES", "ces", "listCesAlarmRules"],
   ["ModelArts", "modelarts", "listModelArtsNotebooks"],
   ["DLI", "dli", "listDliQueues"],
   ["MRS", "mrs", "listMrsClusters"],
   ["DWS", "dws", "listDwsClusters"],
   ["CSS", "css", "listCssClusters"],
+  ["CBH", "cbh", "listCbhInstances"],
+  ["CPH", "cph", "listCphServers"],
 ];
 
 test("new Huawei service routes are present and linked", () => {
@@ -132,4 +138,30 @@ test("networking and infrastructure service loaders use read-only list endpoints
   assert.doesNotMatch(huaweiCloud, /"bms"[\s\S]{0,300}method: "POST"/);
   assert.doesNotMatch(huaweiCloud, /"deh"[\s\S]{0,300}method: "POST"/);
   assert.doesNotMatch(huaweiCloud, /"cci"[\s\S]{0,300}method: "POST"/);
+});
+
+test("security and workspace service loaders use read-only inventory endpoints", () => {
+  const securityEndpoints = [
+    ["ces", "GET", "/v2/${session.projectId}/alarms?limit=100"],
+    ["secmaster", "GET", "/v1/${session.projectId}/workspaces?offset=0&limit=100"],
+    ["cfw", "POST", "/v1/${session.projectId}/firewalls/list?enterprise_project_id=all_granted_eps"],
+    ["cbh", "GET", "/v2/${session.projectId}/cbs/instance/list"],
+    ["workspace", "GET", "/v2/${session.projectId}/workspaces"],
+    ["cph", "GET", "/v1/${session.projectId}/cloud-phone/servers?offset=0&limit=100"],
+  ];
+
+  for (const [service, method, path] of securityEndpoints) {
+    assert.match(huaweiCloud, new RegExp(`"${service}"[\\s\\S]*?${path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
+    assert.match(huaweiCloud, new RegExp(`"${service}"[\\s\\S]*?method: "${method}"|${path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
+  }
+
+  assert.doesNotMatch(huaweiCloud, /"ces"[\s\S]{0,300}method: "POST"/);
+  assert.doesNotMatch(huaweiCloud, /"secmaster"[\s\S]{0,300}method: "POST"/);
+  assert.doesNotMatch(huaweiCloud, /"cbh"[\s\S]{0,300}method: "POST"/);
+  assert.doesNotMatch(huaweiCloud, /"workspace"[\s\S]{0,300}method: "POST"/);
+  assert.doesNotMatch(huaweiCloud, /"cph"[\s\S]{0,300}method: "POST"/);
+  assert.match(huaweiCloud, /"cfw"[\s\S]{0,300}\/firewalls\/list[\s\S]{0,300}method: "POST"/);
+  assert.doesNotMatch(huaweiCloud, /\bcreate(?:Ces|SecMaster|CloudFirewall|Cbh|Workspace|Cph)\b/);
+  assert.doesNotMatch(huaweiCloud, /\bdelete(?:Ces|SecMaster|CloudFirewall|Cbh|Workspace|Cph)\b/);
+  assert.doesNotMatch(huaweiCloud, /\bupdate(?:Ces|SecMaster|CloudFirewall|Cbh|Workspace|Cph)\b/);
 });

@@ -15,10 +15,13 @@ type ServiceKey =
   | "apig"
   | "bms"
   | "cbr"
+  | "cbh"
   | "cdn"
   | "cce"
   | "ces"
   | "cci"
+  | "cfw"
+  | "cph"
   | "cts"
   | "dcs"
   | "dds"
@@ -46,12 +49,14 @@ type ServiceKey =
   | "css"
   | "mrs"
   | "rds"
+  | "secmaster"
   | "sfs"
   | "smn"
   | "taurusdb"
   | "vpn"
   | "vpcep"
   | "waf"
+  | "workspace"
   | "vpc";
 
 export type CloudResult<T> =
@@ -606,6 +611,106 @@ export type SmnTopic = {
   updatedAt: string;
 };
 
+export type CesAlarmRule = {
+  alarmActionEnabled: boolean | null;
+  alarmLevel: string;
+  alarmType: string;
+  condition: string;
+  enabled: boolean | null;
+  id: string;
+  metricName: string;
+  name: string;
+  namespace: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  resourceCount: number;
+  status: string;
+};
+
+export type SecMasterWorkspace = {
+  createdAt: string;
+  creatorName: string;
+  description: string;
+  enterpriseProjectName: string;
+  id: string;
+  isView: boolean | null;
+  name: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  regionId: string;
+  updatedAt: string;
+};
+
+export type CloudFirewall = {
+  bandwidth: string;
+  chargeMode: string;
+  engineType: string;
+  enterpriseProjectId: string;
+  eipCount: number;
+  haType: string;
+  id: string;
+  name: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  serviceType: string;
+  status: string;
+  vpcCount: number;
+};
+
+export type CbhInstance = {
+  availabilityZone: string;
+  bastionVersion: string;
+  createdAt: string;
+  enterpriseProjectId: string;
+  id: string;
+  name: string;
+  privateIp: string;
+  projectId: string;
+  projectName: string;
+  publicIp: string;
+  region: string;
+  serverId: string;
+  status: string;
+  updateStatus: string;
+};
+
+export type WorkspaceTenant = {
+  accessMode: string;
+  configStatus: string;
+  desktopSecurityGroup: string;
+  enterpriseId: string;
+  id: string;
+  internetAccessAddress: string;
+  isGlobal: boolean | null;
+  managementSubnetCidr: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  status: string;
+  subnetCount: number;
+  vpcId: string;
+  vpcName: string;
+};
+
+export type CphServer = {
+  availabilityZone: string;
+  bandwidth: string;
+  flavor: string;
+  id: string;
+  name: string;
+  phoneCount: number;
+  projectId: string;
+  projectName: string;
+  publicIp: string;
+  region: string;
+  status: string;
+  subnetId: string;
+  vpcId: string;
+};
+
 export type ModelArtsNotebook = {
   createdAt: string;
   flavor: string;
@@ -852,10 +957,13 @@ const endpointEnv: Record<ServiceKey, string> = {
   apig: "HUAWEI_APIG_ENDPOINT",
   bms: "HUAWEI_BMS_ENDPOINT",
   cbr: "HUAWEI_CBR_ENDPOINT",
+  cbh: "HUAWEI_CBH_ENDPOINT",
   cdn: "HUAWEI_CDN_ENDPOINT",
   cce: "HUAWEI_CCE_ENDPOINT",
   ces: "HUAWEI_CES_ENDPOINT",
   cci: "HUAWEI_CCI_ENDPOINT",
+  cfw: "HUAWEI_CFW_ENDPOINT",
+  cph: "HUAWEI_CPH_ENDPOINT",
   cts: "HUAWEI_CTS_ENDPOINT",
   dcs: "HUAWEI_DCS_ENDPOINT",
   dds: "HUAWEI_DDS_ENDPOINT",
@@ -883,12 +991,14 @@ const endpointEnv: Record<ServiceKey, string> = {
   css: "HUAWEI_CSS_ENDPOINT",
   mrs: "HUAWEI_MRS_ENDPOINT",
   rds: "HUAWEI_RDS_ENDPOINT",
+  secmaster: "HUAWEI_SECMASTER_ENDPOINT",
   sfs: "HUAWEI_SFS_ENDPOINT",
   smn: "HUAWEI_SMN_ENDPOINT",
   taurusdb: "HUAWEI_TAURUSDB_ENDPOINT",
   vpn: "HUAWEI_VPN_ENDPOINT",
   vpcep: "HUAWEI_VPCEP_ENDPOINT",
   waf: "HUAWEI_WAF_ENDPOINT",
+  workspace: "HUAWEI_WORKSPACE_ENDPOINT",
   vpc: "HUAWEI_VPC_ENDPOINT",
 };
 
@@ -3243,6 +3353,231 @@ async function listSmnTopicsForProject(session: HuaweiProjectSession) {
 
 export async function listSmnTopics(session: BetterUiSession) {
   return loadAcrossProjects(session, listSmnTopicsForProject);
+}
+
+async function listCesAlarmRulesForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{
+    alarm_rules?: unknown[];
+    alarms?: unknown[];
+    metric_alarms?: unknown[];
+  }>(
+    session,
+    "ces",
+    `/v2/${session.projectId}/alarms?limit=100`,
+  );
+
+  return asArray(body.alarm_rules ?? body.alarms ?? body.metric_alarms).map((alarm): CesAlarmRule => {
+    const item = asRecord(alarm);
+    const metric = asRecord(item.metric);
+    const condition = asRecord(item.condition);
+    const resources = asArray(item.resources ?? item.resource_list ?? item.dimensions ?? metric.dimensions);
+
+    return {
+      alarmActionEnabled:
+        typeof item.alarm_action_enabled === "boolean"
+          ? item.alarm_action_enabled
+          : null,
+      alarmLevel: String(item.alarm_level ?? item.level ?? "-"),
+      alarmType: firstString([item.alarm_type, item.type], "-"),
+      condition: [
+        condition.period ? `${condition.period}s` : "",
+        condition.filter,
+        condition.comparison_operator,
+        condition.value,
+        condition.unit,
+      ].filter(Boolean).join(" ") || "-",
+      enabled:
+        typeof item.alarm_enabled === "boolean"
+          ? item.alarm_enabled
+          : typeof item.enabled === "boolean"
+            ? item.enabled
+            : null,
+      id: firstString([item.alarm_id, item.id]),
+      metricName: firstString([metric.metric_name, item.metric_name], "-"),
+      name: firstString([item.alarm_name, item.name, item.id]),
+      namespace: firstString([metric.namespace, item.namespace], "-"),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      resourceCount: resources.length,
+      status: firstString([item.alarm_state, item.status], "UNKNOWN"),
+    };
+  });
+}
+
+export async function listCesAlarmRules(session: BetterUiSession) {
+  return loadAcrossProjects(session, listCesAlarmRulesForProject);
+}
+
+async function listSecMasterWorkspacesForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ workspaces?: unknown[] }>(
+    session,
+    "secmaster",
+    `/v1/${session.projectId}/workspaces?offset=0&limit=100`,
+  );
+
+  return asArray(body.workspaces).map((workspace): SecMasterWorkspace => {
+    const item = asRecord(workspace);
+
+    return {
+      createdAt: firstString([item.create_time, item.created_at, item.createdAt]),
+      creatorName: firstString([item.creator_name, item.creator_id], "-"),
+      description: asString(item.description, ""),
+      enterpriseProjectName: firstString([item.enterprise_project_name, item.enterprise_project_id], "-"),
+      id: firstString([item.id, item.workspace_id]),
+      isView: typeof item.is_view === "boolean" ? item.is_view : null,
+      name: firstString([item.name, item.workspace_name, item.id]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      regionId: firstString([item.region_id, session.region]),
+      updatedAt: firstString([item.update_time, item.updated_at, item.updatedAt]),
+    };
+  });
+}
+
+export async function listSecMasterWorkspaces(session: BetterUiSession) {
+  return loadAcrossProjects(session, listSecMasterWorkspacesForProject);
+}
+
+async function listCloudFirewallsForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ data?: { records?: unknown[] }; records?: unknown[] }>(
+    session,
+    "cfw",
+    `/v1/${session.projectId}/firewalls/list?enterprise_project_id=all_granted_eps`,
+    {
+      body: JSON.stringify({ limit: 100, offset: 0 }),
+      method: "POST",
+    },
+  );
+  const data = asRecord(body.data);
+
+  return asArray(data.records ?? body.records).map((firewall): CloudFirewall => {
+    const item = asRecord(firewall);
+    const flavor = asRecord(item.flavor);
+
+    return {
+      bandwidth: numberWithUnit(flavor.bandwidth, "Mbit/s"),
+      chargeMode: String(item.charge_mode ?? "-"),
+      engineType: String(item.engine_type ?? "-"),
+      enterpriseProjectId: asString(item.enterprise_project_id, "-"),
+      eipCount: Number(flavor.eip_count ?? item.eip_count ?? 0),
+      haType: String(item.ha_type ?? "-"),
+      id: firstString([item.fw_instance_id, item.resource_id, item.id]),
+      name: firstString([item.fw_instance_name, item.name, item.id]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      serviceType: String(item.service_type ?? "-"),
+      status: String(item.status ?? "UNKNOWN"),
+      vpcCount: Number(flavor.vpc_count ?? item.vpc_count ?? 0),
+    };
+  });
+}
+
+export async function listCloudFirewalls(session: BetterUiSession) {
+  return loadAcrossProjects(session, listCloudFirewallsForProject);
+}
+
+async function listCbhInstancesForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ instance?: unknown[]; instances?: unknown[] }>(
+    session,
+    "cbh",
+    `/v2/${session.projectId}/cbs/instance/list`,
+  );
+
+  return asArray(body.instance ?? body.instances).map((instance): CbhInstance => {
+    const item = asRecord(instance);
+    const az = asRecord(item.az_info);
+    const status = asRecord(item.status_info);
+    const network = asRecord(item.network);
+
+    return {
+      availabilityZone: firstString([az.zone_name, az.availability_zone, item.availability_zone], "-"),
+      bastionVersion: firstString([item.bastion_version, item.version], "-"),
+      createdAt: firstString([item.created_time, item.create_time, item.createdAt]),
+      enterpriseProjectId: asString(item.enterprise_project_id, "-"),
+      id: firstString([item.instance_id, item.id]),
+      name: firstString([item.name, item.instance_name, item.id]),
+      privateIp: firstString([network.private_ip, item.private_ip], "-"),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      publicIp: firstString([network.public_ip, item.public_ip], "-"),
+      region: session.region,
+      serverId: firstString([item.server_id, item.resource_id], "-"),
+      status: firstString([status.status, item.status], "UNKNOWN"),
+      updateStatus: firstString([item.update, item.upgrade_status], "-"),
+    };
+  });
+}
+
+export async function listCbhInstances(session: BetterUiSession) {
+  return loadAcrossProjects(session, listCbhInstancesForProject);
+}
+
+async function listWorkspaceTenantsForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<Record<string, unknown>>(
+    session,
+    "workspace",
+    `/v2/${session.projectId}/workspaces`,
+  );
+  const subnets = asArray(body.subnet_ids ?? body.subnets);
+  const desktopSecurityGroup = asRecord(body.desktop_security_group);
+
+  return [{
+    accessMode: firstString([body.access_mode], "-"),
+    configStatus: String(body.config_status ?? "-"),
+    desktopSecurityGroup: firstString([desktopSecurityGroup.name, desktopSecurityGroup.id], "-"),
+    enterpriseId: asString(body.enterprise_id, "-"),
+    id: firstString([body.id, body.enterprise_id, session.projectId]),
+    internetAccessAddress: firstString([body.internet_access_address, body.dedicated_access_address], "-"),
+    isGlobal: typeof body.is_global === "boolean" ? body.is_global : null,
+    managementSubnetCidr: asString(body.management_subnet_cidr, "-"),
+    projectId: session.projectId,
+    projectName: session.projectName,
+    region: session.region,
+    status: firstString([body.status, body.config_status], "UNKNOWN"),
+    subnetCount: subnets.length,
+    vpcId: asString(body.vpc_id, "-"),
+    vpcName: asString(body.vpc_name, "-"),
+  } satisfies WorkspaceTenant];
+}
+
+export async function listWorkspaceTenants(session: BetterUiSession) {
+  return loadAcrossProjects(session, listWorkspaceTenantsForProject);
+}
+
+async function listCphServersForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ servers?: unknown[]; cloud_phone_servers?: unknown[] }>(
+    session,
+    "cph",
+    `/v1/${session.projectId}/cloud-phone/servers?offset=0&limit=100`,
+  );
+
+  return asArray(body.servers ?? body.cloud_phone_servers).map((server): CphServer => {
+    const item = asRecord(server);
+    const bandwidth = asRecord(item.band_width ?? item.bandwidth);
+
+    return {
+      availabilityZone: firstString([item.availability_zone, item.availability_zone_name], "-"),
+      bandwidth: numberWithUnit(bandwidth.size ?? item.bandwidth_size, "Mbit/s"),
+      flavor: firstString([item.server_model_name, item.flavor, item.server_model], "-"),
+      id: firstString([item.server_id, item.id]),
+      name: firstString([item.server_name, item.name, item.id]),
+      phoneCount: Number(item.phone_count ?? item.phone_num ?? 0),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      publicIp: firstString([item.public_ip, item.public_ip_address], "-"),
+      region: session.region,
+      status: firstString([item.status, item.server_status], "UNKNOWN"),
+      subnetId: asString(item.subnet_id, "-"),
+      vpcId: asString(item.vpc_id, "-"),
+    };
+  });
+}
+
+export async function listCphServers(session: BetterUiSession) {
+  return loadAcrossProjects(session, listCphServersForProject);
 }
 
 async function listModelArtsNotebooksForProject(session: HuaweiProjectSession) {
