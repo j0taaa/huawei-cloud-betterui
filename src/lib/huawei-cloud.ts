@@ -19,14 +19,18 @@ type ServiceKey =
   | "ces"
   | "cts"
   | "dcs"
+  | "dds"
   | "dew"
   | "dms"
   | "dns"
+  | "drs"
   | "ecs"
   | "eip"
   | "elb"
   | "evs"
   | "fg"
+  | "gaussdb"
+  | "geminidb"
   | "hss"
   | "ims"
   | "lts"
@@ -34,6 +38,7 @@ type ServiceKey =
   | "rds"
   | "sfs"
   | "smn"
+  | "taurusdb"
   | "vpn"
   | "waf"
   | "vpc";
@@ -262,6 +267,94 @@ export type RdsInstance = {
   projectId: string;
   projectName: string;
   region: string;
+};
+
+export type DrsJob = {
+  createdAt: string;
+  destination: string;
+  direction: string;
+  engineType: string;
+  id: string;
+  jobType: string;
+  name: string;
+  networkType: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  source: string;
+  status: string;
+};
+
+export type GaussDbInstance = {
+  availabilityZone: string;
+  backupWindow: string;
+  datastore: string;
+  id: string;
+  mode: string;
+  name: string;
+  nodes: number;
+  port: string;
+  privateIp: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  status: string;
+  storage: string;
+  type: string;
+};
+
+export type DdsInstance = {
+  availabilityZone: string;
+  backupWindow: string;
+  datastore: string;
+  id: string;
+  mode: string;
+  name: string;
+  nodes: number;
+  port: string;
+  privateIp: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  status: string;
+  storage: string;
+  vpcId: string;
+};
+
+export type TaurusDbInstance = {
+  availabilityZone: string;
+  backupWindow: string;
+  datastore: string;
+  id: string;
+  mode: string;
+  name: string;
+  nodes: number;
+  port: string;
+  privateIp: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  status: string;
+  storage: string;
+  vpcId: string;
+};
+
+export type GeminiDbInstance = {
+  apiType: string;
+  backupWindow: string;
+  datastore: string;
+  groupCount: number;
+  id: string;
+  mode: string;
+  name: string;
+  nodeCount: number;
+  privateIp: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  status: string;
+  storage: string;
+  vpcId: string;
 };
 
 export type DnsZone = {
@@ -574,14 +667,18 @@ const endpointEnv: Record<ServiceKey, string> = {
   ces: "HUAWEI_CES_ENDPOINT",
   cts: "HUAWEI_CTS_ENDPOINT",
   dcs: "HUAWEI_DCS_ENDPOINT",
+  dds: "HUAWEI_DDS_ENDPOINT",
   dew: "HUAWEI_DEW_ENDPOINT",
   dms: "HUAWEI_DMS_ENDPOINT",
   dns: "HUAWEI_DNS_ENDPOINT",
+  drs: "HUAWEI_DRS_ENDPOINT",
   ecs: "HUAWEI_ECS_ENDPOINT",
   eip: "HUAWEI_EIP_ENDPOINT",
   elb: "HUAWEI_ELB_ENDPOINT",
   evs: "HUAWEI_EVS_ENDPOINT",
   fg: "HUAWEI_FUNCTIONGRAPH_ENDPOINT",
+  gaussdb: "HUAWEI_GAUSSDB_ENDPOINT",
+  geminidb: "HUAWEI_GEMINIDB_ENDPOINT",
   hss: "HUAWEI_HSS_ENDPOINT",
   ims: "HUAWEI_IMS_ENDPOINT",
   lts: "HUAWEI_LTS_ENDPOINT",
@@ -589,6 +686,7 @@ const endpointEnv: Record<ServiceKey, string> = {
   rds: "HUAWEI_RDS_ENDPOINT",
   sfs: "HUAWEI_SFS_ENDPOINT",
   smn: "HUAWEI_SMN_ENDPOINT",
+  taurusdb: "HUAWEI_TAURUSDB_ENDPOINT",
   vpn: "HUAWEI_VPN_ENDPOINT",
   waf: "HUAWEI_WAF_ENDPOINT",
   vpc: "HUAWEI_VPC_ENDPOINT",
@@ -625,7 +723,13 @@ function serviceEndpoint(service: ServiceKey, region: string) {
     cdn: "https://cdn.myhuaweicloud.com",
     dns: "https://dns.myhuaweicloud.com",
   };
-  const defaultService = service === "fg" ? "functiongraph" : service;
+  const regionalServiceHost: Partial<Record<ServiceKey, string>> = {
+    fg: "functiongraph",
+    gaussdb: "gaussdb-opengauss",
+    geminidb: "gaussdb-nosql",
+    taurusdb: "gaussdb-mysql",
+  };
+  const defaultService = regionalServiceHost[service] ?? service;
 
   return (
     process.env[endpointEnv[service]] ??
@@ -2180,6 +2284,212 @@ export async function getRdsInstance(session: BetterUiSession, id: string) {
 
 export async function listRdsInstances(session: BetterUiSession) {
   return loadAcrossProjects(session, listRdsInstancesForProject);
+}
+
+async function listDrsJobsForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ jobs?: unknown[] }>(
+    session,
+    "drs",
+    `/v5/${session.projectId}/jobs?limit=100`,
+  );
+
+  return asArray(body.jobs).map((job): DrsJob => {
+    const item = asRecord(job);
+    const sourceEndpoint = asRecord(item.source_endpoint ?? item.source);
+    const targetEndpoint = asRecord(item.target_endpoint ?? item.destination ?? item.target);
+
+    return {
+      createdAt: firstString([item.created_at, item.create_time, item.createdAt]),
+      destination: firstString([targetEndpoint.db_type, targetEndpoint.endpoint_type, targetEndpoint.name, item.target_db_type], "-"),
+      direction: firstString([item.db_use_type, item.direction], "-"),
+      engineType: firstString([item.engine_type, item.engine, item.migration_type], "-"),
+      id: firstString([item.id, item.job_id]),
+      jobType: firstString([item.job_type, item.type], "-"),
+      name: firstString([item.name, item.job_name, item.id]),
+      networkType: firstString([item.net_type, item.network_type], "-"),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      source: firstString([sourceEndpoint.db_type, sourceEndpoint.endpoint_type, sourceEndpoint.name, item.source_db_type], "-"),
+      status: firstString([item.status, item.job_status], "UNKNOWN"),
+    };
+  });
+}
+
+export async function listDrsJobs(session: BetterUiSession) {
+  return loadAcrossProjects(session, listDrsJobsForProject);
+}
+
+function nodeCount(value: unknown) {
+  return asArray(value).length || Number(value ?? 0) || 0;
+}
+
+function firstIpFromValues(values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) {
+      return value;
+    }
+
+    const array = asArray(value);
+    if (array.length) {
+      const match = array.find((item) => typeof item === "string" && item.trim());
+      if (typeof match === "string") {
+        return match;
+      }
+    }
+  }
+
+  return "-";
+}
+
+function backupWindow(value: unknown) {
+  const strategy = asRecord(value);
+  return firstString([strategy.start_time, strategy.period, strategy.keep_days], "-");
+}
+
+function parseRelationalDbInstance(
+  instance: unknown,
+  session: HuaweiProjectSession,
+): GaussDbInstance {
+  const item = asRecord(instance);
+  const datastore = asRecord(item.datastore);
+  const volume = asRecord(item.volume);
+  const backupStrategy = item.backup_strategy ?? item.backupStrategy;
+
+  return {
+    availabilityZone: firstString([item.az_code, item.availability_zone, item.availability_zone_mode], "-"),
+    backupWindow: backupWindow(backupStrategy),
+    datastore: [datastore.type, datastore.version].filter(Boolean).join(" ") || "-",
+    id: firstString([item.id, item.instance_id]),
+    mode: firstString([item.mode, item.ha_mode, item.instance_mode], "-"),
+    name: firstString([item.name, item.instance_name, item.id]),
+    nodes: nodeCount(item.nodes ?? item.node_count),
+    port: String(item.port ?? item.db_port ?? "-"),
+    privateIp: firstIpFromValues([item.private_ips, item.private_ip, item.private_ip_address]),
+    projectId: session.projectId,
+    projectName: session.projectName,
+    region: session.region,
+    status: firstString([item.status, item.instance_status], "UNKNOWN"),
+    storage: numberWithUnit(volume.size ?? item.volume_size ?? item.storage_size, "GB"),
+    type: firstString([item.type, item.instance_type, item.flavor_ref], "-"),
+  };
+}
+
+async function listGaussDbInstancesForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ instances?: unknown[] }>(
+    session,
+    "gaussdb",
+    `/v3/${session.projectId}/instances?limit=100`,
+  );
+
+  return asArray(body.instances).map((instance) =>
+    parseRelationalDbInstance(instance, session),
+  );
+}
+
+export async function listGaussDbInstances(session: BetterUiSession) {
+  return loadAcrossProjects(session, listGaussDbInstancesForProject);
+}
+
+async function listDdsInstancesForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ instances?: unknown[] }>(
+    session,
+    "dds",
+    `/v3/${session.projectId}/instances?limit=100`,
+  );
+
+  return asArray(body.instances).map((instance): DdsInstance => {
+    const item = asRecord(instance);
+    const datastore = asRecord(item.datastore);
+    const volume = asRecord(item.volume);
+
+    return {
+      availabilityZone: firstString([item.az_code, item.availability_zone, item.availability_zone_mode], "-"),
+      backupWindow: backupWindow(item.backup_strategy),
+      datastore: [datastore.type, datastore.version].filter(Boolean).join(" ") || "DDS",
+      id: firstString([item.id, item.instance_id]),
+      mode: firstString([item.mode, item.instance_mode, item.type], "-"),
+      name: firstString([item.name, item.instance_name, item.id]),
+      nodes: nodeCount(item.nodes ?? item.groups),
+      port: String(item.port ?? item.db_port ?? "-"),
+      privateIp: firstIpFromValues([item.private_ips, item.private_ip, item.private_ip_address]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      status: firstString([item.status, item.instance_status], "UNKNOWN"),
+      storage: numberWithUnit(volume.size ?? item.volume_size ?? item.storage_size, "GB"),
+      vpcId: firstString([item.vpc_id, item.vpcId], "-"),
+    };
+  });
+}
+
+export async function listDdsInstances(session: BetterUiSession) {
+  return loadAcrossProjects(session, listDdsInstancesForProject);
+}
+
+async function listTaurusDbInstancesForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ instances?: unknown[] }>(
+    session,
+    "taurusdb",
+    `/v3/${session.projectId}/instances?limit=100`,
+  );
+
+  return asArray(body.instances).map((instance): TaurusDbInstance => {
+    const parsed = parseRelationalDbInstance(instance, session);
+    const item = asRecord(instance);
+
+    return {
+      ...parsed,
+      datastore: parsed.datastore === "-" ? "TaurusDB" : parsed.datastore,
+      vpcId: firstString([item.vpc_id, item.vpcId], "-"),
+    };
+  });
+}
+
+export async function listTaurusDbInstances(session: BetterUiSession) {
+  return loadAcrossProjects(session, listTaurusDbInstancesForProject);
+}
+
+async function listGeminiDbInstancesForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ instances?: unknown[] }>(
+    session,
+    "geminidb",
+    `/v3/${session.projectId}/instances?limit=100`,
+  );
+
+  return asArray(body.instances).map((instance): GeminiDbInstance => {
+    const item = asRecord(instance);
+    const datastore = asRecord(item.datastore);
+    const groups = asArray(item.groups);
+    const groupNodes = groups.reduce((total, group) => {
+      const record = asRecord(group);
+      return total + asArray(record.nodes).length;
+    }, 0);
+    const firstGroup = asRecord(groups[0]);
+    const volume = asRecord(item.volume ?? firstGroup.volume);
+
+    return {
+      apiType: firstString([datastore.type, item.datastore_type, item.type], "-"),
+      backupWindow: backupWindow(item.backup_strategy),
+      datastore: [datastore.type, datastore.version].filter(Boolean).join(" ") || "-",
+      groupCount: groups.length,
+      id: firstString([item.id, item.instance_id]),
+      mode: firstString([item.mode, item.instance_mode], "-"),
+      name: firstString([item.name, item.instance_name, item.id]),
+      nodeCount: groupNodes || nodeCount(item.nodes ?? item.node_count),
+      privateIp: firstIpFromValues([item.private_ips, item.private_ip, item.private_ip_address]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      status: firstString([item.status, item.instance_status], "UNKNOWN"),
+      storage: numberWithUnit(volume.size ?? item.volume_size ?? item.storage_size, "GB"),
+      vpcId: firstString([item.vpc_id, item.vpcId], "-"),
+    };
+  });
+}
+
+export async function listGeminiDbInstances(session: BetterUiSession) {
+  return loadAcrossProjects(session, listGeminiDbInstancesForProject);
 }
 
 export async function listDnsZones(session: BetterUiSession) {

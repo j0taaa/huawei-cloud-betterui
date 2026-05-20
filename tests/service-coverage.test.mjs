@@ -23,6 +23,11 @@ const services = [
   ["APIG", "apig", "listApigInstances"],
   ["DMS Kafka", "dms-kafka", "listDmsKafkaInstances"],
   ["DCS", "dcs", "listDcsRedisInstances"],
+  ["DRS", "drs", "listDrsJobs"],
+  ["GaussDB", "gaussdb", "listGaussDbInstances"],
+  ["DDS", "dds", "listDdsInstances"],
+  ["TaurusDB", "taurusdb", "listTaurusDbInstances"],
+  ["GeminiDB", "geminidb", "listGeminiDbInstances"],
   ["WAF", "waf", "listWafInstances"],
   ["DEW", "dew", "listDewKeys"],
   ["HSS", "hss", "listHssHosts"],
@@ -50,4 +55,25 @@ test("new Huawei service pages use read-only loaders", () => {
     assert.match(page, new RegExp(`\\b${loader}\\b`));
     assert.doesNotMatch(page, /\bcreate[A-Z]|\bdelete[A-Z]|\bupdate[A-Z]/);
   }
+});
+
+test("database service loaders use read-only list endpoints", () => {
+  const databaseEndpoints = [
+    ["drs", "GET", "/v5/${session.projectId}/jobs?limit=100"],
+    ["gaussdb", "GET", "/v3/${session.projectId}/instances?limit=100"],
+    ["dds", "GET", "/v3/${session.projectId}/instances?limit=100"],
+    ["taurusdb", "GET", "/v3/${session.projectId}/instances?limit=100"],
+    ["geminidb", "GET", "/v3/${session.projectId}/instances?limit=100"],
+  ];
+
+  for (const [service, method, path] of databaseEndpoints) {
+    assert.match(huaweiCloud, new RegExp(`"${service}"[\\s\\S]*?${path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
+    assert.equal(method, "GET");
+  }
+
+  assert.doesNotMatch(huaweiCloud, /"drs"[\s\S]{0,300}method: "POST"/);
+  assert.doesNotMatch(huaweiCloud, /"gaussdb"[\s\S]{0,300}method: "POST"/);
+  assert.doesNotMatch(huaweiCloud, /"dds"[\s\S]{0,300}method: "POST"/);
+  assert.doesNotMatch(huaweiCloud, /"taurusdb"[\s\S]{0,300}method: "POST"/);
+  assert.doesNotMatch(huaweiCloud, /"geminidb"[\s\S]{0,300}method: "POST"/);
 });
