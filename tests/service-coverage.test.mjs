@@ -49,6 +49,12 @@ const services = [
   ["CSS", "css", "listCssClusters"],
   ["CBH", "cbh", "listCbhInstances"],
   ["CPH", "cph", "listCphServers"],
+  ["SMS", "sms", "listSmsTasks"],
+  ["MGC", "mgc", "listMgcMigrationItems"],
+  ["OMS", "oms", "listOmsMigrationTasks"],
+  ["SDRS", "sdrs", "listSdrsProtectedInstances"],
+  ["CDM", "cdm", "listCdmClusters"],
+  ["DataArts", "dataarts", "listDataArtsInstances"],
 ];
 
 test("new Huawei service routes are present and linked", () => {
@@ -164,4 +170,28 @@ test("security and workspace service loaders use read-only inventory endpoints",
   assert.doesNotMatch(huaweiCloud, /\bcreate(?:Ces|SecMaster|CloudFirewall|Cbh|Workspace|Cph)\b/);
   assert.doesNotMatch(huaweiCloud, /\bdelete(?:Ces|SecMaster|CloudFirewall|Cbh|Workspace|Cph)\b/);
   assert.doesNotMatch(huaweiCloud, /\bupdate(?:Ces|SecMaster|CloudFirewall|Cbh|Workspace|Cph)\b/);
+});
+
+test("migration and governance service loaders use read-only list endpoints", () => {
+  const migrationEndpoints = [
+    ["sms", "GET", "/v3/tasks?limit=100&offset=0"],
+    ["oms", "GET", "/v2/${session.projectId}/tasks?offset=0&limit=100"],
+    ["sdrs", "GET", "/v1/${session.projectId}/protected-instances"],
+    ["cdm", "GET", "/v1.1/${session.projectId}/clusters"],
+    ["dataarts", "GET", "/v1/${session.projectId}/instances"],
+  ];
+
+  for (const [service, method, path] of migrationEndpoints) {
+    assert.match(huaweiCloud, new RegExp(`"${service}"[\\s\\S]*?${path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
+    assert.equal(method, "GET");
+    assert.doesNotMatch(huaweiCloud, new RegExp(`"${service}"[\\s\\S]{0,300}method: "POST"`));
+  }
+
+  assert.match(huaweiCloud, /export async function listMgcMigrationItems\(/);
+  assert.match(huaweiCloud, /listSmsTasks\(session\)/);
+  assert.match(huaweiCloud, /listOmsMigrationTasks\(session\)/);
+  assert.match(huaweiCloud, /listCdmClusters\(session\)/);
+  assert.doesNotMatch(huaweiCloud, /\bcreate(?:Sms|Mgc|Oms|Sdrs|Cdm|DataArts)\b/);
+  assert.doesNotMatch(huaweiCloud, /\bdelete(?:Sms|Mgc|Oms|Sdrs|Cdm|DataArts)\b/);
+  assert.doesNotMatch(huaweiCloud, /\bupdate(?:Sms|Mgc|Oms|Sdrs|Cdm|DataArts)\b/);
 });

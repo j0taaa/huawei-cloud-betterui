@@ -77,6 +77,13 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       logo: serviceLogos.CPH,
       status: "Available",
     },
+    {
+      name: "Server Migration Service",
+      shortName: "SMS",
+      description: "Server migration tasks, source mappings, target servers, and progress state.",
+      href: "/services/sms",
+      status: "Available",
+    },
   ],
   Containers: [
     {
@@ -149,6 +156,27 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description: "Offline migration service for large-scale data transfer.",
       logo: serviceLogos.DES,
       status: "Catalog",
+    },
+    {
+      name: "Object Storage Migration Service",
+      shortName: "OMS",
+      description: "Object migration tasks, source clouds, bucket targets, and transfer progress.",
+      href: "/services/oms",
+      status: "Available",
+    },
+    {
+      name: "Storage Disaster Recovery Service",
+      shortName: "SDRS",
+      description: "Protected instances, production/DR server mapping, and replication pairs.",
+      href: "/services/sdrs",
+      status: "Available",
+    },
+    {
+      name: "Migration Center",
+      shortName: "MGC",
+      description: "Unified migration-center rollup across server, object, and data migration assets.",
+      href: "/services/mgc",
+      status: "Available",
     },
   ],
   Networking: [
@@ -343,6 +371,20 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       shortName: "CSS",
       description: "Elasticsearch and OpenSearch-compatible search clusters.",
       href: "/services/css",
+      status: "Available",
+    },
+    {
+      name: "Cloud Data Migration",
+      shortName: "CDM",
+      description: "Data migration clusters, node topology, runtime status, and access endpoints.",
+      href: "/services/cdm",
+      status: "Available",
+    },
+    {
+      name: "DataArts Studio",
+      shortName: "DataArts",
+      description: "Data governance instances, editions, workspaces, and lifecycle status.",
+      href: "/services/dataarts",
       status: "Available",
     },
   ],

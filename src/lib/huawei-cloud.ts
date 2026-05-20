@@ -16,6 +16,7 @@ type ServiceKey =
   | "bms"
   | "cbr"
   | "cbh"
+  | "cdm"
   | "cdn"
   | "cce"
   | "ces"
@@ -23,6 +24,7 @@ type ServiceKey =
   | "cfw"
   | "cph"
   | "cts"
+  | "dataarts"
   | "dcs"
   | "dds"
   | "dc"
@@ -43,6 +45,7 @@ type ServiceKey =
   | "ims"
   | "lts"
   | "modelarts"
+  | "oms"
   | "nat"
   | "dli"
   | "dws"
@@ -52,6 +55,8 @@ type ServiceKey =
   | "secmaster"
   | "sfs"
   | "smn"
+  | "sms"
+  | "sdrs"
   | "taurusdb"
   | "vpn"
   | "vpcep"
@@ -788,6 +793,101 @@ export type CssCluster = {
   storage: string;
 };
 
+export type SmsMigrationTask = {
+  createdAt: string;
+  id: string;
+  name: string;
+  progress: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  sourceServer: string;
+  sourceServerId: string;
+  state: string;
+  syncSpeed: string;
+  targetServer: string;
+  targetServerId: string;
+};
+
+export type OmsMigrationTask = {
+  completedSize: string;
+  destination: string;
+  failedObjects: number;
+  id: string;
+  name: string;
+  progress: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  source: string;
+  sourceCloud: string;
+  status: string;
+  taskType: string;
+  totalSize: string;
+};
+
+export type SdrsProtectedInstance = {
+  createdAt: string;
+  id: string;
+  name: string;
+  priorityStation: string;
+  projectId: string;
+  projectName: string;
+  protectedServer: string;
+  protectionGroupId: string;
+  replicationPairs: number;
+  region: string;
+  sourceServer: string;
+  status: string;
+  targetServer: string;
+};
+
+export type CdmCluster = {
+  createdAt: string;
+  flavor: string;
+  id: string;
+  manageIp: string;
+  mode: string;
+  name: string;
+  nodeCount: number;
+  projectId: string;
+  projectName: string;
+  publicEndpoint: string;
+  region: string;
+  status: string;
+  statusDetail: string;
+  version: string;
+};
+
+export type DataArtsInstance = {
+  chargingMode: string;
+  createdAt: string;
+  description: string;
+  edition: string;
+  id: string;
+  name: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  status: string;
+  version: string;
+  workspaceCount: number;
+};
+
+export type MgcMigrationItem = {
+  id: string;
+  name: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  service: "CDM" | "OMS" | "SMS";
+  signal: string;
+  sizeOrScope: string;
+  source: string;
+  status: string;
+  target: string;
+};
+
 export type CbrVault = {
   allocated: string;
   autoBind: string;
@@ -958,6 +1058,7 @@ const endpointEnv: Record<ServiceKey, string> = {
   bms: "HUAWEI_BMS_ENDPOINT",
   cbr: "HUAWEI_CBR_ENDPOINT",
   cbh: "HUAWEI_CBH_ENDPOINT",
+  cdm: "HUAWEI_CDM_ENDPOINT",
   cdn: "HUAWEI_CDN_ENDPOINT",
   cce: "HUAWEI_CCE_ENDPOINT",
   ces: "HUAWEI_CES_ENDPOINT",
@@ -965,6 +1066,7 @@ const endpointEnv: Record<ServiceKey, string> = {
   cfw: "HUAWEI_CFW_ENDPOINT",
   cph: "HUAWEI_CPH_ENDPOINT",
   cts: "HUAWEI_CTS_ENDPOINT",
+  dataarts: "HUAWEI_DATAARTS_ENDPOINT",
   dcs: "HUAWEI_DCS_ENDPOINT",
   dds: "HUAWEI_DDS_ENDPOINT",
   dc: "HUAWEI_DIRECT_CONNECT_ENDPOINT",
@@ -985,6 +1087,7 @@ const endpointEnv: Record<ServiceKey, string> = {
   ims: "HUAWEI_IMS_ENDPOINT",
   lts: "HUAWEI_LTS_ENDPOINT",
   modelarts: "HUAWEI_MODELARTS_ENDPOINT",
+  oms: "HUAWEI_OMS_ENDPOINT",
   nat: "HUAWEI_NAT_ENDPOINT",
   dli: "HUAWEI_DLI_ENDPOINT",
   dws: "HUAWEI_DWS_ENDPOINT",
@@ -994,6 +1097,8 @@ const endpointEnv: Record<ServiceKey, string> = {
   secmaster: "HUAWEI_SECMASTER_ENDPOINT",
   sfs: "HUAWEI_SFS_ENDPOINT",
   smn: "HUAWEI_SMN_ENDPOINT",
+  sms: "HUAWEI_SMS_ENDPOINT",
+  sdrs: "HUAWEI_SDRS_ENDPOINT",
   taurusdb: "HUAWEI_TAURUSDB_ENDPOINT",
   vpn: "HUAWEI_VPN_ENDPOINT",
   vpcep: "HUAWEI_VPCEP_ENDPOINT",
@@ -1035,6 +1140,7 @@ function serviceEndpoint(service: ServiceKey, region: string) {
   };
   const regionalServiceHost: Partial<Record<ServiceKey, string>> = {
     dc: "dc",
+    dataarts: "dataartsstudio",
     fg: "functiongraph",
     gaussdb: "gaussdb-opengauss",
     geminidb: "gaussdb-nosql",
@@ -3761,6 +3867,227 @@ async function listCssClustersForProject(session: HuaweiProjectSession) {
 
 export async function listCssClusters(session: BetterUiSession) {
   return loadAcrossProjects(session, listCssClustersForProject);
+}
+
+async function listSmsTasksForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ tasks?: unknown[] }>(
+    session,
+    "sms",
+    "/v3/tasks?limit=100&offset=0",
+  );
+
+  return asArray(body.tasks).map((task): SmsMigrationTask => {
+    const item = asRecord(task);
+    const source = asRecord(item.source_server);
+    const target = asRecord(item.target_server);
+
+    return {
+      createdAt: firstString([item.create_time, item.created_at, item.createdAt]),
+      id: firstString([item.id, item.task_id]),
+      name: firstString([item.name, item.task_name, item.id]),
+      progress: String(item.migration_progress ?? item.progress ?? "-"),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      sourceServer: firstString([source.name, item.source_server_name], "-"),
+      sourceServerId: firstString([item.source_server_id, source.id], "-"),
+      state: firstString([item.state, item.status], "UNKNOWN"),
+      syncSpeed: firstString([item.migration_speed, item.sync_speed], "-"),
+      targetServer: firstString([target.name, item.target_server_name], "-"),
+      targetServerId: firstString([item.target_server_id, target.id], "-"),
+    };
+  });
+}
+
+export async function listSmsTasks(session: BetterUiSession) {
+  return loadAcrossProjects(session, listSmsTasksForProject);
+}
+
+async function listOmsMigrationTasksForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ tasks?: unknown[] }>(
+    session,
+    "oms",
+    `/v2/${session.projectId}/tasks?offset=0&limit=100`,
+  );
+
+  return asArray(body.tasks).map((task): OmsMigrationTask => {
+    const item = asRecord(task);
+    const source = asRecord(item.src_node);
+    const destination = asRecord(item.dst_node);
+
+    return {
+      completedSize: formatBytes(item.complete_size),
+      destination: firstString([destination.bucket, destination.region], "-"),
+      failedObjects: Number(item.failed_num ?? 0),
+      id: String(item.id ?? item.task_id ?? item.name ?? ""),
+      name: firstString([item.name, item.description, item.id]),
+      progress: String(item.progress ?? "-"),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      source: firstString([source.bucket, source.region], "-"),
+      sourceCloud: firstString([source.cloud_type, item.src_cloud_type], "-"),
+      status: String(item.status ?? "UNKNOWN"),
+      taskType: firstString([item.task_type, item.group_type], "-"),
+      totalSize: formatBytes(item.total_size),
+    };
+  });
+}
+
+export async function listOmsMigrationTasks(session: BetterUiSession) {
+  return loadAcrossProjects(session, listOmsMigrationTasksForProject);
+}
+
+async function listSdrsProtectedInstancesForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ protected_instances?: unknown[]; instances?: unknown[] }>(
+    session,
+    "sdrs",
+    `/v1/${session.projectId}/protected-instances`,
+  );
+
+  return asArray(body.protected_instances ?? body.instances).map((instance): SdrsProtectedInstance => {
+    const item = asRecord(instance);
+    const server = asRecord(item.server);
+    const target = asRecord(item.target_server);
+
+    return {
+      createdAt: firstString([item.created_at, item.create_time, item.createdAt]),
+      id: firstString([item.id, item.protected_instance_id]),
+      name: firstString([item.name, item.protected_instance_name, item.id]),
+      priorityStation: firstString([item.priority_station, item.primary_site], "-"),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      protectedServer: firstString([server.name, server.id, item.server_id], "-"),
+      protectionGroupId: firstString([item.server_group_id, item.protection_group_id], "-"),
+      replicationPairs: asArray(item.replication_pairs ?? item.replication_pair_ids).length,
+      region: session.region,
+      sourceServer: firstString([item.source_server, item.production_server, server.name], "-"),
+      status: firstString([item.status, item.protected_status], "UNKNOWN"),
+      targetServer: firstString([target.name, target.id, item.target_server], "-"),
+    };
+  });
+}
+
+export async function listSdrsProtectedInstances(session: BetterUiSession) {
+  return loadAcrossProjects(session, listSdrsProtectedInstancesForProject);
+}
+
+async function listCdmClustersForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ clusters?: unknown[] }>(
+    session,
+    "cdm",
+    `/v1.1/${session.projectId}/clusters`,
+  );
+
+  return asArray(body.clusters).map((cluster): CdmCluster => {
+    const item = asRecord(cluster);
+    const datastore = asRecord(item.datastore);
+    const instances = asArray(item.instances);
+    const firstInstance = asRecord(instances[0]);
+
+    return {
+      createdAt: firstString([item.created, item.created_at, item.create_time]),
+      flavor: firstString([item.flavorName, item.flavor_name, item.flavor], "-"),
+      id: firstString([item.id, item.cluster_id]),
+      manageIp: firstString([firstInstance.manageIp, firstInstance.manage_ip, item.manageIp], "-"),
+      mode: firstString([item.clusterMode, item.cluster_mode, item.mode], "-"),
+      name: firstString([item.name, item.cluster_name, item.id]),
+      nodeCount: instances.length,
+      projectId: session.projectId,
+      projectName: session.projectName,
+      publicEndpoint: firstString([item.publicEndpoint, item.public_endpoint], "-"),
+      region: session.region,
+      status: String(item.status ?? "UNKNOWN"),
+      statusDetail: firstString([item.statusDetail, item.status_detail], "-"),
+      version: firstString([datastore.version, item.version], "-"),
+    };
+  });
+}
+
+export async function listCdmClusters(session: BetterUiSession) {
+  return loadAcrossProjects(session, listCdmClustersForProject);
+}
+
+async function listDataArtsInstancesForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ instances?: unknown[] }>(
+    session,
+    "dataarts",
+    `/v1/${session.projectId}/instances`,
+  );
+
+  return asArray(body.instances).map((instance): DataArtsInstance => {
+    const item = asRecord(instance);
+    const spec = asRecord(item.spec);
+
+    return {
+      chargingMode: firstString([item.charging_mode, item.charge_mode, spec.charging_mode], "-"),
+      createdAt: firstString([item.create_time, item.created_at, item.createdAt]),
+      description: asString(item.description, ""),
+      edition: firstString([item.edition, item.instance_type, spec.edition], "-"),
+      id: firstString([item.id, item.instance_id]),
+      name: firstString([item.name, item.instance_name, item.id]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      status: firstString([item.status, item.state], "UNKNOWN"),
+      version: firstString([item.version, spec.version], "-"),
+      workspaceCount: Number(item.workspace_count ?? item.workspaces_count ?? 0),
+    };
+  });
+}
+
+export async function listDataArtsInstances(session: BetterUiSession) {
+  return loadAcrossProjects(session, listDataArtsInstancesForProject);
+}
+
+export async function listMgcMigrationItems(session: BetterUiSession) {
+  const [smsTasks, omsTasks, cdmClusters] = await Promise.all([
+    listSmsTasks(session),
+    listOmsMigrationTasks(session),
+    listCdmClusters(session),
+  ]);
+
+  return [
+    ...smsTasks.map((task): MgcMigrationItem => ({
+      id: task.id,
+      name: task.name,
+      projectId: task.projectId,
+      projectName: task.projectName,
+      region: task.region,
+      service: "SMS",
+      signal: task.progress,
+      sizeOrScope: task.syncSpeed,
+      source: task.sourceServer,
+      status: task.state,
+      target: task.targetServer,
+    })),
+    ...omsTasks.map((task): MgcMigrationItem => ({
+      id: task.id,
+      name: task.name,
+      projectId: task.projectId,
+      projectName: task.projectName,
+      region: task.region,
+      service: "OMS",
+      signal: task.progress,
+      sizeOrScope: task.totalSize,
+      source: task.source,
+      status: task.status,
+      target: task.destination,
+    })),
+    ...cdmClusters.map((cluster): MgcMigrationItem => ({
+      id: cluster.id,
+      name: cluster.name,
+      projectId: cluster.projectId,
+      projectName: cluster.projectName,
+      region: cluster.region,
+      service: "CDM",
+      signal: cluster.mode,
+      sizeOrScope: `${cluster.nodeCount} nodes`,
+      source: cluster.manageIp,
+      status: cluster.status,
+      target: cluster.publicEndpoint,
+    })),
+  ];
 }
 
 export async function listIamUsers(session: BetterUiSession) {
