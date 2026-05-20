@@ -12,14 +12,21 @@ import {
 } from "@/lib/auth-session";
 
 type ServiceKey =
+  | "cbr"
   | "cce"
   | "ces"
+  | "cts"
   | "ecs"
+  | "eip"
   | "elb"
   | "evs"
   | "fg"
   | "ims"
+  | "lts"
+  | "nat"
   | "rds"
+  | "sfs"
+  | "vpn"
   | "vpc";
 
 export type CloudResult<T> =
@@ -134,6 +141,64 @@ export type VpcItem = {
   region: string;
 };
 
+export type EipItem = {
+  associatedInstanceId: string;
+  associatedInstanceType: string;
+  bandwidthName: string;
+  bandwidthSize: string;
+  createdAt: string;
+  id: string;
+  ipAddress: string;
+  name: string;
+  privateIpAddress: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  status: string;
+  type: string;
+};
+
+export type NatGateway = {
+  createdAt: string;
+  description: string;
+  enterpriseProjectId: string;
+  id: string;
+  name: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  routerId: string;
+  spec: string;
+  status: string;
+  subnetId: string;
+  type: string;
+  vpcId: string;
+};
+
+export type VpnConnection = {
+  cgwId: string;
+  connectionMonitorId: string;
+  createdAt: string;
+  customerGatewayId: string;
+  enterpriseProjectId: string;
+  haRole: string;
+  id: string;
+  localSubnets: string;
+  name: string;
+  peerSubnets: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  status: string;
+  style: string;
+  tunnelLocalAddress: string;
+  tunnelPeerAddress: string;
+  updatedAt: string;
+  vgwId: string;
+  vgwIp: string;
+  vpnGatewayId: string;
+};
+
 export type SubnetItem = {
   cidr: string;
   gateway: string;
@@ -188,6 +253,100 @@ export type RdsInstance = {
   projectId: string;
   projectName: string;
   region: string;
+};
+
+export type CbrVault = {
+  allocated: string;
+  autoBind: string;
+  createdAt: string;
+  id: string;
+  name: string;
+  objectType: string;
+  projectId: string;
+  projectName: string;
+  providerId: string;
+  region: string;
+  resources: number;
+  size: string;
+  status: string;
+};
+
+export type SfsShare = {
+  availabilityZone: string;
+  createdAt: string;
+  exportLocation: string;
+  id: string;
+  name: string;
+  projectId: string;
+  projectName: string;
+  protocol: string;
+  region: string;
+  shareType: string;
+  size: string;
+  status: string;
+};
+
+export type ImsImage = {
+  createdAt: string;
+  id: string;
+  imageType: string;
+  minDisk: string;
+  name: string;
+  os: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  size: string;
+  status: string;
+  visibility: string;
+};
+
+export type IamUser = {
+  description: string;
+  domainId: string;
+  enabled: string;
+  id: string;
+  name: string;
+  passwordExpiresAt: string;
+};
+
+export type CtsTracker = {
+  bucketName: string;
+  filePrefix: string;
+  id: string;
+  isLtsEnabled: string;
+  ltsGroupId: string;
+  name: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  status: string;
+};
+
+export type CtsTrace = {
+  code: string;
+  id: string;
+  recordedAt: string;
+  resourceName: string;
+  resourceType: string;
+  serviceType: string;
+  sourceIp: string;
+  traceName: string;
+  traceRating: string;
+  traceType: string;
+  userName: string;
+};
+
+export type LtsLogGroup = {
+  alias: string;
+  createdAt: string;
+  id: string;
+  name: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  tags: number;
+  ttlDays: string;
 };
 
 export type FunctionGraphFunction = {
@@ -262,14 +421,21 @@ const emptySummary: CloudSummary = {
 };
 
 const endpointEnv: Record<ServiceKey, string> = {
+  cbr: "HUAWEI_CBR_ENDPOINT",
   cce: "HUAWEI_CCE_ENDPOINT",
   ces: "HUAWEI_CES_ENDPOINT",
+  cts: "HUAWEI_CTS_ENDPOINT",
   ecs: "HUAWEI_ECS_ENDPOINT",
+  eip: "HUAWEI_EIP_ENDPOINT",
   elb: "HUAWEI_ELB_ENDPOINT",
   evs: "HUAWEI_EVS_ENDPOINT",
   fg: "HUAWEI_FUNCTIONGRAPH_ENDPOINT",
   ims: "HUAWEI_IMS_ENDPOINT",
+  lts: "HUAWEI_LTS_ENDPOINT",
+  nat: "HUAWEI_NAT_ENDPOINT",
   rds: "HUAWEI_RDS_ENDPOINT",
+  sfs: "HUAWEI_SFS_ENDPOINT",
+  vpn: "HUAWEI_VPN_ENDPOINT",
   vpc: "HUAWEI_VPC_ENDPOINT",
 };
 
@@ -513,6 +679,28 @@ async function huaweiFetch<T>(
       },
     },
   );
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return (await response.json().catch(() => ({}))) as T;
+}
+
+async function huaweiAccountFetch<T>(
+  session: BetterUiSession,
+  path: string,
+  init?: RequestInit,
+) {
+  const response = await fetch(`${session.iamEndpoint.replace(/\/+$/, "")}${path}`, {
+    ...init,
+    cache: "no-store",
+    headers: {
+      "Content-Type": "application/json;charset=utf8",
+      "X-Auth-Token": session.token,
+      ...init?.headers,
+    },
+  });
 
   if (!response.ok) {
     throw new Error(await parseError(response));
@@ -1240,6 +1428,110 @@ export async function listEvsSnapshots(session: BetterUiSession) {
   return loadAcrossProjects(session, listEvsSnapshotsForProject);
 }
 
+async function listCbrVaultsForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ vaults?: unknown[] }>(
+    session,
+    "cbr",
+    `/v3/${session.projectId}/vaults?limit=1000`,
+  );
+
+  return asArray(body.vaults).map((vault): CbrVault => {
+    const item = asRecord(vault);
+    const billing = asRecord(item.billing);
+    const resources = asArray(item.resources);
+
+    return {
+      allocated: formatBytes(billing.allocated),
+      autoBind: String(item.auto_bind ?? "-"),
+      createdAt: firstString([item.created_at, item.createdAt]),
+      id: asString(item.id),
+      name: firstString([item.name, item.id]),
+      objectType: firstString([billing.object_type, item.object_type]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      providerId: asString(item.provider_id, "-"),
+      region: session.region,
+      resources: resources.length,
+      size: formatBytes(billing.size),
+      status: asString(item.status, "UNKNOWN"),
+    };
+  });
+}
+
+export async function listCbrVaults(session: BetterUiSession) {
+  return loadAcrossProjects(session, listCbrVaultsForProject);
+}
+
+async function listSfsSharesForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ shares?: unknown[] }>(
+    session,
+    "sfs",
+    `/v2/${session.projectId}/shares/detail?limit=100`,
+    {
+      headers: {
+        Accept: "application/json",
+        "X-Openstack-Manila-Api-Version": "2.9",
+      },
+    },
+  );
+
+  return asArray(body.shares).map((share): SfsShare => {
+    const item = asRecord(share);
+    const exportLocations = asArray(item.export_locations);
+    const firstExport = asRecord(exportLocations[0]);
+
+    return {
+      availabilityZone: asString(item.availability_zone),
+      createdAt: firstString([item.created_at, item.createdAt]),
+      exportLocation: firstString([item.export_location, firstExport.path, firstExport.export_location], "-"),
+      id: asString(item.id),
+      name: firstString([item.name, item.id]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      protocol: asString(item.share_proto),
+      region: session.region,
+      shareType: firstString([item.share_type, item.share_type_name]),
+      size: `${Number(item.size ?? 0)} GB`,
+      status: asString(item.status, "UNKNOWN"),
+    };
+  });
+}
+
+export async function listSfsShares(session: BetterUiSession) {
+  return loadAcrossProjects(session, listSfsSharesForProject);
+}
+
+async function listImagesForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ images?: unknown[] }>(
+    session,
+    "ims",
+    "/v2/cloudimages?__imagetype=private&limit=100&sort_key=created_at&sort_dir=desc",
+  );
+
+  return asArray(body.images).map((image): ImsImage => {
+    const item = asRecord(image);
+
+    return {
+      createdAt: firstString([item.created_at, item.createdAt]),
+      id: asString(item.id),
+      imageType: firstString([item.__imagetype, item.imagetype, item.image_type]),
+      minDisk: `${Number(item.min_disk ?? 0)} GB`,
+      name: firstString([item.name, item.id]),
+      os: firstString([item.__os_version, item.os_version, item.__os_type, item.os_type]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      size: formatBytes(item.size),
+      status: asString(item.status, "UNKNOWN"),
+      visibility: asString(item.visibility, "-"),
+    };
+  });
+}
+
+export async function listImages(session: BetterUiSession) {
+  return loadAcrossProjects(session, listImagesForProject);
+}
+
 export async function getEcsSnapshots(session: BetterUiSession, id: string) {
   const instance = await getEcsInstance(session, id);
 
@@ -1372,6 +1664,122 @@ export async function listVpcs(session: BetterUiSession) {
 
 export async function listSubnets(session: BetterUiSession) {
   return loadAcrossProjects(session, listSubnetsForProject);
+}
+
+async function listEipsForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ publicips?: unknown[] }>(
+    session,
+    "eip",
+    `/v3/${session.projectId}/eip/publicips?limit=2000`,
+  );
+
+  return asArray(body.publicips).map((publicIp): EipItem => {
+    const item = asRecord(publicIp);
+    const bandwidth = asRecord(item.bandwidth);
+    const associate = asRecord(item.associate_instance_info);
+
+    return {
+      associatedInstanceId: firstString([item.associate_instance_id, associate.instance_id], ""),
+      associatedInstanceType: firstString([item.associate_instance_type, associate.instance_type], ""),
+      bandwidthName: asString(bandwidth.name, "-"),
+      bandwidthSize: bandwidth.size ? `${bandwidth.size} Mbit/s` : "-",
+      createdAt: firstString([item.created_at, item.createdAt]),
+      id: asString(item.id),
+      ipAddress: firstString([item.public_ip_address, item.publicip_address]),
+      name: firstString([item.alias, item.name, item.public_ip_address, item.id]),
+      privateIpAddress: asString(item.private_ip_address, "-"),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      status: asString(item.status, "UNKNOWN"),
+      type: firstString([item.type, item.ip_version], "-"),
+    };
+  });
+}
+
+export async function listEips(session: BetterUiSession) {
+  return loadAcrossProjects(session, listEipsForProject);
+}
+
+async function listNatGatewaysForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ nat_gateways?: unknown[] }>(
+    session,
+    "nat",
+    `/v2/${session.projectId}/nat_gateways?limit=1000`,
+  );
+
+  return asArray(body.nat_gateways).map((gateway): NatGateway => {
+    const item = asRecord(gateway);
+
+    return {
+      createdAt: firstString([item.created_at, item.createdAt]),
+      description: asString(item.description, ""),
+      enterpriseProjectId: asString(item.enterprise_project_id, "-"),
+      id: asString(item.id),
+      name: firstString([item.name, item.id]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      routerId: firstString([item.router_id, item.vpc_id]),
+      spec: firstString([item.spec, item.specification], "-"),
+      status: asString(item.status, "UNKNOWN"),
+      subnetId: firstString([item.internal_network_id, item.network_id, item.subnet_id]),
+      type: firstString([item.type, item.gateway_type], "-"),
+      vpcId: firstString([item.vpc_id, item.router_id]),
+    };
+  });
+}
+
+export async function listNatGateways(session: BetterUiSession) {
+  return loadAcrossProjects(session, listNatGatewaysForProject);
+}
+
+async function listVpnConnectionsForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ vpn_connections?: unknown[] }>(
+    session,
+    "vpn",
+    `/v5/${session.projectId}/vpn-connection`,
+  );
+
+  return asArray(body.vpn_connections).map((connection): VpnConnection => {
+    const item = asRecord(connection);
+    const policyRules = asArray(item.policy_rules);
+    const firstRule = asRecord(policyRules[0]);
+    const localSubnets = asArray(firstRule.local_subnets ?? item.local_subnets)
+      .map((value) => String(value))
+      .join(", ");
+    const peerSubnets = asArray(firstRule.peer_subnets ?? item.peer_subnets)
+      .map((value) => String(value))
+      .join(", ");
+
+    return {
+      cgwId: firstString([item.cgw_id, item.customer_gateway_id]),
+      connectionMonitorId: firstString([item.connection_monitor_id, item.monitor_id], "-"),
+      createdAt: firstString([item.created_at, item.createdAt]),
+      customerGatewayId: firstString([item.cgw_id, item.customer_gateway_id]),
+      enterpriseProjectId: asString(item.enterprise_project_id, "-"),
+      haRole: asString(item.ha_role, "-"),
+      id: asString(item.id),
+      localSubnets: localSubnets || "-",
+      name: firstString([item.name, item.id]),
+      peerSubnets: peerSubnets || "-",
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      status: asString(item.status, "UNKNOWN"),
+      style: asString(item.style, "-"),
+      tunnelLocalAddress: firstString([item.tunnel_local_address, item.local_gateway_ip], "-"),
+      tunnelPeerAddress: firstString([item.tunnel_peer_address, item.peer_gateway_ip], "-"),
+      updatedAt: firstString([item.updated_at, item.created_at, item.createdAt]),
+      vgwId: firstString([item.vgw_id, item.vpn_gateway_id]),
+      vgwIp: firstString([item.vgw_ip, item.gateway_ip], "-"),
+      vpnGatewayId: firstString([item.vgw_id, item.vpn_gateway_id]),
+    };
+  });
+}
+
+export async function listVpnConnections(session: BetterUiSession) {
+  return loadAcrossProjects(session, listVpnConnectionsForProject);
 }
 
 async function listSecurityGroupsForProject(session: HuaweiProjectSession) {
@@ -1612,6 +2020,125 @@ export async function getRdsInstance(session: BetterUiSession, id: string) {
 
 export async function listRdsInstances(session: BetterUiSession) {
   return loadAcrossProjects(session, listRdsInstancesForProject);
+}
+
+export async function listIamUsers(session: BetterUiSession) {
+  const body = await huaweiAccountFetch<{ users?: unknown[] }>(
+    session,
+    "/v3/users",
+  );
+
+  return asArray(body.users).map((user): IamUser => {
+    const item = asRecord(user);
+
+    return {
+      description: asString(item.description, ""),
+      domainId: asString(item.domain_id),
+      enabled: String(item.enabled ?? "-"),
+      id: asString(item.id),
+      name: asString(item.name),
+      passwordExpiresAt: firstString([item.password_expires_at, item.pwd_status], "-"),
+    };
+  });
+}
+
+async function listCtsTrackersForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ trackers?: unknown[] }>(
+    session,
+    "cts",
+    `/v3/${session.projectId}/trackers`,
+  );
+
+  return asArray(body.trackers).map((tracker): CtsTracker => {
+    const item = asRecord(tracker);
+    const obs = asRecord(item.obs_info);
+    const lts = asRecord(item.lts);
+
+    return {
+      bucketName: asString(obs.bucket_name, "-"),
+      filePrefix: asString(obs.file_prefix_name, "-"),
+      id: firstString([item.id, item.tracker_name]),
+      isLtsEnabled: String(item.is_lts_enabled ?? lts.is_lts_enabled ?? "-"),
+      ltsGroupId: firstString([item.group_id, lts.log_group_id], "-"),
+      name: firstString([item.tracker_name, item.name]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      status: asString(item.status, "UNKNOWN"),
+    };
+  });
+}
+
+export async function listCtsTrackers(session: BetterUiSession) {
+  return loadAcrossProjects(session, listCtsTrackersForProject);
+}
+
+async function listCtsTracesForProject(session: HuaweiProjectSession) {
+  const now = Date.now();
+  const oneDayAgo = now - 24 * 60 * 60 * 1000;
+  const body = await huaweiFetch<{ traces?: unknown[] }>(
+    session,
+    "cts",
+    `/v1.0/${session.projectId}/system/trace?from=${oneDayAgo}&to=${now}&limit=50`,
+  );
+
+  return asArray(body.traces).map((trace): CtsTrace => {
+    const item = asRecord(trace);
+    const user = asRecord(item.user);
+
+    return {
+      code: firstString([item.code, item.request_id], "-"),
+      id: firstString([item.trace_id, item.id, item.request_id]),
+      recordedAt: firstString([item.time, item.record_time, item.trace_time]),
+      resourceName: firstString([item.resource_name, item.resource_id], "-"),
+      resourceType: asString(item.resource_type, "-"),
+      serviceType: asString(item.service_type, "-"),
+      sourceIp: firstString([item.source_ip, item.user_ip], "-"),
+      traceName: asString(item.trace_name, "-"),
+      traceRating: asString(item.trace_rating, "-"),
+      traceType: asString(item.trace_type, "-"),
+      userName: firstString([user.name, item.user_name], "-"),
+    };
+  });
+}
+
+export async function listCtsTraces(session: BetterUiSession) {
+  const results = await Promise.allSettled(
+    sessionProjects(session).map((project) => listCtsTracesForProject(project)),
+  );
+
+  return results
+    .flatMap((result) => (result.status === "fulfilled" ? result.value : []))
+    .sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime())
+    .slice(0, 50);
+}
+
+async function listLtsLogGroupsForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ log_groups?: unknown[]; groups?: unknown[] }>(
+    session,
+    "lts",
+    `/v2/${session.projectId}/groups`,
+  );
+
+  return asArray(body.log_groups ?? body.groups).map((group): LtsLogGroup => {
+    const item = asRecord(group);
+
+    return {
+      alias: asString(item.alias, ""),
+      createdAt: firstString([item.creation_time, item.created_at, item.createdAt]),
+      id: firstString([item.log_group_id, item.id]),
+      name: firstString([item.log_group_name, item.name]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      tags: asArray(item.tag).length || asArray(item.tags).length,
+      ttlDays: firstString([item.ttl_in_days, item.ttl], "-"),
+    };
+  });
+}
+
+export async function listLtsLogGroups(session: BetterUiSession) {
+  return loadAcrossProjects(session, listLtsLogGroupsForProject);
 }
 
 function parseObsBuckets(xml: string): ObsBucket[] {
