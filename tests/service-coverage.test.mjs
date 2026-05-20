@@ -12,6 +12,12 @@ const services = [
   ["EIP", "eip", "listEips"],
   ["NAT", "nat", "listNatGateways"],
   ["VPN", "vpn", "listVpnConnections"],
+  ["DC", "direct-connect", "listDirectConnectConnections"],
+  ["ER", "enterprise-router", "listEnterpriseRouters"],
+  ["VPCEP", "vpc-endpoint", "listVpcEndpoints"],
+  ["BMS", "bms", "listBmsServers"],
+  ["DeH", "deh", "listDedicatedHosts"],
+  ["CCI", "cci", "listCciNamespaces"],
   ["CBR", "cbr", "listCbrVaults"],
   ["SFS", "sfs", "listSfsShares"],
   ["IMS", "ims", "listImages"],
@@ -102,4 +108,28 @@ test("analytics and search service loaders use read-only list endpoints", () => 
   assert.doesNotMatch(huaweiCloud, /"mrs"[\s\S]{0,300}method: "POST"/);
   assert.doesNotMatch(huaweiCloud, /"dws"[\s\S]{0,300}method: "POST"/);
   assert.doesNotMatch(huaweiCloud, /"css"[\s\S]{0,300}method: "POST"/);
+});
+
+test("networking and infrastructure service loaders use read-only list endpoints", () => {
+  const infrastructureEndpoints = [
+    ["dc", "GET", "/v3/${session.projectId}/dcaas/direct-connects"],
+    ["er", "GET", "/v3/${session.projectId}/enterprise-router/instances?limit=2000"],
+    ["vpcep", "GET", "/v1/${session.projectId}/vpc-endpoints?limit=1000"],
+    ["bms", "GET", "/v1/${session.projectId}/baremetalservers/detail"],
+    ["deh", "GET", "/v1.0/${session.projectId}/dedicated-hosts"],
+    ["cci", "GET", "/apis/cci/v2/namespaces"],
+    ["cci", "GET", "/apis/cci/v2/namespaces/${encodeURIComponent(name)}/pods"],
+  ];
+
+  for (const [service, method, path] of infrastructureEndpoints) {
+    assert.match(huaweiCloud, new RegExp(`"${service}"[\\s\\S]*?${path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
+    assert.equal(method, "GET");
+  }
+
+  assert.doesNotMatch(huaweiCloud, /"dc"[\s\S]{0,300}method: "POST"/);
+  assert.doesNotMatch(huaweiCloud, /"er"[\s\S]{0,300}method: "POST"/);
+  assert.doesNotMatch(huaweiCloud, /"vpcep"[\s\S]{0,300}method: "POST"/);
+  assert.doesNotMatch(huaweiCloud, /"bms"[\s\S]{0,300}method: "POST"/);
+  assert.doesNotMatch(huaweiCloud, /"deh"[\s\S]{0,300}method: "POST"/);
+  assert.doesNotMatch(huaweiCloud, /"cci"[\s\S]{0,300}method: "POST"/);
 });

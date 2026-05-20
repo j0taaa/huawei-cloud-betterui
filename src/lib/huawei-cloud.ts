@@ -13,13 +13,17 @@ import {
 
 type ServiceKey =
   | "apig"
+  | "bms"
   | "cbr"
   | "cdn"
   | "cce"
   | "ces"
+  | "cci"
   | "cts"
   | "dcs"
   | "dds"
+  | "dc"
+  | "deh"
   | "dew"
   | "dms"
   | "dns"
@@ -27,6 +31,7 @@ type ServiceKey =
   | "ecs"
   | "eip"
   | "elb"
+  | "er"
   | "evs"
   | "fg"
   | "gaussdb"
@@ -45,6 +50,7 @@ type ServiceKey =
   | "smn"
   | "taurusdb"
   | "vpn"
+  | "vpcep"
   | "waf"
   | "vpc";
 
@@ -216,6 +222,107 @@ export type VpnConnection = {
   vgwId: string;
   vgwIp: string;
   vpnGatewayId: string;
+};
+
+export type DirectConnectConnection = {
+  adminState: string;
+  bandwidth: string;
+  createdAt: string;
+  deviceId: string;
+  id: string;
+  location: string;
+  name: string;
+  peerLocation: string;
+  portType: string;
+  projectId: string;
+  projectName: string;
+  provider: string;
+  providerStatus: string;
+  region: string;
+  status: string;
+  type: string;
+  vlan: string;
+};
+
+export type EnterpriseRouter = {
+  asn: string;
+  autoAcceptSharedAttachments: string;
+  createdAt: string;
+  defaultAssociation: string;
+  defaultPropagation: string;
+  id: string;
+  name: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  routeTableId: string;
+  status: string;
+  updatedAt: string;
+};
+
+export type VpcEndpoint = {
+  createdAt: string;
+  dnsEnabled: string;
+  endpointServiceName: string;
+  id: string;
+  ip: string;
+  markerId: string;
+  networkId: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  serviceType: string;
+  status: string;
+  subnetId: string;
+  vpcId: string;
+};
+
+export type BmsServer = {
+  availabilityZone: string;
+  flavor: string;
+  id: string;
+  image: string;
+  keyName: string;
+  name: string;
+  privateIp: string;
+  projectId: string;
+  projectName: string;
+  publicIp: string;
+  region: string;
+  status: string;
+  systemDisk: string;
+  updatedAt: string;
+};
+
+export type DedicatedHost = {
+  availabilityZone: string;
+  availableMemory: string;
+  availableVcpus: string;
+  hostProperties: string;
+  hostType: string;
+  id: string;
+  instanceCount: number;
+  name: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  status: string;
+  totalMemory: string;
+  totalVcpus: string;
+};
+
+export type CciNamespace = {
+  createdAt: string;
+  id: string;
+  name: string;
+  phase: string;
+  podCount: number;
+  projectId: string;
+  projectName: string;
+  readyContainers: number;
+  region: string;
+  restartCount: number;
+  runningPods: number;
 };
 
 export type SubnetItem = {
@@ -743,13 +850,17 @@ const emptySummary: CloudSummary = {
 
 const endpointEnv: Record<ServiceKey, string> = {
   apig: "HUAWEI_APIG_ENDPOINT",
+  bms: "HUAWEI_BMS_ENDPOINT",
   cbr: "HUAWEI_CBR_ENDPOINT",
   cdn: "HUAWEI_CDN_ENDPOINT",
   cce: "HUAWEI_CCE_ENDPOINT",
   ces: "HUAWEI_CES_ENDPOINT",
+  cci: "HUAWEI_CCI_ENDPOINT",
   cts: "HUAWEI_CTS_ENDPOINT",
   dcs: "HUAWEI_DCS_ENDPOINT",
   dds: "HUAWEI_DDS_ENDPOINT",
+  dc: "HUAWEI_DIRECT_CONNECT_ENDPOINT",
+  deh: "HUAWEI_DEH_ENDPOINT",
   dew: "HUAWEI_DEW_ENDPOINT",
   dms: "HUAWEI_DMS_ENDPOINT",
   dns: "HUAWEI_DNS_ENDPOINT",
@@ -757,6 +868,7 @@ const endpointEnv: Record<ServiceKey, string> = {
   ecs: "HUAWEI_ECS_ENDPOINT",
   eip: "HUAWEI_EIP_ENDPOINT",
   elb: "HUAWEI_ELB_ENDPOINT",
+  er: "HUAWEI_ENTERPRISE_ROUTER_ENDPOINT",
   evs: "HUAWEI_EVS_ENDPOINT",
   fg: "HUAWEI_FUNCTIONGRAPH_ENDPOINT",
   gaussdb: "HUAWEI_GAUSSDB_ENDPOINT",
@@ -775,6 +887,7 @@ const endpointEnv: Record<ServiceKey, string> = {
   smn: "HUAWEI_SMN_ENDPOINT",
   taurusdb: "HUAWEI_TAURUSDB_ENDPOINT",
   vpn: "HUAWEI_VPN_ENDPOINT",
+  vpcep: "HUAWEI_VPCEP_ENDPOINT",
   waf: "HUAWEI_WAF_ENDPOINT",
   vpc: "HUAWEI_VPC_ENDPOINT",
 };
@@ -811,9 +924,11 @@ function serviceEndpoint(service: ServiceKey, region: string) {
     dns: "https://dns.myhuaweicloud.com",
   };
   const regionalServiceHost: Partial<Record<ServiceKey, string>> = {
+    dc: "dc",
     fg: "functiongraph",
     gaussdb: "gaussdb-opengauss",
     geminidb: "gaussdb-nosql",
+    vpcep: "vpcep",
     taurusdb: "gaussdb-mysql",
   };
   const defaultService = regionalServiceHost[service] ?? service;
@@ -2131,6 +2246,273 @@ async function listVpnConnectionsForProject(session: HuaweiProjectSession) {
 
 export async function listVpnConnections(session: BetterUiSession) {
   return loadAcrossProjects(session, listVpnConnectionsForProject);
+}
+
+async function listDirectConnectConnectionsForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ direct_connects?: unknown[] }>(
+    session,
+    "dc",
+    `/v3/${session.projectId}/dcaas/direct-connects`,
+  );
+
+  return asArray(body.direct_connects).map((connection): DirectConnectConnection => {
+    const item = asRecord(connection);
+
+    return {
+      adminState: String(item.admin_state_up ?? "-"),
+      bandwidth: item.bandwidth ? `${item.bandwidth} Mbit/s` : "-",
+      createdAt: firstString([item.create_time, item.created_at, item.apply_time]),
+      deviceId: firstString([item.device_id, item.hosting_id], "-"),
+      id: asString(item.id),
+      location: firstString([item.location, item.public_border_group], "-"),
+      name: firstString([item.name, item.id]),
+      peerLocation: firstString([item.peer_location, item.peer_provider], "-"),
+      portType: firstString([item.port_type, item.peer_port_type, item.spec_code], "-"),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      provider: firstString([item.provider, item.peer_provider], "-"),
+      providerStatus: firstString([item.provider_status, item.onestopdc_status], "-"),
+      region: session.region,
+      status: asString(item.status, "UNKNOWN"),
+      type: firstString([item.type, item.charge_mode], "-"),
+      vlan: String(item.vlan ?? "-"),
+    };
+  });
+}
+
+export async function listDirectConnectConnections(session: BetterUiSession) {
+  return loadAcrossProjects(session, listDirectConnectConnectionsForProject);
+}
+
+async function listEnterpriseRoutersForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ instances?: unknown[] }>(
+    session,
+    "er",
+    `/v3/${session.projectId}/enterprise-router/instances?limit=2000`,
+  );
+
+  return asArray(body.instances).map((router): EnterpriseRouter => {
+    const item = asRecord(router);
+
+    return {
+      asn: String(item.asn ?? "-"),
+      autoAcceptSharedAttachments: String(item.auto_accept_shared_attachments ?? "-"),
+      createdAt: firstString([item.created_at, item.createdAt]),
+      defaultAssociation: String(item.enable_default_association ?? "-"),
+      defaultPropagation: String(item.enable_default_propagation ?? "-"),
+      id: asString(item.id),
+      name: firstString([item.name, item.id]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      routeTableId: firstString(
+        [
+          item.default_association_route_table_id,
+          item.default_propagation_route_table_id,
+        ],
+        "-",
+      ),
+      status: firstString([item.state, item.status], "UNKNOWN"),
+      updatedAt: firstString([item.updated_at, item.created_at, item.createdAt]),
+    };
+  });
+}
+
+export async function listEnterpriseRouters(session: BetterUiSession) {
+  return loadAcrossProjects(session, listEnterpriseRoutersForProject);
+}
+
+async function listVpcEndpointsForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ endpoints?: unknown[] }>(
+    session,
+    "vpcep",
+    `/v1/${session.projectId}/vpc-endpoints?limit=1000`,
+  );
+
+  return asArray(body.endpoints).map((endpoint): VpcEndpoint => {
+    const item = asRecord(endpoint);
+
+    return {
+      createdAt: firstString([item.created_at, item.createdAt]),
+      dnsEnabled: String(item.enable_dns ?? "-"),
+      endpointServiceName: firstString([item.endpoint_service_name, item.service_name], "-"),
+      id: asString(item.id),
+      ip: firstString([item.ip, item.private_ip_address], "-"),
+      markerId: String(item.marker_id ?? "-"),
+      networkId: firstString([item.network_id, item.port_id], "-"),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      serviceType: firstString([item.service_type, item.endpoint_type], "-"),
+      status: asString(item.status, "UNKNOWN"),
+      subnetId: asString(item.subnet_id, "-"),
+      vpcId: asString(item.vpc_id, "-"),
+    };
+  });
+}
+
+export async function listVpcEndpoints(session: BetterUiSession) {
+  return loadAcrossProjects(session, listVpcEndpointsForProject);
+}
+
+async function listBmsServersForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ servers?: unknown[]; baremetalservers?: unknown[] }>(
+    session,
+    "bms",
+    `/v1/${session.projectId}/baremetalservers/detail`,
+  );
+
+  return asArray(body.servers ?? body.baremetalservers).map((server): BmsServer => {
+    const item = asRecord(server);
+    const flavor = asRecord(item.flavor);
+    const image = asRecord(item.image);
+    const metadata = asRecord(item.metadata);
+    const rootDevice = firstString([metadata.root_device_name, item.root_device_name], "-");
+
+    return {
+      availabilityZone: firstString(
+        [item["OS-EXT-AZ:availability_zone"], item.availability_zone],
+        "-",
+      ),
+      flavor: firstString([flavor.name, flavor.id, item.flavorRef], "-"),
+      id: asString(item.id),
+      image: firstString([image.name, image.id, item.imageRef], "-"),
+      keyName: firstString([item.key_name, item.keypair_name], "-"),
+      name: firstString([item.name, item.id]),
+      privateIp: firstIp(item.addresses, "private"),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      publicIp: firstIp(item.addresses, "public"),
+      region: session.region,
+      status: asString(item.status, "UNKNOWN"),
+      systemDisk: rootDevice,
+      updatedAt: firstString([item.updated, item.updated_at, item.created]),
+    };
+  });
+}
+
+export async function listBmsServers(session: BetterUiSession) {
+  return loadAcrossProjects(session, listBmsServersForProject);
+}
+
+async function listDedicatedHostsForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ dedicated_hosts?: unknown[] }>(
+    session,
+    "deh",
+    `/v1.0/${session.projectId}/dedicated-hosts`,
+  );
+
+  return asArray(body.dedicated_hosts).map((host): DedicatedHost => {
+    const item = asRecord(host);
+    const properties = asRecord(item.host_properties);
+    const available = asRecord(item.available_resource);
+
+    return {
+      availabilityZone: firstString([item.availability_zone, item.az], "-"),
+      availableMemory: numberWithUnit(available.memory ?? item.available_memory, "MB"),
+      availableVcpus: String(available.vcpus ?? item.available_vcpus ?? "-"),
+      hostProperties: [
+        properties.cpu,
+        properties.memory ? `${properties.memory} MB` : "",
+      ].filter(Boolean).join(" / ") || "-",
+      hostType: firstString([item.host_type, properties.host_type], "-"),
+      id: asString(item.dedicated_host_id ?? item.id),
+      instanceCount: asArray(item.instance_total ?? item.instances).length || Number(item.instance_total ?? 0),
+      name: firstString([item.name, item.dedicated_host_id, item.id]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      status: asString(item.state ?? item.status, "UNKNOWN"),
+      totalMemory: numberWithUnit(properties.memory ?? item.memory, "MB"),
+      totalVcpus: String(properties.vcpus ?? item.vcpus ?? "-"),
+    };
+  });
+}
+
+export async function listDedicatedHosts(session: BetterUiSession) {
+  return loadAcrossProjects(session, listDedicatedHostsForProject);
+}
+
+function podContainerSummary(pods: unknown[]) {
+  return pods.reduce<{
+    readyContainers: number;
+    restartCount: number;
+    runningPods: number;
+  }>(
+    (summary, pod) => {
+      const status = asRecord(asRecord(pod).status);
+      const containerStatuses = asArray(status.containerStatuses);
+      const restartCount = containerStatuses.reduce((total, container) => {
+        const item = asRecord(container);
+        return total + Number(item.restartCount ?? 0);
+      }, 0);
+      const readyContainers = containerStatuses.filter(
+        (container) => asRecord(container).ready === true,
+      ).length;
+
+      return {
+        readyContainers: summary.readyContainers + readyContainers,
+        restartCount: summary.restartCount + restartCount,
+        runningPods:
+          summary.runningPods + (String(status.phase ?? "").toLowerCase() === "running" ? 1 : 0),
+      };
+    },
+    { readyContainers: 0, restartCount: 0, runningPods: 0 },
+  );
+}
+
+async function listCciNamespacesForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ items?: unknown[] }>(
+    session,
+    "cci",
+    "/apis/cci/v2/namespaces",
+  );
+
+  const namespaces = asArray(body.items);
+  const podsByNamespace = await Promise.all(
+    namespaces.map(async (namespace) => {
+      const metadata = asRecord(asRecord(namespace).metadata);
+      const name = asString(metadata.name, "");
+
+      if (!name) {
+        return [] as unknown[];
+      }
+
+      const podBody = await huaweiFetch<{ items?: unknown[] }>(
+        session,
+        "cci",
+        `/apis/cci/v2/namespaces/${encodeURIComponent(name)}/pods`,
+      ).catch(() => ({ items: [] }));
+
+      return asArray(podBody.items);
+    }),
+  );
+
+  return namespaces.map((namespace, index): CciNamespace => {
+    const item = asRecord(namespace);
+    const metadata = asRecord(item.metadata);
+    const status = asRecord(item.status);
+    const pods = podsByNamespace[index] ?? [];
+    const summary = podContainerSummary(pods);
+
+    return {
+      createdAt: firstString([metadata.creationTimestamp, item.creationTimestamp]),
+      id: firstString([metadata.uid, metadata.name]),
+      name: asString(metadata.name),
+      phase: asString(status.phase, "UNKNOWN"),
+      podCount: pods.length,
+      projectId: session.projectId,
+      projectName: session.projectName,
+      readyContainers: summary.readyContainers,
+      region: session.region,
+      restartCount: summary.restartCount,
+      runningPods: summary.runningPods,
+    };
+  });
+}
+
+export async function listCciNamespaces(session: BetterUiSession) {
+  return loadAcrossProjects(session, listCciNamespacesForProject);
 }
 
 async function listSecurityGroupsForProject(session: HuaweiProjectSession) {
