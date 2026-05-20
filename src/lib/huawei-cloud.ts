@@ -34,7 +34,12 @@ type ServiceKey =
   | "hss"
   | "ims"
   | "lts"
+  | "modelarts"
   | "nat"
+  | "dli"
+  | "dws"
+  | "css"
+  | "mrs"
   | "rds"
   | "sfs"
   | "smn"
@@ -494,6 +499,83 @@ export type SmnTopic = {
   updatedAt: string;
 };
 
+export type ModelArtsNotebook = {
+  createdAt: string;
+  flavor: string;
+  id: string;
+  image: string;
+  name: string;
+  pool: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  status: string;
+  storage: string;
+  workspaceId: string;
+};
+
+export type DliQueue = {
+  chargingMode: string;
+  cuCount: number;
+  description: string;
+  engine: string;
+  name: string;
+  owner: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  status: string;
+  type: string;
+};
+
+export type MrsCluster = {
+  billingType: string;
+  components: string;
+  createdAt: string;
+  coreNodes: number;
+  hadoopVersion: string;
+  id: string;
+  masterNodes: number;
+  name: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  status: string;
+  totalNodes: number;
+  vpcId: string;
+};
+
+export type DwsCluster = {
+  availabilityZone: string;
+  createdAt: string;
+  endpoint: string;
+  id: string;
+  name: string;
+  nodeType: string;
+  nodes: number;
+  port: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  status: string;
+  version: string;
+};
+
+export type CssCluster = {
+  createdAt: string;
+  datastore: string;
+  endpoint: string;
+  id: string;
+  name: string;
+  nodeCount: number;
+  nodeSpec: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  status: string;
+  storage: string;
+};
+
 export type CbrVault = {
   allocated: string;
   autoBind: string;
@@ -682,7 +764,12 @@ const endpointEnv: Record<ServiceKey, string> = {
   hss: "HUAWEI_HSS_ENDPOINT",
   ims: "HUAWEI_IMS_ENDPOINT",
   lts: "HUAWEI_LTS_ENDPOINT",
+  modelarts: "HUAWEI_MODELARTS_ENDPOINT",
   nat: "HUAWEI_NAT_ENDPOINT",
+  dli: "HUAWEI_DLI_ENDPOINT",
+  dws: "HUAWEI_DWS_ENDPOINT",
+  css: "HUAWEI_CSS_ENDPOINT",
+  mrs: "HUAWEI_MRS_ENDPOINT",
   rds: "HUAWEI_RDS_ENDPOINT",
   sfs: "HUAWEI_SFS_ENDPOINT",
   smn: "HUAWEI_SMN_ENDPOINT",
@@ -2774,6 +2861,189 @@ async function listSmnTopicsForProject(session: HuaweiProjectSession) {
 
 export async function listSmnTopics(session: BetterUiSession) {
   return loadAcrossProjects(session, listSmnTopicsForProject);
+}
+
+async function listModelArtsNotebooksForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ data?: unknown[]; notebooks?: unknown[] }>(
+    session,
+    "modelarts",
+    `/v1/${session.projectId}/notebooks/all?limit=100`,
+  );
+
+  return asArray(body.data ?? body.notebooks).map((notebook): ModelArtsNotebook => {
+    const item = asRecord(notebook);
+    const flavor = asRecord(item.flavor);
+    const image = asRecord(item.image);
+    const volume = asRecord(item.volume);
+    const resourcePool = asRecord(item.pool ?? item.resource_pool);
+
+    return {
+      createdAt: firstString([item.created_at, item.create_time, item.createdAt]),
+      flavor: firstString([item.flavor, flavor.name, flavor.code, item.flavor_id], "-"),
+      id: firstString([item.id, item.instance_id, item.notebook_id]),
+      image: firstString([item.image_name, image.name, image.id], "-"),
+      name: firstString([item.name, item.instance_name, item.id]),
+      pool: firstString([resourcePool.name, item.pool_name, item.resource_pool_name], "default"),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      status: firstString([item.status, item.state], "UNKNOWN"),
+      storage: firstString([volume.size, item.volume_size], "-"),
+      workspaceId: String(item.workspace_id ?? "-"),
+    };
+  });
+}
+
+export async function listModelArtsNotebooks(session: BetterUiSession) {
+  return loadAcrossProjects(session, listModelArtsNotebooksForProject);
+}
+
+async function listDliQueuesForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ queues?: unknown[]; queue_list?: unknown[] }>(
+    session,
+    "dli",
+    `/v1.0/${session.projectId}/queues?queue_type=all&with-charge-info=true&page-size=100&current-page=1`,
+  );
+
+  return asArray(body.queues ?? body.queue_list).map((queue): DliQueue => {
+    const item = asRecord(queue);
+    const charge = asRecord(item.charge_info ?? item.chargeInfo);
+
+    return {
+      chargingMode: firstString([item.charging_mode, charge.charging_mode, charge.mode], "-"),
+      cuCount: Number(item.cu_count ?? item.cuCount ?? item.cu_num ?? 0),
+      description: asString(item.description, ""),
+      engine: firstString([item.engine, item.resource_type, item.platform], "-"),
+      name: firstString([item.queue_name, item.name]),
+      owner: firstString([item.owner, item.user_name], "-"),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      status: firstString([item.status, item.queue_status], "UNKNOWN"),
+      type: firstString([item.queue_type, item.type], "-"),
+    };
+  });
+}
+
+export async function listDliQueues(session: BetterUiSession) {
+  return loadAcrossProjects(session, listDliQueuesForProject);
+}
+
+function timestampSeconds(value: unknown) {
+  const seconds = Number(value);
+
+  return Number.isFinite(seconds) && seconds > 0
+    ? new Date(seconds * 1000).toISOString()
+    : firstString([value], "-");
+}
+
+async function listMrsClustersForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ clusters?: unknown[] }>(
+    session,
+    "mrs",
+    `/v1.1/${session.projectId}/cluster_infos?pageSize=100&currentPage=1&clusterState=existing`,
+  );
+
+  return asArray(body.clusters).map((cluster): MrsCluster => {
+    const item = asRecord(cluster);
+    const components = asArray(item.componentList ?? item.components)
+      .map((component) => {
+        const record = asRecord(component);
+        return firstString([record.componentName, record.name, record.component_name], "");
+      })
+      .filter(Boolean)
+      .join(", ");
+
+    return {
+      billingType: firstString([item.billingType, item.billing_type], "-"),
+      components: components || "-",
+      coreNodes: Number(item.coreNodeNum ?? item.core_node_num ?? 0),
+      createdAt: timestampSeconds(item.createAt ?? item.created_at),
+      hadoopVersion: firstString([item.hadoopVersion, item.hadoop_version], "-"),
+      id: firstString([item.clusterId, item.id]),
+      masterNodes: Number(item.masterNodeNum ?? item.master_node_num ?? 0),
+      name: firstString([item.clusterName, item.name, item.id]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      status: firstString([item.clusterState, item.status], "UNKNOWN"),
+      totalNodes: Number(item.totalNodeNum ?? item.total_node_num ?? 0),
+      vpcId: firstString([item.vpcId, item.vpc_id], "-"),
+    };
+  });
+}
+
+export async function listMrsClusters(session: BetterUiSession) {
+  return loadAcrossProjects(session, listMrsClustersForProject);
+}
+
+async function listDwsClustersForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ clusters?: unknown[] }>(
+    session,
+    "dws",
+    `/v1.0/${session.projectId}/clusters`,
+  );
+
+  return asArray(body.clusters).map((cluster): DwsCluster => {
+    const item = asRecord(cluster);
+    const endpoints = asArray(item.endpoints ?? item.private_endpoints);
+    const firstEndpoint = asRecord(endpoints[0]);
+
+    return {
+      availabilityZone: firstString([item.availability_zone, item.az_code], "-"),
+      createdAt: firstString([item.created, item.created_at, item.create_time]),
+      endpoint: firstString([firstEndpoint.connect_info, firstEndpoint.ip, item.private_ip, item.public_ip], "-"),
+      id: asString(item.id),
+      name: firstString([item.name, item.cluster_name, item.id]),
+      nodeType: firstString([item.node_type, item.nodeType], "-"),
+      nodes: Number(item.number_of_node ?? item.node_num ?? item.nodes ?? 0),
+      port: String(item.port ?? "-"),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      status: asString(item.status, "UNKNOWN"),
+      version: asString(item.version, "-"),
+    };
+  });
+}
+
+export async function listDwsClusters(session: BetterUiSession) {
+  return loadAcrossProjects(session, listDwsClustersForProject);
+}
+
+async function listCssClustersForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<{ clusters?: unknown[] }>(
+    session,
+    "css",
+    `/v1.0/${session.projectId}/clusters?limit=100`,
+  );
+
+  return asArray(body.clusters).map((cluster): CssCluster => {
+    const item = asRecord(cluster);
+    const datastore = asRecord(item.datastore);
+    const instances = asArray(item.instances ?? item.nodes);
+    const firstNode = asRecord(instances[0]);
+    const volume = asRecord(firstNode.volume ?? item.volume);
+
+    return {
+      createdAt: firstString([item.created, item.created_at, item.create_time]),
+      datastore: [datastore.type, datastore.version].filter(Boolean).join(" ") || "-",
+      endpoint: firstString([item.endpoint, item.privateEndpoint, item.private_ip, item.publicKibanaResp], "-"),
+      id: firstString([item.id, item.cluster_id]),
+      name: firstString([item.name, item.cluster_name, item.id]),
+      nodeCount: Number(item.nodeNum ?? item.node_num ?? instances.length),
+      nodeSpec: firstString([item.nodeType, item.node_type, firstNode.flavorRef, firstNode.flavor_ref], "-"),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      status: asString(item.status, "UNKNOWN"),
+      storage: numberWithUnit(volume.size ?? item.volume_size ?? item.storage_size, "GB"),
+    };
+  });
+}
+
+export async function listCssClusters(session: BetterUiSession) {
+  return loadAcrossProjects(session, listCssClustersForProject);
 }
 
 export async function listIamUsers(session: BetterUiSession) {

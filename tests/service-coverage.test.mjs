@@ -32,6 +32,11 @@ const services = [
   ["DEW", "dew", "listDewKeys"],
   ["HSS", "hss", "listHssHosts"],
   ["SMN", "smn", "listSmnTopics"],
+  ["ModelArts", "modelarts", "listModelArtsNotebooks"],
+  ["DLI", "dli", "listDliQueues"],
+  ["MRS", "mrs", "listMrsClusters"],
+  ["DWS", "dws", "listDwsClusters"],
+  ["CSS", "css", "listCssClusters"],
 ];
 
 test("new Huawei service routes are present and linked", () => {
@@ -76,4 +81,25 @@ test("database service loaders use read-only list endpoints", () => {
   assert.doesNotMatch(huaweiCloud, /"dds"[\s\S]{0,300}method: "POST"/);
   assert.doesNotMatch(huaweiCloud, /"taurusdb"[\s\S]{0,300}method: "POST"/);
   assert.doesNotMatch(huaweiCloud, /"geminidb"[\s\S]{0,300}method: "POST"/);
+});
+
+test("analytics and search service loaders use read-only list endpoints", () => {
+  const analyticsEndpoints = [
+    ["modelarts", "GET", "/v1/${session.projectId}/notebooks/all?limit=100"],
+    ["dli", "GET", "/v1.0/${session.projectId}/queues?queue_type=all&with-charge-info=true&page-size=100&current-page=1"],
+    ["mrs", "GET", "/v1.1/${session.projectId}/cluster_infos?pageSize=100&currentPage=1&clusterState=existing"],
+    ["dws", "GET", "/v1.0/${session.projectId}/clusters"],
+    ["css", "GET", "/v1.0/${session.projectId}/clusters?limit=100"],
+  ];
+
+  for (const [service, method, path] of analyticsEndpoints) {
+    assert.match(huaweiCloud, new RegExp(`"${service}"[\\s\\S]*?${path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
+    assert.equal(method, "GET");
+  }
+
+  assert.doesNotMatch(huaweiCloud, /"modelarts"[\s\S]{0,300}method: "POST"/);
+  assert.doesNotMatch(huaweiCloud, /"dli"[\s\S]{0,300}method: "POST"/);
+  assert.doesNotMatch(huaweiCloud, /"mrs"[\s\S]{0,300}method: "POST"/);
+  assert.doesNotMatch(huaweiCloud, /"dws"[\s\S]{0,300}method: "POST"/);
+  assert.doesNotMatch(huaweiCloud, /"css"[\s\S]{0,300}method: "POST"/);
 });
