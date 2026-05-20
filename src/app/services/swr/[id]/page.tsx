@@ -5,7 +5,6 @@ import {
   Code2,
   DatabaseBackup,
   Download,
-  GitBranch,
   KeyRound,
   LockKeyhole,
   RefreshCw,
@@ -88,29 +87,6 @@ export default async function SwrRepositoryPage({
               ))}
             </div>
           </div>
-        </section>
-
-        <section className="grid gap-4 md:grid-cols-3">
-          {[
-            ["Tags", "142", GitBranch, "text-[#2563eb]"],
-            ["Pulls today", "18.2K", Download, "text-[#16a34a]"],
-            ["Scan status", "Passed", ShieldCheck, "text-[#9333ea]"],
-          ].map(([label, value, Icon, color]) => (
-            <article
-              className="rounded-xl border border-[#e4e9f2] bg-white p-5 shadow-[0_12px_36px_rgba(16,24,40,0.06)]"
-              key={label as string}
-            >
-              <div className="grid size-11 place-items-center rounded-full bg-[#f7f9fc]">
-                <Icon className={`size-5 ${color}`} />
-              </div>
-              <p className="mt-5 text-sm font-bold text-[#344054]">
-                {label as string}
-              </p>
-              <p className="mt-1 text-2xl font-black tracking-tight">
-                {value as string}
-              </p>
-            </article>
-          ))}
         </section>
 
         <section className="grid gap-6 xl:grid-cols-[1fr_360px]">

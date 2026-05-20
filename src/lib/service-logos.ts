@@ -24,6 +24,7 @@ export const serviceLogos = {
   EIP: "https://res-static.hc-cdn.cn/cloudbu-site/public/new-product-icon/Networking/EIP.png",
   ELB: "https://res-static.hc-cdn.cn/cloudbu-site/public/new-product-icon/Networking/ELB.png",
   EVS: "https://res-static.hc-cdn.cn/cloudbu-site/public/new-product-icon/Storage/EVS.png",
+  FG: "https://res-static.hc-cdn.cn/cloudbu-site/public/new-product-icon/Compute/FunctionGraph.png",
   GAUSSDB: "https://res-static.hc-cdn.cn/cloudbu-site/public/new-product-icon/Databases/GaussDB.png",
   HSS: "https://res-static.hc-cdn.cn/cloudbu-site/public/new-product-icon/SecurityCompliance/HSS.png",
   IAM: "https://res-static.hc-cdn.cn/cloudbu-site/public/new-product-icon/ManagementGovernance/IAM.png",

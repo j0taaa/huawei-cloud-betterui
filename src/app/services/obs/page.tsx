@@ -1,47 +1,53 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Box, KeyRound, UploadCloud } from "lucide-react";
+import { ArrowLeft, Box, Database, UploadCloud } from "lucide-react";
 
 import {
   DisabledCloudButton,
   RefreshButton,
 } from "@/components/cloud-action-buttons";
+import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
 import { ConsoleShell } from "@/components/console-shell";
+import { LocalDateTime } from "@/components/local-date-time";
+import { ObsBucketSearchTable } from "@/components/obs-search-tables";
+import { listObsBuckets, withCloudResult } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
   title: "OBS | Huawei Cloud Better UI",
 };
 
-export default function ObsPage() {
+export default async function ObsPage() {
+  const result = await withCloudResult([], listObsBuckets);
+  const buckets = result.data;
+
   return (
     <ConsoleShell active="Storage">
+      <CloudRefreshIndicator show={result.isRefreshing} />
       <main className="grid gap-6 p-4 lg:p-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
-            <Link className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-[#2563eb]" href="/">
+            <Link className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-[#2563eb]" href="/services/storage">
               <ArrowLeft className="size-4" />
-              Back to dashboard
+              Back to Storage
             </Link>
             <div className="flex items-center gap-3">
               <div className="grid size-12 place-items-center rounded-xl bg-[#e9f8f1] text-[#16a34a]">
                 <Box className="size-6" />
               </div>
               <div>
-                <h1 className="text-3xl font-black tracking-tight">
-                  Object Storage Service
-                </h1>
+                <h1 className="text-3xl font-black tracking-tight">Object Storage Service</h1>
                 <p className="mt-1 text-sm font-medium text-[#667085]">
-                  OBS real-data support requires signed OBS requests.
+                  Real OBS buckets discovered through signed temporary OBS credentials.
                 </p>
               </div>
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
-            <DisabledCloudButton title="Bucket creation needs OBS signed request support first.">
+            <DisabledCloudButton title="Bucket creation is not implemented yet.">
               <Box className="size-4" />
               Create bucket
             </DisabledCloudButton>
-            <DisabledCloudButton title="Object upload needs OBS signed request support first.">
+            <DisabledCloudButton title="Object upload is not implemented yet.">
               <UploadCloud className="size-4" />
               Upload object
             </DisabledCloudButton>
@@ -49,21 +55,32 @@ export default function ObsPage() {
           </div>
         </div>
 
-        <section className="rounded-xl border border-[#dbe7ff] bg-[#f5f8ff] p-6 shadow-[0_12px_36px_rgba(16,24,40,0.06)]">
-          <div className="flex gap-4">
-            <div className="grid size-12 shrink-0 place-items-center rounded-xl bg-white text-[#2563eb] shadow-sm">
-              <KeyRound className="size-6" />
-            </div>
-            <div>
-              <h2 className="text-xl font-black">OBS is intentionally deferred</h2>
-              <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-[#475467]">
-                ECS, EVS, VPC, ELB, CCE, and RDS use the IAM token in the
-                current Better UI session. Normal OBS bucket/object APIs use
-                AK/SK-style request signing or temporary AK/SK credentials, so
-                this page no longer displays fake buckets or objects.
-              </p>
-            </div>
+        {result.error ? (
+          <section className="rounded-xl border border-[#fecdd3] bg-[#fff1f2] p-4 text-sm font-bold text-[#b42318]">
+            {result.error}
+          </section>
+        ) : null}
+
+        <section className="overflow-hidden rounded-xl border border-[#e4e9f2] bg-white shadow-[0_12px_36px_rgba(16,24,40,0.06)]">
+          <div className="border-b border-[#e4e9f2] p-5">
+            <h2 className="text-lg font-black">Buckets</h2>
+            <p className="mt-1 text-sm font-medium text-[#667085]">
+              {buckets.length} buckets · Showing {result.isCached ? "cached" : "fresh"} data from <LocalDateTime value={result.updatedAt} />.
+            </p>
           </div>
+          {buckets.length ? (
+            <ObsBucketSearchTable buckets={buckets} />
+          ) : (
+            <div className="grid place-items-center px-6 py-16 text-center">
+              <div>
+                <Database className="mx-auto size-10 text-[#98a2b3]" />
+                <p className="mt-4 text-lg font-black">No OBS buckets found</p>
+                <p className="mt-2 text-sm font-semibold text-[#667085]">
+                  No buckets were returned for this account or OBS access is not permitted.
+                </p>
+              </div>
+            </div>
+          )}
         </section>
       </main>
     </ConsoleShell>

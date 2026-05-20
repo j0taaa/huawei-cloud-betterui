@@ -11,8 +11,10 @@ import {
 } from "lucide-react";
 
 import { RefreshButton } from "@/components/cloud-action-buttons";
+import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
 import { ConsoleShell } from "@/components/console-shell";
 import { loadCloudSummary } from "@/lib/huawei-cloud";
+import { LocalDateTime } from "@/components/local-date-time";
 
 const statCards = [
   {
@@ -58,6 +60,7 @@ export default async function Home() {
 
   return (
     <ConsoleShell active="Dashboard">
+      <CloudRefreshIndicator show={summary.isRefreshing} />
       <main className="grid gap-6 p-4 lg:p-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
@@ -127,7 +130,8 @@ export default async function Home() {
             <div>
               <h2 className="text-lg font-black">Infrastructure Overview</h2>
               <p className="mt-1 text-sm font-medium text-[#667085]">
-                Last refreshed {new Date(summary.updatedAt).toLocaleString()}.
+                Showing {summary.isCached ? "cached" : "fresh"} data from{" "}
+                <LocalDateTime value={summary.updatedAt} />.
               </p>
             </div>
           </div>

@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  allowedDevOrigins: ["hwctools.site"],
 };
 
 export default nextConfig;

@@ -4,15 +4,13 @@ import {
   ArrowLeft,
   Network,
   Plus,
-  Route,
-  ShieldCheck,
-  type LucideIcon,
 } from "lucide-react";
 
 import {
   DisabledCloudButton,
   RefreshButton,
 } from "@/components/cloud-action-buttons";
+import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
 import { ConsoleShell } from "@/components/console-shell";
 import {
   listSecurityGroups,
@@ -20,6 +18,7 @@ import {
   listVpcs,
   withCloudResult,
 } from "@/lib/huawei-cloud";
+import { LocalDateTime } from "@/components/local-date-time";
 
 export const metadata: Metadata = {
   title: "Networking | Huawei Cloud Better UI",
@@ -33,9 +32,14 @@ export default async function NetworkPage() {
   ]);
 
   const errors = [vpcsResult.error, subnetsResult.error, groupsResult.error].filter(Boolean);
+  const isRefreshing =
+    vpcsResult.isRefreshing ||
+    subnetsResult.isRefreshing ||
+    groupsResult.isRefreshing;
 
   return (
     <ConsoleShell active="Networking">
+      <CloudRefreshIndicator show={isRefreshing} />
       <main className="grid gap-6 p-4 lg:p-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
@@ -75,27 +79,6 @@ export default async function NetworkPage() {
           </section>
         ) : null}
 
-        <section className="grid gap-4 md:grid-cols-3">
-          {([
-            ["VPCs", vpcsResult.data.length, Network],
-            ["Subnets", subnetsResult.data.length, Route],
-            ["Security groups", groupsResult.data.length, ShieldCheck],
-          ] as Array<[string, number, LucideIcon]>).map(([label, value, Icon]) => (
-            <article
-              className="rounded-xl border border-[#e4e9f2] bg-white p-5 shadow-[0_12px_36px_rgba(16,24,40,0.06)]"
-              key={label as string}
-            >
-              <Icon className="size-6 text-[#2563eb]" />
-              <p className="mt-4 text-sm font-bold text-[#344054]">
-                {label as string}
-              </p>
-              <p className="mt-1 text-3xl font-black tracking-tight">
-                {value as number}
-              </p>
-            </article>
-          ))}
-        </section>
-
         <section className="grid gap-6 xl:grid-cols-2">
           <NetworkTable
             columns={["Name", "CIDR", "Status"]}
@@ -105,6 +88,7 @@ export default async function NetworkPage() {
               values: [vpc.name, vpc.cidr, vpc.status],
             }))}
             title="VPCs"
+            isCached={vpcsResult.isCached}
             updatedAt={vpcsResult.updatedAt}
           />
           <NetworkTable
@@ -115,6 +99,7 @@ export default async function NetworkPage() {
               values: [subnet.name, subnet.cidr, subnet.gateway, subnet.vpcId],
             }))}
             title="Subnets"
+            isCached={subnetsResult.isCached}
             updatedAt={subnetsResult.updatedAt}
           />
           <NetworkTable
@@ -125,6 +110,7 @@ export default async function NetworkPage() {
               values: [group.name, String(group.rules), group.description || "-"],
             }))}
             title="Security Groups"
+            isCached={groupsResult.isCached}
             updatedAt={groupsResult.updatedAt}
           />
         </section>
@@ -136,10 +122,12 @@ export default async function NetworkPage() {
 function NetworkTable({
   columns,
   rows,
+  isCached,
   title,
   updatedAt,
 }: {
   columns: string[];
+  isCached: boolean;
   rows: Array<{ href: string; id: string; values: string[] }>;
   title: string;
   updatedAt: string;
@@ -149,7 +137,8 @@ function NetworkTable({
       <div className="border-b border-[#e4e9f2] p-5">
         <h2 className="text-lg font-black">{title}</h2>
         <p className="mt-1 text-sm font-medium text-[#667085]">
-          Last refreshed {new Date(updatedAt).toLocaleString()}.
+          Showing {isCached ? "cached" : "fresh"} data from{" "}
+          <LocalDateTime value={updatedAt} />.
         </p>
       </div>
       {rows.length ? (

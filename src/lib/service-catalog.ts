@@ -52,6 +52,14 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       status: "Available",
     },
     {
+      name: "FunctionGraph",
+      shortName: "FunctionGraph",
+      description: "Event-driven serverless functions for APIs, automation, and cloud workflows.",
+      href: "/services/functiongraph",
+      logo: serviceLogos.FG,
+      status: "Available",
+    },
+    {
       name: "Image Management Service",
       shortName: "IMS",
       description: "Create, manage, and share system and private images.",

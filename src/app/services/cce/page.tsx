@@ -6,8 +6,10 @@ import {
   DisabledCloudButton,
   RefreshButton,
 } from "@/components/cloud-action-buttons";
+import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
 import { ConsoleShell } from "@/components/console-shell";
 import { listCceClusters, withCloudResult } from "@/lib/huawei-cloud";
+import { LocalDateTime } from "@/components/local-date-time";
 
 export const metadata: Metadata = {
   title: "CCE | Huawei Cloud Better UI",
@@ -19,6 +21,7 @@ export default async function CcePage() {
 
   return (
     <ConsoleShell active="Containers">
+      <CloudRefreshIndicator show={result.isRefreshing} />
       <main className="grid gap-6 p-4 lg:p-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
@@ -57,7 +60,8 @@ export default async function CcePage() {
           <div className="border-b border-[#e4e9f2] p-5">
             <h2 className="text-lg font-black">Clusters</h2>
             <p className="mt-1 text-sm font-medium text-[#667085]">
-              Last refreshed {new Date(result.updatedAt).toLocaleString()}.
+              Showing {result.isCached ? "cached" : "fresh"} data from{" "}
+              <LocalDateTime value={result.updatedAt} />.
             </p>
           </div>
           {clusters.length ? (

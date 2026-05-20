@@ -28,10 +28,12 @@ export function EcsInstanceActions({
   id,
   projectId,
   status,
+  variant = "default",
 }: {
   id: string;
   projectId?: string;
   status: string;
+  variant?: "default" | "hero";
 }) {
   const router = useRouter();
   const [pending, setPending] = useState<EcsAction | null>(null);
@@ -77,10 +79,17 @@ export function EcsInstanceActions({
         {actions.map((action) => {
           const Icon = actionMeta[action].icon;
           const isPending = pending === action;
+          const isHeroPrimary = variant === "hero" && action === actions[0];
 
           return (
             <button
-              className="flex h-10 items-center gap-2 rounded-lg border border-[#d9e0eb] bg-white px-3 text-sm font-bold shadow-sm hover:bg-[#f8fafc] disabled:opacity-70"
+              className={`flex items-center gap-2 rounded-lg border text-sm font-bold shadow-sm disabled:opacity-70 ${
+                variant === "hero" ? "h-11 px-4" : "h-10 px-3"
+              } ${
+                isHeroPrimary
+                  ? "border-[#2563eb] bg-[#2563eb] text-white shadow-[0_12px_28px_rgba(37,99,235,0.28)] hover:bg-[#1d4ed8]"
+                  : "border-[#d9e0eb] bg-white hover:bg-[#f8fafc]"
+              }`}
               disabled={!!pending}
               key={action}
               onClick={() => runAction(action)}

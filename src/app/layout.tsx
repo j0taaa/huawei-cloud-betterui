@@ -27,6 +27,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${manrope.variable} ${jetBrainsMono.variable} h-full antialiased`}
+      style={{ fontSize: "75%" }}
     >
       <body className="flex min-h-full flex-col font-sans">{children}</body>
     </html>

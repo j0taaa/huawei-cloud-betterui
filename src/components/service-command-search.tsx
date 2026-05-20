@@ -78,6 +78,16 @@ const huaweiServices: Service[] = [
     aliases: ["scaling", "autoscale", "capacity"],
   },
   {
+    name: "FunctionGraph",
+    shortName: "FunctionGraph",
+    category: "Compute",
+    description: "Event-driven serverless functions and cloud workflows.",
+    href: "/services/functiongraph",
+    icon: Code2,
+    logo: serviceLogos.FG,
+    aliases: ["function", "serverless", "lambda", "faas", "event", "workflow"],
+  },
+  {
     name: "Object Storage Service",
     shortName: "OBS",
     category: "Storage",

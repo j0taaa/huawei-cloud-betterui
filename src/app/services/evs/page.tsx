@@ -6,8 +6,10 @@ import {
   DisabledCloudButton,
   RefreshButton,
 } from "@/components/cloud-action-buttons";
+import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
 import { ConsoleShell } from "@/components/console-shell";
 import { listEvsDisks, withCloudResult } from "@/lib/huawei-cloud";
+import { LocalDateTime } from "@/components/local-date-time";
 
 export const metadata: Metadata = {
   title: "EVS | Huawei Cloud Better UI",
@@ -16,10 +18,10 @@ export const metadata: Metadata = {
 export default async function EvsPage() {
   const result = await withCloudResult([], listEvsDisks);
   const disks = result.data;
-  const totalGb = disks.reduce((sum, disk) => sum + Number.parseInt(disk.size), 0);
 
   return (
     <ConsoleShell active="Storage">
+      <CloudRefreshIndicator show={result.isRefreshing} />
       <main className="grid gap-6 p-4 lg:p-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
@@ -63,32 +65,12 @@ export default async function EvsPage() {
           </section>
         ) : null}
 
-        <section className="grid gap-4 md:grid-cols-3">
-          {[
-            ["Disks", disks.length, "Total EVS disks"],
-            ["Capacity", `${totalGb} GB`, "Provisioned capacity"],
-            ["Attached", disks.filter((disk) => disk.attachedTo !== "-").length, "Attached disks"],
-          ].map(([label, value, detail]) => (
-            <article
-              className="rounded-xl border border-[#e4e9f2] bg-white p-5 shadow-[0_12px_36px_rgba(16,24,40,0.06)]"
-              key={label}
-            >
-              <p className="text-sm font-bold text-[#344054]">{label}</p>
-              <p className="mt-1 text-3xl font-black tracking-tight">
-                {value}
-              </p>
-              <p className="mt-3 text-sm font-medium text-[#667085]">
-                {detail}
-              </p>
-            </article>
-          ))}
-        </section>
-
         <section className="overflow-hidden rounded-xl border border-[#e4e9f2] bg-white shadow-[0_12px_36px_rgba(16,24,40,0.06)]">
           <div className="border-b border-[#e4e9f2] p-5">
             <h2 className="text-lg font-black">Disks</h2>
             <p className="mt-1 text-sm font-medium text-[#667085]">
-              Last refreshed {new Date(result.updatedAt).toLocaleString()}.
+              {disks.length} disks · Showing {result.isCached ? "cached" : "fresh"} data from{" "}
+              <LocalDateTime value={result.updatedAt} />.
             </p>
           </div>
           {disks.length ? (
