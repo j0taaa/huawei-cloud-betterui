@@ -22,6 +22,10 @@ type ServiceKey =
   | "ces"
   | "cci"
   | "cfw"
+  | "codeartsbuild"
+  | "codeartsdeploy"
+  | "codeartspipeline"
+  | "codeartsrepo"
   | "cph"
   | "cts"
   | "dataarts"
@@ -34,11 +38,13 @@ type ServiceKey =
   | "dns"
   | "drs"
   | "ecs"
+  | "eg"
   | "eip"
   | "elb"
   | "er"
   | "evs"
   | "fg"
+  | "flexus"
   | "gaussdb"
   | "geminidb"
   | "hss"
@@ -47,6 +53,7 @@ type ServiceKey =
   | "modelarts"
   | "oms"
   | "nat"
+  | "iotda"
   | "dli"
   | "dws"
   | "css"
@@ -57,6 +64,7 @@ type ServiceKey =
   | "smn"
   | "sms"
   | "sdrs"
+  | "servicestage"
   | "taurusdb"
   | "vpn"
   | "vpcep"
@@ -888,6 +896,133 @@ export type MgcMigrationItem = {
   target: string;
 };
 
+export type CodeArtsRepository = {
+  createdAt: string;
+  defaultBranch: string;
+  id: string;
+  name: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  sshUrl: string;
+  visibility: string;
+  webUrl: string;
+};
+
+export type CodeArtsBuildJob = {
+  branch: string;
+  buildNumber: string;
+  buildTime: string;
+  creator: string;
+  id: string;
+  lastBuildAt: string;
+  lastBuildStatus: string;
+  name: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  repository: string;
+  triggerType: string;
+};
+
+export type CodeArtsPipelineItem = {
+  creator: string;
+  executor: string;
+  groupName: string;
+  id: string;
+  latestRunAt: string;
+  name: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  source: string;
+  status: string;
+};
+
+export type CodeArtsDeployApplication = {
+  createdAt: string;
+  creator: string;
+  description: string;
+  groupName: string;
+  id: string;
+  name: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  status: string;
+  updatedAt: string;
+};
+
+export type FlexusResource = {
+  createdAt: string;
+  id: string;
+  name: string;
+  privateIp: string;
+  projectId: string;
+  projectName: string;
+  publicIp: string;
+  region: string;
+  signal: string;
+  sourceService: "ECS" | "RDS";
+  status: string;
+};
+
+export type IotdaDevice = {
+  appName: string;
+  deviceId: string;
+  deviceName: string;
+  gatewayId: string;
+  nodeId: string;
+  nodeType: string;
+  productId: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  status: string;
+  tags: number;
+};
+
+export type ServiceStageApplication = {
+  componentCount: number;
+  createdAt: string;
+  creator: string;
+  description: string;
+  enterpriseProjectId: string;
+  id: string;
+  name: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  updatedAt: string;
+};
+
+export type EventGridSubscription = {
+  channelName: string;
+  createdAt: string;
+  id: string;
+  name: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  sourceCount: number;
+  status: string;
+  targetCount: number;
+  type: string;
+  updatedAt: string;
+};
+
+export type KooGalleryPurchasedApi = {
+  apiName: string;
+  groupName: string;
+  id: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+  remark: string;
+  runEnvName: string;
+  status: string;
+};
+
 export type CbrVault = {
   allocated: string;
   autoBind: string;
@@ -1064,6 +1199,10 @@ const endpointEnv: Record<ServiceKey, string> = {
   ces: "HUAWEI_CES_ENDPOINT",
   cci: "HUAWEI_CCI_ENDPOINT",
   cfw: "HUAWEI_CFW_ENDPOINT",
+  codeartsbuild: "HUAWEI_CODEARTS_BUILD_ENDPOINT",
+  codeartsdeploy: "HUAWEI_CODEARTS_DEPLOY_ENDPOINT",
+  codeartspipeline: "HUAWEI_CODEARTS_PIPELINE_ENDPOINT",
+  codeartsrepo: "HUAWEI_CODEARTS_REPO_ENDPOINT",
   cph: "HUAWEI_CPH_ENDPOINT",
   cts: "HUAWEI_CTS_ENDPOINT",
   dataarts: "HUAWEI_DATAARTS_ENDPOINT",
@@ -1076,11 +1215,13 @@ const endpointEnv: Record<ServiceKey, string> = {
   dns: "HUAWEI_DNS_ENDPOINT",
   drs: "HUAWEI_DRS_ENDPOINT",
   ecs: "HUAWEI_ECS_ENDPOINT",
+  eg: "HUAWEI_EVENTGRID_ENDPOINT",
   eip: "HUAWEI_EIP_ENDPOINT",
   elb: "HUAWEI_ELB_ENDPOINT",
   er: "HUAWEI_ENTERPRISE_ROUTER_ENDPOINT",
   evs: "HUAWEI_EVS_ENDPOINT",
   fg: "HUAWEI_FUNCTIONGRAPH_ENDPOINT",
+  flexus: "HUAWEI_FLEXUS_ENDPOINT",
   gaussdb: "HUAWEI_GAUSSDB_ENDPOINT",
   geminidb: "HUAWEI_GEMINIDB_ENDPOINT",
   hss: "HUAWEI_HSS_ENDPOINT",
@@ -1089,6 +1230,7 @@ const endpointEnv: Record<ServiceKey, string> = {
   modelarts: "HUAWEI_MODELARTS_ENDPOINT",
   oms: "HUAWEI_OMS_ENDPOINT",
   nat: "HUAWEI_NAT_ENDPOINT",
+  iotda: "HUAWEI_IOTDA_ENDPOINT",
   dli: "HUAWEI_DLI_ENDPOINT",
   dws: "HUAWEI_DWS_ENDPOINT",
   css: "HUAWEI_CSS_ENDPOINT",
@@ -1099,6 +1241,7 @@ const endpointEnv: Record<ServiceKey, string> = {
   smn: "HUAWEI_SMN_ENDPOINT",
   sms: "HUAWEI_SMS_ENDPOINT",
   sdrs: "HUAWEI_SDRS_ENDPOINT",
+  servicestage: "HUAWEI_SERVICESTAGE_ENDPOINT",
   taurusdb: "HUAWEI_TAURUSDB_ENDPOINT",
   vpn: "HUAWEI_VPN_ENDPOINT",
   vpcep: "HUAWEI_VPCEP_ENDPOINT",
@@ -1139,9 +1282,15 @@ function serviceEndpoint(service: ServiceKey, region: string) {
     dns: "https://dns.myhuaweicloud.com",
   };
   const regionalServiceHost: Partial<Record<ServiceKey, string>> = {
+    codeartsbuild: "cloudbuild-ext",
+    codeartsdeploy: "codeartsdeploy",
+    codeartspipeline: "codeartspipeline",
+    codeartsrepo: "codeartsrepo",
     dc: "dc",
     dataarts: "dataartsstudio",
+    eg: "eg",
     fg: "functiongraph",
+    flexus: "rms",
     gaussdb: "gaussdb-opengauss",
     geminidb: "gaussdb-nosql",
     vpcep: "vpcep",
@@ -4038,6 +4187,328 @@ async function listDataArtsInstancesForProject(session: HuaweiProjectSession) {
 
 export async function listDataArtsInstances(session: BetterUiSession) {
   return loadAcrossProjects(session, listDataArtsInstancesForProject);
+}
+
+function timestampMillis(value: unknown) {
+  const millis = Number(value);
+
+  return Number.isFinite(millis) && millis > 0
+    ? new Date(millis).toISOString()
+    : firstString([value], "-");
+}
+
+function firstResponseArray(body: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = body[key];
+
+    if (Array.isArray(value)) {
+      return value;
+    }
+
+    const nested = asRecord(value);
+    for (const nestedKey of keys) {
+      if (Array.isArray(nested[nestedKey])) {
+        return nested[nestedKey] as unknown[];
+      }
+    }
+  }
+
+  return [];
+}
+
+async function listCodeArtsRepositoriesForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<Record<string, unknown>>(
+    session,
+    "codeartsrepo",
+    `/v4/projects/${session.projectId}/repositories?offset=0&limit=100&order_by=updated_at&sort=desc`,
+  );
+
+  return firstResponseArray(body, ["repositories", "repository_list", "result"]).map((repository): CodeArtsRepository => {
+    const item = asRecord(repository);
+
+    return {
+      createdAt: firstString([item.created_at, item.createdAt]),
+      defaultBranch: firstString([item.default_branch, item.defaultBranch], "-"),
+      id: String(item.id ?? item.repository_id ?? item.uuid ?? item.name ?? ""),
+      name: firstString([item.name, item.repository_name, item.path_with_namespace, item.id]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      sshUrl: firstString([item.ssh_url_to_repo, item.ssh_url, item.sshUrl], "-"),
+      visibility: firstString([item.visibility, item.repository_type, item.private], "-"),
+      webUrl: firstString([item.web_url, item.http_url_to_repo, item.https_url, item.url], "-"),
+    };
+  });
+}
+
+export async function listCodeArtsRepositories(session: BetterUiSession) {
+  return loadAcrossProjects(session, listCodeArtsRepositoriesForProject);
+}
+
+async function listCodeArtsBuildJobsForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<Record<string, unknown>>(
+    session,
+    "codeartsbuild",
+    `/v1/job/${session.projectId}/list?page_index=0&page_size=100`,
+  );
+
+  return firstResponseArray(body, ["job_list", "jobs", "result"]).map((job): CodeArtsBuildJob => {
+    const item = asRecord(job);
+
+    return {
+      branch: firstString([item.code_branch, item.branch], "-"),
+      buildNumber: firstString([item.build_number, item.build_id], "-"),
+      buildTime: String(item.build_time ?? "-"),
+      creator: firstString([item.user_name, item.job_creator, item.creator], "-"),
+      id: firstString([item.id, item.task_id, item.job_id]),
+      lastBuildAt: timestampMillis(item.last_build_time),
+      lastBuildStatus: firstString([item.last_build_status, item.last_job_running_status, item.status], "UNKNOWN"),
+      name: firstString([item.job_name, item.name, item.id]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      repository: firstString([item.scm_web_url, item.repo_id, item.source_code], "-"),
+      triggerType: firstString([item.trigger_type, item.build_type], "-"),
+    };
+  });
+}
+
+export async function listCodeArtsBuildJobs(session: BetterUiSession) {
+  return loadAcrossProjects(session, listCodeArtsBuildJobsForProject);
+}
+
+async function listCodeArtsPipelinesForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<Record<string, unknown>>(
+    session,
+    "codeartspipeline",
+    `/v5/${session.projectId}/api/pipelines/list`,
+    {
+      body: JSON.stringify({ limit: 100, offset: 0, project_id: session.projectId }),
+      method: "POST",
+    },
+  );
+
+  return firstResponseArray(body, ["pipelines", "pipeline_list", "items", "result"]).map((pipeline): CodeArtsPipelineItem => {
+    const item = asRecord(pipeline);
+
+    return {
+      creator: firstString([item.creator_name, item.creator, item.create_user], "-"),
+      executor: firstString([item.executor_name, item.executor, item.last_executor], "-"),
+      groupName: firstString([item.group_name, item.pipeline_group_name], "-"),
+      id: firstString([item.pipeline_id, item.id]),
+      latestRunAt: timestampMillis(item.latest_run_time ?? item.update_time ?? item.updated_at),
+      name: firstString([item.name, item.pipeline_name, item.id]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      source: firstString([item.source, item.trigger_type, item.manifest_version], "-"),
+      status: firstString([item.status, item.latest_run_status, item.run_status], "UNKNOWN"),
+    };
+  });
+}
+
+export async function listCodeArtsPipelines(session: BetterUiSession) {
+  return loadAcrossProjects(session, listCodeArtsPipelinesForProject);
+}
+
+async function listCodeArtsDeployApplicationsForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<Record<string, unknown>>(
+    session,
+    "codeartsdeploy",
+    "/v1/applications/list",
+    {
+      body: JSON.stringify({ page: 1, project_id: session.projectId, size: 100 }),
+      method: "POST",
+    },
+  );
+
+  return firstResponseArray(body, ["applications", "app_list", "records", "result"]).map((application): CodeArtsDeployApplication => {
+    const item = asRecord(application);
+
+    return {
+      createdAt: timestampMillis(item.create_time ?? item.created_at),
+      creator: firstString([item.creator, item.creator_name, item.user_name], "-"),
+      description: asString(item.description, ""),
+      groupName: firstString([item.group_name, item.application_group_name], "-"),
+      id: firstString([item.id, item.application_id, item.app_id]),
+      name: firstString([item.name, item.application_name, item.app_name, item.id]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      status: firstString([item.status, item.application_status], "UNKNOWN"),
+      updatedAt: timestampMillis(item.update_time ?? item.updated_at),
+    };
+  });
+}
+
+export async function listCodeArtsDeployApplications(session: BetterUiSession) {
+  return loadAcrossProjects(session, listCodeArtsDeployApplicationsForProject);
+}
+
+export async function listFlexusResources(session: BetterUiSession) {
+  const [ecsInstances, rdsInstances] = await Promise.all([
+    listEcsInstances(session),
+    listRdsInstances(session),
+  ]);
+  const isFlexusSignal = (value: string) =>
+    /flexus|hcss|hecs|l-instance|x-instance|taurus/i.test(value);
+
+  return [
+    ...ecsInstances
+      .filter((instance) =>
+        [instance.flavor, instance.imageName, instance.name].some(isFlexusSignal),
+      )
+      .map((instance): FlexusResource => ({
+        createdAt: instance.createdAt,
+        id: instance.id,
+        name: instance.name,
+        privateIp: instance.privateIp,
+        projectId: instance.projectId,
+        projectName: instance.projectName,
+        publicIp: instance.publicIp,
+        region: instance.region,
+        signal: instance.flavor,
+        sourceService: "ECS",
+        status: instance.status,
+      })),
+    ...rdsInstances
+      .filter((instance) =>
+        [instance.name, instance.datastore, instance.type].some(isFlexusSignal),
+      )
+      .map((instance): FlexusResource => ({
+        createdAt: "-",
+        id: instance.id,
+        name: instance.name,
+        privateIp: instance.privateIp,
+        projectId: instance.projectId,
+        projectName: instance.projectName,
+        publicIp: "-",
+        region: instance.region,
+        signal: [instance.datastore, instance.type].filter(Boolean).join(" / ") || "-",
+        sourceService: "RDS",
+        status: instance.status,
+      })),
+  ];
+}
+
+async function listIotdaDevicesForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<Record<string, unknown>>(
+    session,
+    "iotda",
+    `/v5/iot/${session.projectId}/devices?limit=50`,
+  );
+
+  return firstResponseArray(body, ["devices"]).map((device): IotdaDevice => {
+    const item = asRecord(device);
+
+    return {
+      appName: firstString([item.app_name, item.app_id], "-"),
+      deviceId: firstString([item.device_id, item.id]),
+      deviceName: firstString([item.device_name, item.name, item.node_id]),
+      gatewayId: firstString([item.gateway_id], "-"),
+      nodeId: firstString([item.node_id], "-"),
+      nodeType: firstString([item.node_type], "-"),
+      productId: firstString([item.product_id], "-"),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      status: firstString([item.status], "UNKNOWN"),
+      tags: asArray(item.tags).length,
+    };
+  });
+}
+
+export async function listIotdaDevices(session: BetterUiSession) {
+  return loadAcrossProjects(session, listIotdaDevicesForProject);
+}
+
+async function listServiceStageApplicationsForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<Record<string, unknown>>(
+    session,
+    "servicestage",
+    `/v3/${session.projectId}/cas/applications`,
+  );
+
+  return firstResponseArray(body, ["applications", "apps", "result"]).map((application): ServiceStageApplication => {
+    const item = asRecord(application);
+
+    return {
+      componentCount: Number(item.component_count ?? item.components_count ?? 0),
+      createdAt: timestampMillis(item.create_time ?? item.created_at),
+      creator: firstString([item.creator, item.creator_name], "-"),
+      description: asString(item.description, ""),
+      enterpriseProjectId: firstString([item.enterprise_project_id], "-"),
+      id: firstString([item.id, item.application_id]),
+      name: firstString([item.name, item.application_name, item.id]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      updatedAt: timestampMillis(item.update_time ?? item.updated_at),
+    };
+  });
+}
+
+export async function listServiceStageApplications(session: BetterUiSession) {
+  return loadAcrossProjects(session, listServiceStageApplicationsForProject);
+}
+
+async function listEventGridSubscriptionsForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<Record<string, unknown>>(
+    session,
+    "eg",
+    `/v1/${session.projectId}/subscriptions?offset=0&limit=100`,
+  );
+
+  return firstResponseArray(body, ["items", "subscriptions"]).map((subscription): EventGridSubscription => {
+    const item = asRecord(subscription);
+
+    return {
+      channelName: firstString([item.channel_name, item.channel_id], "-"),
+      createdAt: firstString([item.created_time, item.created_at]),
+      id: firstString([item.id, item.subscription_id]),
+      name: firstString([item.name, item.id]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      sourceCount: asArray(item.sources).length,
+      status: firstString([item.status], "UNKNOWN"),
+      targetCount: asArray(item.targets).length,
+      type: firstString([item.type], "-"),
+      updatedAt: firstString([item.updated_time, item.updated_at]),
+    };
+  });
+}
+
+export async function listEventGridSubscriptions(session: BetterUiSession) {
+  return loadAcrossProjects(session, listEventGridSubscriptionsForProject);
+}
+
+async function listKooGalleryPurchasedApisForProject(session: HuaweiProjectSession) {
+  const body = await huaweiFetch<Record<string, unknown>>(
+    session,
+    "apig",
+    "/v1.0/apigw/purchases/apis?page_size=100&page_no=1",
+  );
+
+  return firstResponseArray(body, ["apis", "purchases", "purchased_apis", "items"]).map((api): KooGalleryPurchasedApi => {
+    const item = asRecord(api);
+
+    return {
+      apiName: firstString([item.api_name, item.name, item.api_id]),
+      groupName: firstString([item.group_name, item.group_id], "-"),
+      id: firstString([item.api_id, item.id, item.name]),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      remark: asString(item.remark ?? item.description, ""),
+      runEnvName: firstString([item.run_env_name, item.env_name], "-"),
+      status: firstString([item.status, item.auth_status], "UNKNOWN"),
+    };
+  });
+}
+
+export async function listKooGalleryPurchasedApis(session: BetterUiSession) {
+  return loadAcrossProjects(session, listKooGalleryPurchasedApisForProject);
 }
 
 export async function listMgcMigrationItems(session: BetterUiSession) {

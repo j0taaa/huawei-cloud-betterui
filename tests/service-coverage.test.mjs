@@ -55,6 +55,15 @@ const services = [
   ["SDRS", "sdrs", "listSdrsProtectedInstances"],
   ["CDM", "cdm", "listCdmClusters"],
   ["DataArts", "dataarts", "listDataArtsInstances"],
+  ["CodeArts Repo", "codearts-repo", "listCodeArtsRepositories"],
+  ["CodeArts Build", "codearts-build", "listCodeArtsBuildJobs"],
+  ["CodeArts Pipeline", "codearts-pipeline", "listCodeArtsPipelines"],
+  ["CodeArts Deploy", "codearts-deploy", "listCodeArtsDeployApplications"],
+  ["Flexus", "flexus", "listFlexusResources"],
+  ["IoTDA", "iotda", "listIotdaDevices"],
+  ["ServiceStage", "servicestage", "listServiceStageApplications"],
+  ["EventGrid", "eventgrid", "listEventGridSubscriptions"],
+  ["KooGallery", "koogallery", "listKooGalleryPurchasedApis"],
 ];
 
 test("new Huawei service routes are present and linked", () => {
@@ -194,4 +203,32 @@ test("migration and governance service loaders use read-only list endpoints", ()
   assert.doesNotMatch(huaweiCloud, /\bcreate(?:Sms|Mgc|Oms|Sdrs|Cdm|DataArts)\b/);
   assert.doesNotMatch(huaweiCloud, /\bdelete(?:Sms|Mgc|Oms|Sdrs|Cdm|DataArts)\b/);
   assert.doesNotMatch(huaweiCloud, /\bupdate(?:Sms|Mgc|Oms|Sdrs|Cdm|DataArts)\b/);
+});
+
+test("developer, eventing, and marketplace service loaders use documented read-only inventory endpoints", () => {
+  const escaped = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const readOnlyEndpoints = [
+    ["codeartsrepo", "GET", "/v4/projects/${session.projectId}/repositories?offset=0&limit=100&order_by=updated_at&sort=desc"],
+    ["codeartsbuild", "GET", "/v1/job/${session.projectId}/list?page_index=0&page_size=100"],
+    ["codeartspipeline", "POST", "/v5/${session.projectId}/api/pipelines/list"],
+    ["codeartsdeploy", "POST", "/v1/applications/list"],
+    ["iotda", "GET", "/v5/iot/${session.projectId}/devices?limit=50"],
+    ["servicestage", "GET", "/v3/${session.projectId}/cas/applications"],
+    ["eg", "GET", "/v1/${session.projectId}/subscriptions?offset=0&limit=100"],
+    ["apig", "GET", "/v1.0/apigw/purchases/apis?page_size=100&page_no=1"],
+  ];
+
+  for (const [service, method, path] of readOnlyEndpoints) {
+    assert.match(huaweiCloud, new RegExp(`"${service}"[\\s\\S]*?${escaped(path)}`));
+    if (method === "POST") {
+      assert.match(huaweiCloud, new RegExp(`${escaped(path)}[\\s\\S]{0,400}method: "POST"`));
+    }
+  }
+
+  assert.match(huaweiCloud, /export async function listFlexusResources\(/);
+  assert.match(huaweiCloud, /listEcsInstances\(session\)/);
+  assert.match(huaweiCloud, /listRdsInstances\(session\)/);
+  assert.doesNotMatch(huaweiCloud, /\bcreate(?:CodeArts|Flexus|Iotda|ServiceStage|EventGrid|KooGallery)\b/);
+  assert.doesNotMatch(huaweiCloud, /\bdelete(?:CodeArts|Flexus|Iotda|ServiceStage|EventGrid|KooGallery)\b/);
+  assert.doesNotMatch(huaweiCloud, /\bupdate(?:CodeArts|Flexus|Iotda|ServiceStage|EventGrid|KooGallery)\b/);
 });
