@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Cable } from "lucide-react";
 
@@ -35,7 +36,7 @@ const columns: InventoryColumn<EventGridSubscription>[] = [
 ];
 
 export default async function EventGridPage() {
-  const result = await withCloudResult<EventGridSubscription[]>([], listEventGridSubscriptions);
+  const result = await withCloudResult<EventGridSubscription[]>([], listEventGridSubscriptions, cloudCacheKeys.listEventGridSubscriptions);
   const subscriptions = result.data;
   const routes = subscriptions.reduce((total, subscription) => total + subscription.targetCount, 0);
 

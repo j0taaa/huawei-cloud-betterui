@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { GitBranch } from "lucide-react";
 
@@ -34,7 +35,7 @@ const columns: InventoryColumn<CodeArtsRepository>[] = [
 ];
 
 export default async function CodeArtsRepoPage() {
-  const result = await withCloudResult<CodeArtsRepository[]>([], listCodeArtsRepositories);
+  const result = await withCloudResult<CodeArtsRepository[]>([], listCodeArtsRepositories, cloudCacheKeys.listCodeArtsRepositories);
   const repositories = result.data;
   const branches = new Set(repositories.map((repo) => repo.defaultBranch).filter((branch) => branch !== "-"));
   const linked = repositories.filter((repo) => repo.webUrl !== "-").length;

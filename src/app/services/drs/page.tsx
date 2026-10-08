@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { ArrowRightLeft } from "lucide-react";
 
@@ -31,7 +32,7 @@ function statusTone(status: string) {
 }
 
 export default async function DrsPage() {
-  const result = await withCloudResult<DrsJob[]>([], listDrsJobs);
+  const result = await withCloudResult<DrsJob[]>([], listDrsJobs, cloudCacheKeys.listDrsJobs);
   const jobs = result.data;
   const active = jobs.filter((job) =>
     ["running", "migrating", "syncing", "normal"].includes(job.status.toLowerCase()),

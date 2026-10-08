@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { FileJson } from "lucide-react";
 
@@ -21,7 +22,7 @@ function statusTone(status: string) {
 }
 
 export default async function DdsPage() {
-  const result = await withCloudResult<DdsInstance[]>([], listDdsInstances);
+  const result = await withCloudResult<DdsInstance[]>([], listDdsInstances, cloudCacheKeys.listDdsInstances);
   const instances = result.data;
   const healthy = instances.filter((instance) =>
     ["normal", "available", "active", "running"].includes(instance.status.toLowerCase()),

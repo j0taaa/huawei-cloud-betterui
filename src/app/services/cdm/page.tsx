@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { DatabaseZap } from "lucide-react";
 
@@ -20,7 +21,7 @@ function statusTone(status: string) {
 }
 
 export default async function CdmPage() {
-  const result = await withCloudResult<CdmCluster[]>([], listCdmClusters);
+  const result = await withCloudResult<CdmCluster[]>([], listCdmClusters, cloudCacheKeys.listCdmClusters);
   const clusters = result.data;
   const normal = clusters.filter((cluster) => ["200", "normal"].includes(cluster.status.toLowerCase())).length;
   const nodes = clusters.reduce((total, cluster) => total + cluster.nodeCount, 0);

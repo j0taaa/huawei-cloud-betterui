@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { FileSearch } from "lucide-react";
 
@@ -42,7 +43,7 @@ function enabledText(value: string) {
 }
 
 export default async function CtsPage() {
-  const result = await withCloudResult<CtsTracker[]>([], listCtsTrackers, "listCtsTrackers");
+  const result = await withCloudResult<CtsTracker[]>([], listCtsTrackers, cloudCacheKeys.listCtsTrackers);
   const trackers = result.data;
   const enabled = trackers.filter((tracker) => tracker.status.toLowerCase() === "enabled").length;
   const errors = trackers.filter((tracker) => tracker.status.toLowerCase() === "error").length;

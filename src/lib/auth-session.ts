@@ -9,6 +9,7 @@ export { sessionCookieName };
 
 export type BetterUiSession = {
   accountName: string;
+  accountToken?: string;
   catalog?: unknown[];
   createdAt: string;
   expiresAt: string;
@@ -39,8 +40,7 @@ const globalSessions = globalThis as typeof globalThis & {
 };
 
 const sessions =
-  globalSessions.__betterUiSessions ??
-  new Map<string, SessionRecord>();
+  globalSessions.__betterUiSessions ?? new Map<string, SessionRecord>();
 
 globalSessions.__betterUiSessions = sessions;
 

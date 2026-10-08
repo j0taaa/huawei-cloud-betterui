@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Server } from "lucide-react";
 
@@ -21,7 +22,7 @@ function hostTone(status: string) {
 }
 
 export default async function DehPage() {
-  const result = await withCloudResult<DedicatedHost[]>([], listDedicatedHosts);
+  const result = await withCloudResult<DedicatedHost[]>([], listDedicatedHosts, cloudCacheKeys.listDedicatedHosts);
   const hosts = result.data;
   const available = hosts.filter((host) => hostTone(host.status) === "good").length;
   const occupied = hosts.reduce((total, host) => total + host.instanceCount, 0);

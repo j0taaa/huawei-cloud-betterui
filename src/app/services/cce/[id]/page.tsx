@@ -1,3 +1,5 @@
+import { CloudErrorPage, CloudErrorBanner } from "@/components/cloud-error";
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Boxes } from "lucide-react";
@@ -17,14 +19,16 @@ export default async function CceDetailPage({
   const result = await withCloudResult(
     null,
     (session) => getCceCluster(session, id),
-    `cce-cluster:${id}`,
+    cloudCacheKeys.cce(id),
   );
+  if (!result.data && result.error) return <CloudErrorPage active="Containers" backHref="/services/cce" error={result.error} />;
   const cluster = result.data;
   if (!cluster) notFound();
 
   return (
     <ConsoleShell active="Containers">
       <CloudRefreshIndicator show={result.isRefreshing} />
+      <CloudErrorBanner error={result.error} isCached={result.isCached} />
       <main className="grid gap-6 p-4 lg:p-8">
         <Link className="inline-flex w-fit items-center gap-2 text-sm font-bold text-[#2563eb]" href="/services/cce"><ArrowLeft className="size-4" />Back to CCE</Link>
         <section className="rounded-xl border border-[#e4e9f2] bg-white p-6 shadow-[0_12px_36px_rgba(16,24,40,0.06)]">

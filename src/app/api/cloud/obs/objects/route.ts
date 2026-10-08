@@ -1,3 +1,5 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
+
 import { NextResponse } from "next/server";
 
 import { getCurrentSession } from "@/lib/auth-session";
@@ -8,7 +10,7 @@ import {
 } from "@/lib/huawei-cloud";
 
 function readParam(url: URL, name: string) {
-  return url.searchParams.get(name)?.trim() ?? "";
+  return url.searchParams.get(name) ?? "";
 }
 
 export async function GET(request: Request) {
@@ -64,7 +66,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Bucket is required." }, { status: 400 });
   }
 
-  if (typeof key !== "string" || !key.trim()) {
+  if (typeof key !== "string" || !key) {
     return NextResponse.json({ error: "Object key is required." }, { status: 400 });
   }
 
@@ -74,8 +76,10 @@ export async function POST(request: Request) {
 
   try {
     await uploadObsObject(session, bucket, key, file);
-    await invalidateCloudResult(session, `obs-bucket:${bucket}`);
-    await invalidateCloudResult(session, "listObsBuckets");
+    await invalidateCloudResult(session, cloudCacheKeys.obsBucket(bucket));
+    await invalidateCloudResult(session, cloudCacheKeys.listObsBuckets);
+
+    await invalidateCloudResult(session, cloudCacheKeys.obsObject(bucket, key));
 
     return NextResponse.json({ ok: true });
   } catch (error) {

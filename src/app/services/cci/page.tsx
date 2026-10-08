@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Layers3 } from "lucide-react";
 
@@ -19,7 +20,7 @@ function namespaceTone(namespace: CciNamespace) {
 }
 
 export default async function CciPage() {
-  const result = await withCloudResult<CciNamespace[]>([], listCciNamespaces);
+  const result = await withCloudResult<CciNamespace[]>([], listCciNamespaces, cloudCacheKeys.listCciNamespaces);
   const namespaces = result.data;
   const pods = namespaces.reduce((total, namespace) => total + namespace.podCount, 0);
   const runningPods = namespaces.reduce(

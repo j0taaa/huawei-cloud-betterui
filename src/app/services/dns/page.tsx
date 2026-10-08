@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Network } from "lucide-react";
 
@@ -7,7 +8,7 @@ import { listDnsZones, type DnsZone, withCloudResult } from "@/lib/huawei-cloud"
 export const metadata: Metadata = { title: "DNS | Huawei Cloud Better UI" };
 
 export default async function DnsPage() {
-  const result = await withCloudResult<DnsZone[]>([], listDnsZones);
+  const result = await withCloudResult<DnsZone[]>([], listDnsZones, cloudCacheKeys.listDnsZones);
   const zones = result.data;
   const active = zones.filter((zone) => zone.status.toLowerCase() === "active").length;
 

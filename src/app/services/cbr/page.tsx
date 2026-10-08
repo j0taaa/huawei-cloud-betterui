@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
@@ -15,40 +16,15 @@ import {
 import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
 import { ConsoleShell } from "@/components/console-shell";
 import { LocalDateTime } from "@/components/local-date-time";
-import * as huaweiCloud from "@/lib/huawei-cloud";
-import { withCloudResult } from "@/lib/huawei-cloud";
-import type { BetterUiSession } from "@/lib/auth-session";
+import {
+  withCloudResult,
+  listCbrVaults,
+  type CbrVault,
+} from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
   title: "CBR | Huawei Cloud Better UI",
 };
-
-type CbrVault = {
-  allocated: string;
-  autoBind: string;
-  createdAt: string;
-  id: string;
-  name: string;
-  objectType: string;
-  projectId: string;
-  projectName: string;
-  providerId: string;
-  region: string;
-  resources: number;
-  size: string;
-  status: string;
-};
-
-type ListCbrVaults = (session: BetterUiSession) => Promise<CbrVault[]>;
-
-const listCbrVaults =
-  (huaweiCloud as typeof huaweiCloud & { listCbrVaults?: ListCbrVaults })
-    .listCbrVaults ??
-  (async () => {
-    throw new Error(
-      "listCbrVaults is not exported from @/lib/huawei-cloud yet.",
-    );
-  });
 
 function numberFromSize(value: string) {
   const match = value.match(/[\d.]+/);
@@ -101,7 +77,8 @@ function VaultStatus({ status }: { status: string }) {
 function VaultRow({ vault }: { vault: CbrVault }) {
   const allocated = numberFromSize(vault.allocated);
   const size = numberFromSize(vault.size);
-  const usage = size > 0 ? Math.min(100, Math.round((allocated / size) * 100)) : 0;
+  const usage =
+    size > 0 ? Math.min(100, Math.round((allocated / size) * 100)) : 0;
 
   return (
     <tr>
@@ -127,7 +104,10 @@ function VaultRow({ vault }: { vault: CbrVault }) {
       </td>
       <td className="px-5 py-4 align-top">
         <div className="h-2 w-44 overflow-hidden rounded-full bg-[#eef2f7]">
-          <div className="h-full rounded-full bg-[#2563eb]" style={{ width: `${usage}%` }} />
+          <div
+            className="h-full rounded-full bg-[#2563eb]"
+            style={{ width: `${usage}%` }}
+          />
         </div>
         <p className="mt-2 font-black">{vault.allocated} allocated</p>
         <p className="mt-1 text-xs font-semibold text-[#667085]">
@@ -148,13 +128,19 @@ function VaultRow({ vault }: { vault: CbrVault }) {
 }
 
 export default async function CbrPage() {
-  const result = await withCloudResult<CbrVault[]>([], listCbrVaults);
+  const result = await withCloudResult<CbrVault[]>(
+    [],
+    listCbrVaults,
+    cloudCacheKeys.listCbrVaults,
+  );
   const vaults = result.data;
   const available = vaults.filter(
     (vault) => vault.status.toLowerCase() === "available",
   ).length;
   const resources = vaults.reduce((total, vault) => total + vault.resources, 0);
-  const objectTypes = new Set(vaults.map((vault) => vault.objectType).filter(Boolean));
+  const objectTypes = new Set(
+    vaults.map((vault) => vault.objectType).filter(Boolean),
+  );
 
   return (
     <ConsoleShell active="Storage">
@@ -178,7 +164,8 @@ export default async function CbrPage() {
                   Cloud Backup and Recovery
                 </h1>
                 <p className="mt-1 text-sm font-medium text-[#667085]">
-                  Backup vault capacity, protected object types, and associated resources.
+                  Backup vault capacity, protected object types, and associated
+                  resources.
                 </p>
               </div>
             </div>
@@ -209,7 +196,9 @@ export default async function CbrPage() {
               className="rounded-xl border border-[#e4e9f2] bg-white p-4 shadow-[0_12px_36px_rgba(16,24,40,0.04)]"
               key={label}
             >
-              <p className="text-xs font-black uppercase text-[#667085]">{label}</p>
+              <p className="text-xs font-black uppercase text-[#667085]">
+                {label}
+              </p>
               <p className="mt-2 text-2xl font-black">{value}</p>
             </div>
           ))}
@@ -219,7 +208,8 @@ export default async function CbrPage() {
           <div className="border-b border-[#e4e9f2] p-5">
             <h2 className="text-lg font-black">Vault inventory</h2>
             <p className="mt-1 text-sm font-medium text-[#667085]">
-              {vaults.length} vaults · Showing {result.isCached ? "cached" : "fresh"} data from{" "}
+              {vaults.length} vaults · Showing{" "}
+              {result.isCached ? "cached" : "fresh"} data from{" "}
               <LocalDateTime value={result.updatedAt} />.
             </p>
           </div>

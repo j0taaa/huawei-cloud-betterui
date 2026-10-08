@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { ServerCog } from "lucide-react";
 
@@ -8,43 +9,16 @@ import {
   StatStrip,
   StatusPill,
 } from "@/app/services/_components/governance-readonly";
-import type { BetterUiSession } from "@/lib/auth-session";
-import * as huaweiCloud from "@/lib/huawei-cloud";
-import { withCloudResult } from "@/lib/huawei-cloud";
+import {
+  withCloudResult,
+  listHssHosts,
+  type HssHost,
+} from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
   title: "HSS | Huawei Cloud Better UI",
   description: "Read-only Host Security Service host risk posture.",
 };
-
-type HssHost = {
-  agentStatus?: string;
-  baselineRiskCount?: number;
-  detectResult?: string;
-  groupName?: string;
-  id?: string;
-  intrusionCount?: number;
-  name?: string;
-  os?: string;
-  policyGroupName?: string;
-  privateIp?: string;
-  projectId?: string;
-  projectName?: string;
-  publicIp?: string;
-  region?: string;
-  riskCount?: number;
-  version?: string;
-  vulnerabilityCount?: number;
-};
-
-type ListHssHosts = (session: BetterUiSession) => Promise<HssHost[]>;
-
-const listHssHosts =
-  (huaweiCloud as typeof huaweiCloud & { listHssHosts?: ListHssHosts })
-    .listHssHosts ??
-  (async () => {
-    throw new Error("listHssHosts is not exported from @/lib/huawei-cloud yet.");
-  });
 
 function agentIntent(status: string) {
   const normalized = status.toLowerCase();
@@ -91,12 +65,28 @@ function riskIntent(count: number) {
 }
 
 export default async function HssPage() {
-  const result = await withCloudResult<HssHost[]>([], listHssHosts, "listHssHosts");
+  const result = await withCloudResult<HssHost[]>(
+    [],
+    listHssHosts,
+    cloudCacheKeys.listHssHosts,
+  );
   const hosts = result.data;
-  const online = hosts.filter((host) => (host.agentStatus ?? "").toLowerCase() === "online").length;
-  const risky = hosts.filter((host) => (host.riskCount ?? 0) > 0 || (host.detectResult ?? "").toLowerCase() === "risk").length;
-  const vulnerabilities = hosts.reduce((total, host) => total + (host.vulnerabilityCount ?? 0), 0);
-  const baselines = hosts.reduce((total, host) => total + (host.baselineRiskCount ?? 0), 0);
+  const online = hosts.filter(
+    (host) => (host.agentStatus ?? "").toLowerCase() === "online",
+  ).length;
+  const risky = hosts.filter(
+    (host) =>
+      (host.riskCount ?? 0) > 0 ||
+      (host.detectResult ?? "").toLowerCase() === "risk",
+  ).length;
+  const vulnerabilities = hosts.reduce(
+    (total, host) => total + (host.vulnerabilityCount ?? 0),
+    0,
+  );
+  const baselines = hosts.reduce(
+    (total, host) => total + (host.baselineRiskCount ?? 0),
+    0,
+  );
 
   return (
     <GovernanceShell
@@ -112,9 +102,17 @@ export default async function HssPage() {
       <StatStrip
         items={[
           { label: "Hosts", value: hosts.length, tone: "info" },
-          { label: "Agent online", value: online, tone: online === hosts.length ? "good" : "warn" },
+          {
+            label: "Agent online",
+            value: online,
+            tone: online === hosts.length ? "good" : "warn",
+          },
           { label: "Risky hosts", value: risky, tone: risky ? "bad" : "good" },
-          { label: "Vulnerabilities", value: vulnerabilities + baselines, tone: vulnerabilities || baselines ? "bad" : "good" },
+          {
+            label: "Vulnerabilities",
+            value: vulnerabilities + baselines,
+            tone: vulnerabilities || baselines ? "bad" : "good",
+          },
         ]}
       />
 
@@ -144,16 +142,22 @@ export default async function HssPage() {
               </thead>
               <tbody className="divide-y divide-[#eef2f7]">
                 {hosts.map((host) => (
-                  <tr className="hover:bg-[#fbfcfe]" key={`${host.projectId ?? "project"}:${host.id ?? host.name ?? "host"}`}>
+                  <tr
+                    className="hover:bg-[#fbfcfe]"
+                    key={`${host.projectId ?? "project"}:${host.id ?? host.name ?? "host"}`}
+                  >
                     <td className="px-5 py-4 align-top">
                       <p className="font-black">{host.name || "-"}</p>
                       <p className="mt-1 break-all text-xs font-semibold text-[#98a2b3]">
                         {host.id || "-"}
                       </p>
                       <p className="mt-2 text-xs font-bold text-[#667085]">
-                        {host.privateIp || "-"} private · {host.publicIp || "-"} public
+                        {host.privateIp || "-"} private · {host.publicIp || "-"}{" "}
+                        public
                       </p>
-                      <p className="mt-1 text-xs font-semibold text-[#667085]">{host.os || "-"}</p>
+                      <p className="mt-1 text-xs font-semibold text-[#667085]">
+                        {host.os || "-"}
+                      </p>
                     </td>
                     <td className="px-5 py-4 align-top">
                       <StatusPill intent={agentIntent(host.agentStatus ?? "")}>
@@ -164,31 +168,42 @@ export default async function HssPage() {
                       </p>
                     </td>
                     <td className="px-5 py-4 align-top">
-                      <StatusPill intent={detectionIntent(host.detectResult ?? "")}>
+                      <StatusPill
+                        intent={detectionIntent(host.detectResult ?? "")}
+                      >
                         {host.detectResult || "Unknown"}
                       </StatusPill>
                     </td>
                     <td className="px-5 py-4 align-top">
                       <div className="flex flex-wrap gap-2">
-                        <StatusPill intent={riskIntent(host.vulnerabilityCount ?? 0)}>
+                        <StatusPill
+                          intent={riskIntent(host.vulnerabilityCount ?? 0)}
+                        >
                           {host.vulnerabilityCount ?? 0} vul
                         </StatusPill>
-                        <StatusPill intent={riskIntent(host.baselineRiskCount ?? 0)}>
+                        <StatusPill
+                          intent={riskIntent(host.baselineRiskCount ?? 0)}
+                        >
                           {host.baselineRiskCount ?? 0} baseline
                         </StatusPill>
-                        <StatusPill intent={riskIntent(host.intrusionCount ?? 0)}>
+                        <StatusPill
+                          intent={riskIntent(host.intrusionCount ?? 0)}
+                        >
                           {host.intrusionCount ?? 0} intrusion
                         </StatusPill>
                       </div>
                     </td>
                     <td className="px-5 py-4 align-top">
-                      <p className="font-semibold">{host.policyGroupName || "-"}</p>
+                      <p className="font-semibold">
+                        {host.policyGroupName || "-"}
+                      </p>
                       <p className="mt-1 text-xs font-semibold text-[#667085]">
                         Group {host.groupName || "-"}
                       </p>
                     </td>
                     <td className="px-5 py-4 align-top font-semibold">
-                      {host.projectName || host.projectId || "-"} · {host.region || "-"}
+                      {host.projectName || host.projectId || "-"} ·{" "}
+                      {host.region || "-"}
                     </td>
                   </tr>
                 ))}

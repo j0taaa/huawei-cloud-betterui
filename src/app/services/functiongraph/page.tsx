@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Code2, Play, Plus } from "lucide-react";
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 export default async function FunctionGraphPage() {
-  const result = await withCloudResult([], listFunctionGraphFunctions);
+  const result = await withCloudResult([], listFunctionGraphFunctions, cloudCacheKeys.listFunctionGraphFunctions);
   const functions = result.data;
 
   return (

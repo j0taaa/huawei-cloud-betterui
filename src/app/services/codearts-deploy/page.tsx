@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Rocket } from "lucide-react";
 
@@ -36,7 +37,7 @@ const columns: InventoryColumn<CodeArtsDeployApplication>[] = [
 ];
 
 export default async function CodeArtsDeployPage() {
-  const result = await withCloudResult<CodeArtsDeployApplication[]>([], listCodeArtsDeployApplications);
+  const result = await withCloudResult<CodeArtsDeployApplication[]>([], listCodeArtsDeployApplications, cloudCacheKeys.listCodeArtsDeployApplications);
   const applications = result.data;
   const groups = new Set(applications.map((application) => application.groupName).filter((group) => group !== "-"));
   const creators = new Set(applications.map((application) => application.creator).filter((creator) => creator !== "-"));

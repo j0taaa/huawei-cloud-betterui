@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
@@ -16,39 +17,15 @@ import {
 import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
 import { ConsoleShell } from "@/components/console-shell";
 import { LocalDateTime } from "@/components/local-date-time";
-import * as huaweiCloud from "@/lib/huawei-cloud";
-import { withCloudResult } from "@/lib/huawei-cloud";
-import type { BetterUiSession } from "@/lib/auth-session";
+import {
+  withCloudResult,
+  listSfsShares,
+  type SfsShare,
+} from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
   title: "SFS | Huawei Cloud Better UI",
 };
-
-type SfsShare = {
-  availabilityZone: string;
-  createdAt: string;
-  exportLocation: string;
-  id: string;
-  name: string;
-  projectId: string;
-  projectName: string;
-  protocol: string;
-  region: string;
-  shareType: string;
-  size: string;
-  status: string;
-};
-
-type ListSfsShares = (session: BetterUiSession) => Promise<SfsShare[]>;
-
-const listSfsShares =
-  (huaweiCloud as typeof huaweiCloud & { listSfsShares?: ListSfsShares })
-    .listSfsShares ??
-  (async () => {
-    throw new Error(
-      "listSfsShares is not exported from @/lib/huawei-cloud yet.",
-    );
-  });
 
 function numberFromSize(value: string) {
   const match = value.match(/[\d.]+/);
@@ -128,7 +105,11 @@ function ShareRow({ share }: { share: SfsShare }) {
 }
 
 export default async function SfsPage() {
-  const result = await withCloudResult<SfsShare[]>([], listSfsShares);
+  const result = await withCloudResult<SfsShare[]>(
+    [],
+    listSfsShares,
+    cloudCacheKeys.listSfsShares,
+  );
   const shares = result.data;
   const totalGb = shares.reduce(
     (total, share) => total + numberFromSize(share.size),
@@ -137,8 +118,12 @@ export default async function SfsPage() {
   const available = shares.filter(
     (share) => share.status.toLowerCase() === "available",
   ).length;
-  const withExports = shares.filter((share) => share.exportLocation !== "-").length;
-  const protocols = new Set(shares.map((share) => share.protocol).filter(Boolean));
+  const withExports = shares.filter(
+    (share) => share.exportLocation !== "-",
+  ).length;
+  const protocols = new Set(
+    shares.map((share) => share.protocol).filter(Boolean),
+  );
 
   return (
     <ConsoleShell active="Storage">
@@ -162,7 +147,8 @@ export default async function SfsPage() {
                   Scalable File Service
                 </h1>
                 <p className="mt-1 text-sm font-medium text-[#667085]">
-                  Shared file systems, export paths, protocols, capacity, and availability zones.
+                  Shared file systems, export paths, protocols, capacity, and
+                  availability zones.
                 </p>
               </div>
             </div>
@@ -192,7 +178,8 @@ export default async function SfsPage() {
               <div>
                 <h2 className="text-lg font-black">Fleet capacity</h2>
                 <p className="mt-1 text-sm font-semibold text-[#667085]">
-                  {shares.length} file systems · {Math.round(totalGb)} GB provisioned
+                  {shares.length} file systems · {Math.round(totalGb)} GB
+                  provisioned
                 </p>
               </div>
               <HardDrive className="size-6 text-[#16a34a]" />
@@ -200,15 +187,21 @@ export default async function SfsPage() {
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               <div className="border-l-4 border-[#16a34a] pl-3">
                 <p className="text-2xl font-black">{available}</p>
-                <p className="text-xs font-bold uppercase text-[#667085]">Available</p>
+                <p className="text-xs font-bold uppercase text-[#667085]">
+                  Available
+                </p>
               </div>
               <div className="border-l-4 border-[#2563eb] pl-3">
                 <p className="text-2xl font-black">{withExports}</p>
-                <p className="text-xs font-bold uppercase text-[#667085]">Mount paths</p>
+                <p className="text-xs font-bold uppercase text-[#667085]">
+                  Mount paths
+                </p>
               </div>
               <div className="border-l-4 border-[#9333ea] pl-3">
                 <p className="text-2xl font-black">{protocols.size}</p>
-                <p className="text-xs font-bold uppercase text-[#667085]">Protocols</p>
+                <p className="text-xs font-bold uppercase text-[#667085]">
+                  Protocols
+                </p>
               </div>
             </div>
           </div>
@@ -247,7 +240,8 @@ export default async function SfsPage() {
           <div className="border-b border-[#e4e9f2] p-5">
             <h2 className="text-lg font-black">File systems</h2>
             <p className="mt-1 text-sm font-medium text-[#667085]">
-              {shares.length} shares · Showing {result.isCached ? "cached" : "fresh"} data from{" "}
+              {shares.length} shares · Showing{" "}
+              {result.isCached ? "cached" : "fresh"} data from{" "}
               <LocalDateTime value={result.updatedAt} />.
             </p>
           </div>
@@ -276,7 +270,9 @@ export default async function SfsPage() {
             <div className="grid place-items-center px-6 py-16 text-center">
               <div>
                 <Database className="mx-auto size-10 text-[#98a2b3]" />
-                <p className="mt-4 text-lg font-black">No SFS file systems found</p>
+                <p className="mt-4 text-lg font-black">
+                  No SFS file systems found
+                </p>
                 <p className="mt-2 text-sm font-semibold text-[#667085]">
                   No shared file systems were returned for this account, or this
                   IAM user cannot list SFS shares.

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { projectRegion } from "@/lib/huawei/regions";
+
 import type { HuaweiProjectSession } from "@/lib/auth-session";
 
 type IamLoginInput = {
@@ -23,6 +25,7 @@ type HuaweiIamTokenBody = {
 };
 
 type HuaweiProject = {
+  region_id?: string;
   enabled?: boolean;
   id?: string;
   is_domain?: boolean;
@@ -64,10 +67,7 @@ function isIamTokenBody(body: unknown): body is HuaweiIamTokenBody {
   );
 }
 
-async function requestToken(
-  endpoint: string,
-  body: Record<string, unknown>,
-) {
+async function requestToken(endpoint: string, body: Record<string, unknown>) {
   const response = await fetch(`${endpoint}/v3/auth/tokens?nocatalog=true`, {
     body: JSON.stringify(body),
     headers: {
@@ -122,9 +122,14 @@ async function listAccessibleProjects(endpoint: string, token: string) {
   }
 
   return (body?.projects ?? []).filter(
-    (project): project is Required<Pick<HuaweiProject, "id" | "name">> &
+    (
+      project,
+    ): project is Required<Pick<HuaweiProject, "id" | "name">> &
       HuaweiProject =>
-      !!project.id && !!project.name && project.enabled !== false && !project.is_domain,
+      !!project.id &&
+      !!project.name &&
+      project.enabled !== false &&
+      !project.is_domain,
   );
 }
 
@@ -135,7 +140,7 @@ export async function createHuaweiIamSession({
   username,
 }: IamLoginInput) {
   const endpoint = normalizeEndpoint(iamEndpoint);
-  const unscopedToken = await requestToken(endpoint, {
+  const accountToken = await requestToken(endpoint, {
     auth: {
       identity: {
         methods: ["password"],
@@ -149,9 +154,10 @@ export async function createHuaweiIamSession({
           },
         },
       },
+      scope: { domain: { name: accountName } },
     },
   });
-  const projects = await listAccessibleProjects(endpoint, unscopedToken.token);
+  const projects = await listAccessibleProjects(endpoint, accountToken.token);
   const projectTokens = await Promise.all(
     projects.map(async (project): Promise<HuaweiProjectSession | null> => {
       try {
@@ -160,7 +166,7 @@ export async function createHuaweiIamSession({
             identity: {
               methods: ["token"],
               token: {
-                id: unscopedToken.token,
+                id: accountToken.token,
               },
             },
             scope: {
@@ -179,7 +185,7 @@ export async function createHuaweiIamSession({
           expiresAt: scopedToken.expiresAt,
           projectId: scopedToken.projectId,
           projectName: scopedToken.projectName,
-          region: scopedToken.projectName,
+          region: projectRegion(scopedToken.projectName, project.region_id),
           token: scopedToken.token,
         };
       } catch {
@@ -199,13 +205,19 @@ export async function createHuaweiIamSession({
   }
 
   return {
-    expiresAt: primaryProject.expiresAt,
+    accountToken: accountToken.token,
+    expiresAt: new Date(
+      Math.min(
+        Date.parse(primaryProject.expiresAt),
+        Date.parse(accountToken.expiresAt),
+      ),
+    ).toISOString(),
     iamEndpoint: endpoint,
     projects: usableProjects,
     projectId: primaryProject.projectId,
     projectName: primaryProject.projectName,
     region: primaryProject.region,
     token: primaryProject.token,
-    userId: unscopedToken.userId,
+    userId: accountToken.userId,
   };
 }

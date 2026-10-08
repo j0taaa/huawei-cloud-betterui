@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Cable } from "lucide-react";
 
@@ -27,7 +28,7 @@ function statusTone(status: string) {
 export default async function DirectConnectPage() {
   const result = await withCloudResult<DirectConnectConnection[]>(
     [],
-    listDirectConnectConnections,
+    listDirectConnectConnections, cloudCacheKeys.listDirectConnectConnections,
   );
   const connections = result.data;
   const active = connections.filter((connection) => statusTone(connection.status) === "good").length;

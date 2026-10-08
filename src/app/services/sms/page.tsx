@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Server } from "lucide-react";
 
@@ -22,7 +23,7 @@ function statusTone(status: string) {
 }
 
 export default async function SmsPage() {
-  const result = await withCloudResult<SmsMigrationTask[]>([], listSmsTasks);
+  const result = await withCloudResult<SmsMigrationTask[]>([], listSmsTasks, cloudCacheKeys.listSmsTasks);
   const tasks = result.data;
   const active = tasks.filter((task) => ["running", "syncing"].includes(task.state.toLowerCase())).length;
   const failed = tasks.filter((task) => task.state.toLowerCase().includes("fail")).length;

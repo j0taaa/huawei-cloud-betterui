@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Boxes, Plus } from "lucide-react";
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 export default async function CcePage() {
-  const result = await withCloudResult([], listCceClusters);
+  const result = await withCloudResult([], listCceClusters, cloudCacheKeys.listCceClusters);
   const clusters = result.data;
 
   return (

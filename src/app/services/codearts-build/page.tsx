@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Hammer } from "lucide-react";
 
@@ -43,7 +44,7 @@ const columns: InventoryColumn<CodeArtsBuildJob>[] = [
 ];
 
 export default async function CodeArtsBuildPage() {
-  const result = await withCloudResult<CodeArtsBuildJob[]>([], listCodeArtsBuildJobs);
+  const result = await withCloudResult<CodeArtsBuildJob[]>([], listCodeArtsBuildJobs, cloudCacheKeys.listCodeArtsBuildJobs);
   const jobs = result.data;
   const failed = jobs.filter((job) => statusTone(job.lastBuildStatus) === "bad").length;
   const running = jobs.filter((job) => statusTone(job.lastBuildStatus) === "warn").length;

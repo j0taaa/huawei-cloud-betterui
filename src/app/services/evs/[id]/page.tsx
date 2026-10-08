@@ -1,3 +1,5 @@
+import { CloudErrorPage, CloudErrorBanner } from "@/components/cloud-error";
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, HardDrive } from "lucide-react";
@@ -22,8 +24,9 @@ export default async function EvsDiskPage({
   const result = await withCloudResult(
     null,
     (session) => getEvsDisk(session, id),
-    `evs-disk:${id}`,
+    cloudCacheKeys.evs(id),
   );
+  if (!result.data && result.error) return <CloudErrorPage active="Storage" backHref="/services/evs" error={result.error} />;
   const disk = result.data;
   if (!disk) notFound();
   const details: DetailItem[] = [
@@ -38,6 +41,7 @@ export default async function EvsDiskPage({
   return (
     <ConsoleShell active="Storage">
       <CloudRefreshIndicator show={result.isRefreshing} />
+      <CloudErrorBanner error={result.error} isCached={result.isCached} />
       <main className="grid gap-6 p-4 lg:p-8">
         <Link className="inline-flex w-fit items-center gap-2 text-sm font-bold text-[#2563eb]" href="/services/evs">
           <ArrowLeft className="size-4" />

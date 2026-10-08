@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, CloudCog, Plus } from "lucide-react";
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ElbPage() {
-  const result = await withCloudResult([], listElbs);
+  const result = await withCloudResult([], listElbs, cloudCacheKeys.listElbs);
   const loadBalancers = result.data;
 
   return (

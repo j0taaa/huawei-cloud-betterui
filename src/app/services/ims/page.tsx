@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
@@ -17,36 +18,11 @@ import {
 import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
 import { ConsoleShell } from "@/components/console-shell";
 import { LocalDateTime } from "@/components/local-date-time";
-import * as huaweiCloud from "@/lib/huawei-cloud";
-import { withCloudResult } from "@/lib/huawei-cloud";
-import type { BetterUiSession } from "@/lib/auth-session";
+import { withCloudResult, listImages, type ImsImage } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
   title: "IMS | Huawei Cloud Better UI",
 };
-
-type ImsImage = {
-  createdAt: string;
-  id: string;
-  imageType: string;
-  minDisk: string;
-  name: string;
-  os: string;
-  projectId: string;
-  projectName: string;
-  region: string;
-  size: string;
-  status: string;
-  visibility: string;
-};
-
-type ListImages = (session: BetterUiSession) => Promise<ImsImage[]>;
-
-const listImages =
-  (huaweiCloud as typeof huaweiCloud & { listImages?: ListImages }).listImages ??
-  (async () => {
-    throw new Error("listImages is not exported from @/lib/huawei-cloud yet.");
-  });
 
 function statusTone(status: string) {
   const normalized = status.toLowerCase();
@@ -121,7 +97,9 @@ function ImageRow({ image }: { image: ImsImage }) {
       </td>
       <td className="px-5 py-4 align-top font-bold">
         <p>{image.projectName || image.projectId}</p>
-        <p className="mt-1 text-xs font-semibold text-[#667085]">{image.region}</p>
+        <p className="mt-1 text-xs font-semibold text-[#667085]">
+          {image.region}
+        </p>
       </td>
       <td className="px-5 py-4 align-top font-bold">
         <LocalDateTime value={image.createdAt} />
@@ -131,7 +109,11 @@ function ImageRow({ image }: { image: ImsImage }) {
 }
 
 export default async function ImsPage() {
-  const result = await withCloudResult<ImsImage[]>([], listImages);
+  const result = await withCloudResult<ImsImage[]>(
+    [],
+    listImages,
+    cloudCacheKeys.listImages,
+  );
   const images = result.data;
   const active = images.filter(
     (image) => image.status.toLowerCase() === "active",
@@ -166,7 +148,8 @@ export default async function ImsPage() {
                   Image Management Service
                 </h1>
                 <p className="mt-1 text-sm font-medium text-[#667085]">
-                  Private image catalog, status, visibility, OS, and launch disk requirements.
+                  Private image catalog, status, visibility, OS, and launch disk
+                  requirements.
                 </p>
               </div>
             </div>
@@ -201,7 +184,9 @@ export default async function ImsPage() {
               className="rounded-xl border border-[#e4e9f2] bg-white p-4 shadow-[0_12px_36px_rgba(16,24,40,0.04)]"
               key={label}
             >
-              <p className="text-xs font-black uppercase text-[#667085]">{label}</p>
+              <p className="text-xs font-black uppercase text-[#667085]">
+                {label}
+              </p>
               <p className="mt-2 text-2xl font-black">{value}</p>
             </div>
           ))}
@@ -241,7 +226,8 @@ export default async function ImsPage() {
           <div className="border-b border-[#e4e9f2] p-5">
             <h2 className="text-lg font-black">Images</h2>
             <p className="mt-1 text-sm font-medium text-[#667085]">
-              {images.length} images · Showing {result.isCached ? "cached" : "fresh"} data from{" "}
+              {images.length} images · Showing{" "}
+              {result.isCached ? "cached" : "fresh"} data from{" "}
               <LocalDateTime value={result.updatedAt} />.
             </p>
           </div>
@@ -260,7 +246,10 @@ export default async function ImsPage() {
                 </thead>
                 <tbody className="divide-y divide-[#eef2f7]">
                   {images.map((image) => (
-                    <ImageRow image={image} key={`${image.region}:${image.id}`} />
+                    <ImageRow
+                      image={image}
+                      key={`${image.region}:${image.id}`}
+                    />
                   ))}
                 </tbody>
               </table>

@@ -7,20 +7,17 @@ import {
 } from "@/lib/auth-session";
 import { createHuaweiIamSession } from "@/lib/huawei-iam";
 
-const requiredFields = [
-  "accountName",
-  "username",
-  "password",
-] as const;
+const requiredFields = ["accountName", "username", "password"] as const;
 
 function readString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json().catch(() => null)) as
-    | Record<string, unknown>
-    | null;
+  const body = (await request.json().catch(() => null)) as Record<
+    string,
+    unknown
+  > | null;
 
   if (!body) {
     return NextResponse.json(
@@ -49,6 +46,7 @@ export async function POST(request: Request) {
     const iamToken = await createHuaweiIamSession(fields);
     const sessionId = createSession({
       accountName: fields.accountName,
+      accountToken: iamToken.accountToken,
       createdAt: new Date().toISOString(),
       expiresAt: iamToken.expiresAt,
       iamEndpoint: iamToken.iamEndpoint,
@@ -77,9 +75,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          error instanceof Error
-            ? error.message
-            : "Huawei IAM login failed.",
+          error instanceof Error ? error.message : "Huawei IAM login failed.",
       },
       { status: 401 },
     );

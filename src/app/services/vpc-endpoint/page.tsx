@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Network } from "lucide-react";
 
@@ -21,7 +22,7 @@ function endpointTone(status: string) {
 }
 
 export default async function VpcEndpointPage() {
-  const result = await withCloudResult<VpcEndpoint[]>([], listVpcEndpoints);
+  const result = await withCloudResult<VpcEndpoint[]>([], listVpcEndpoints, cloudCacheKeys.listVpcEndpoints);
   const endpoints = result.data;
   const healthy = endpoints.filter((endpoint) => endpointTone(endpoint.status) === "good").length;
   const dnsEnabled = endpoints.filter((endpoint) => endpoint.dnsEnabled === "true").length;

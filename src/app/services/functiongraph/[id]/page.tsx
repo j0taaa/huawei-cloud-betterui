@@ -1,3 +1,5 @@
+import { CloudErrorPage } from "@/components/cloud-error";
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Code2, Play } from "lucide-react";
@@ -38,8 +40,9 @@ export default async function FunctionGraphFunctionPage({
   const result = await withCloudResult<FunctionGraphFunction | null>(
     null,
     (session) => getFunctionGraphFunction(session, id),
-    `functiongraph-function:${id}`,
+    cloudCacheKeys.functionGraph(id),
   );
+  if (!result.data && result.error) return <CloudErrorPage active="Compute" backHref="/services/functiongraph" error={result.error} />;
   const fn = result.data;
 
   if (!fn) {

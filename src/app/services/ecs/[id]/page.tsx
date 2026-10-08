@@ -1,3 +1,5 @@
+import { CloudErrorPage, CloudErrorBanner } from "@/components/cloud-error";
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -724,14 +726,15 @@ export default async function EcsInstancePage({
   const result = await withCloudResult(
     null,
     (session) => getEcsInstance(session, id),
-    `ecs-instance-v2:${id}`,
+    cloudCacheKeys.ecs(id),
   );
+  if (!result.data && result.error) return <CloudErrorPage active="Compute" backHref="/services/ecs" error={result.error} />;
   const monitoringResult =
     activeTab === "monitoring"
       ? await withCloudResult(
           null,
           (session) => getEcsMonitoring(session, id),
-          `ecs-monitoring-v3:${id}`,
+          cloudCacheKeys.ecsMonitoring(id),
         )
       : null;
   const snapshotsResult =
@@ -739,7 +742,7 @@ export default async function EcsInstancePage({
       ? await withCloudResult(
           null,
           (session) => getEcsSnapshots(session, id),
-          `ecs-snapshots:${id}`,
+          cloudCacheKeys.ecsSnapshots(id),
         )
       : null;
   const instance = result.data;
@@ -758,6 +761,7 @@ export default async function EcsInstancePage({
         }
       />
       <main className="grid gap-5 bg-[#f4f7fb] p-4 lg:p-8">
+        <CloudErrorBanner error={result.error} isCached={result.isCached} />
         <Link
           className="inline-flex w-fit items-center gap-2 text-sm font-black text-[#2563eb]"
           href="/services/ecs"

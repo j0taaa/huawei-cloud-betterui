@@ -1,3 +1,6 @@
+import { mapCloudLoad } from "@/lib/huawei/errors";
+import { CloudErrorPage } from "@/components/cloud-error";
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Network } from "lucide-react";
@@ -12,10 +15,10 @@ export default async function VpcDetailPage({ params }: { params: Promise<{ id: 
   const { id } = await params;
   const result = await withCloudResult(
     null,
-    async (session) =>
-      (await listVpcs(session)).find((vpc) => vpc.id === id) ?? null,
-    `vpc:${id}`,
+    (session) => mapCloudLoad(() => listVpcs(session), (items) => items.find((vpc) => vpc.id === id) ?? null),
+    cloudCacheKeys.vpc(id),
   );
+  if (!result.data && result.error) return <CloudErrorPage active="Networking" backHref="/services/network" error={result.error} />;
   const item = result.data;
   if (!item) notFound();
   return <NetworkDetail activeTitle="VPC" back="/services/network" facts={[["Name", item.name], ["ID", item.id], ["CIDR", item.cidr], ["Status", item.status]]} icon={<Network className="size-6" />} isCached={result.isCached} isRefreshing={result.isRefreshing} title={item.name} updatedAt={result.updatedAt} />;

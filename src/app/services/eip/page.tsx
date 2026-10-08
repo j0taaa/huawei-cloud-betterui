@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Globe2 } from "lucide-react";
 
@@ -83,7 +84,7 @@ function eipAddress(eip: EipItem) {
 }
 
 export default async function EipPage() {
-  const result = await withCloudResult<EipItem[]>([], listEips, "listEips");
+  const result = await withCloudResult<EipItem[]>([], listEips, cloudCacheKeys.listEips);
   const eips = result.data;
   const bound = eips.filter((eip) => valueOrDash(eip.portId) !== "-").length;
   const active = eips.filter((eip) => eip.status.toUpperCase() === "ACTIVE").length;

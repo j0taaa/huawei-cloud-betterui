@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
@@ -26,9 +27,9 @@ export const metadata: Metadata = {
 
 export default async function NetworkPage() {
   const [vpcsResult, subnetsResult, groupsResult] = await Promise.all([
-    withCloudResult([], listVpcs),
-    withCloudResult([], listSubnets),
-    withCloudResult([], listSecurityGroups),
+    withCloudResult([], listVpcs, cloudCacheKeys.listVpcs),
+    withCloudResult([], listSubnets, cloudCacheKeys.listSubnets),
+    withCloudResult([], listSecurityGroups, cloudCacheKeys.listSecurityGroups),
   ]);
 
   const errors = [vpcsResult.error, subnetsResult.error, groupsResult.error].filter(Boolean);

@@ -1,3 +1,5 @@
+import { CloudErrorPage, CloudErrorBanner } from "@/components/cloud-error";
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, CloudCog } from "lucide-react";
@@ -17,14 +19,16 @@ export default async function ElbDetailPage({
   const result = await withCloudResult(
     null,
     (session) => getElb(session, id),
-    `elb:${id}`,
+    cloudCacheKeys.elb(id),
   );
+  if (!result.data && result.error) return <CloudErrorPage active="Networking" backHref="/services/elb" error={result.error} />;
   const elb = result.data;
   if (!elb) notFound();
 
   return (
     <ConsoleShell active="Networking">
       <CloudRefreshIndicator show={result.isRefreshing} />
+      <CloudErrorBanner error={result.error} isCached={result.isCached} />
       <main className="grid gap-6 p-4 lg:p-8">
         <Link className="inline-flex w-fit items-center gap-2 text-sm font-bold text-[#2563eb]" href="/services/elb"><ArrowLeft className="size-4" />Back to ELB</Link>
         <section className="rounded-xl border border-[#e4e9f2] bg-white p-6 shadow-[0_12px_36px_rgba(16,24,40,0.06)]">

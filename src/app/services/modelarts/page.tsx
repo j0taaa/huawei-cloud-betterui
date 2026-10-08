@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { BrainCircuit } from "lucide-react";
 
@@ -25,7 +26,7 @@ function statusTone(status: string) {
 }
 
 export default async function ModelArtsPage() {
-  const result = await withCloudResult<ModelArtsNotebook[]>([], listModelArtsNotebooks);
+  const result = await withCloudResult<ModelArtsNotebook[]>([], listModelArtsNotebooks, cloudCacheKeys.listModelArtsNotebooks);
   const notebooks = result.data;
   const running = notebooks.filter((notebook) =>
     ["running", "active", "inservice"].includes(notebook.status.toLowerCase()),

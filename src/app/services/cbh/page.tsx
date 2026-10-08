@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { KeyRound } from "lucide-react";
 
@@ -18,7 +19,7 @@ function upgradeState(instance: CbhInstance) {
 }
 
 export default async function CbhPage() {
-  const result = await withCloudResult<CbhInstance[]>([], listCbhInstances, "listCbhInstances");
+  const result = await withCloudResult<CbhInstance[]>([], listCbhInstances, cloudCacheKeys.listCbhInstances);
   const instances = result.data;
   const publicInstances = instances.filter((instance) => instance.publicIp !== "-").length;
   const upgradeable = instances.filter((instance) => upgradeTone(instance) === "warn").length;

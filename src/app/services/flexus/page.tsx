@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { ServerCog } from "lucide-react";
 
@@ -35,7 +36,7 @@ const columns: InventoryColumn<FlexusResource>[] = [
 ];
 
 export default async function FlexusPage() {
-  const result = await withCloudResult<FlexusResource[]>([], listFlexusResources);
+  const result = await withCloudResult<FlexusResource[]>([], listFlexusResources, cloudCacheKeys.listFlexusResources);
   const resources = result.data;
   const compute = resources.filter((resource) => resource.sourceService === "ECS").length;
   const database = resources.filter((resource) => resource.sourceService === "RDS").length;

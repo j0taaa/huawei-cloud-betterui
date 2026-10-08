@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { ShieldCheck } from "lucide-react";
 
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function SecMasterPage() {
-  const result = await withCloudResult<SecMasterWorkspace[]>([], listSecMasterWorkspaces, "listSecMasterWorkspaces");
+  const result = await withCloudResult<SecMasterWorkspace[]>([], listSecMasterWorkspaces, cloudCacheKeys.listSecMasterWorkspaces);
   const workspaces = result.data;
   const views = workspaces.filter((workspace) => workspace.isView).length;
   const enterpriseScoped = workspaces.filter((workspace) => workspace.enterpriseProjectName !== "-").length;

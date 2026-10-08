@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Database } from "lucide-react";
 
@@ -21,7 +22,7 @@ function statusTone(status: string) {
 }
 
 export default async function DwsPage() {
-  const result = await withCloudResult<DwsCluster[]>([], listDwsClusters);
+  const result = await withCloudResult<DwsCluster[]>([], listDwsClusters, cloudCacheKeys.listDwsClusters);
   const clusters = result.data;
   const available = clusters.filter((cluster) =>
     ["available", "active", "running"].includes(cluster.status.toLowerCase()),

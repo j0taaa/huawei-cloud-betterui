@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, DatabaseBackup, HardDrive, Plus } from "lucide-react";
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 export default async function EvsPage() {
-  const result = await withCloudResult([], listEvsDisks);
+  const result = await withCloudResult([], listEvsDisks, cloudCacheKeys.listEvsDisks);
   const disks = result.data;
 
   return (

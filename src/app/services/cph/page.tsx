@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Smartphone } from "lucide-react";
 
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function CphPage() {
-  const result = await withCloudResult<CphServer[]>([], listCphServers, "listCphServers");
+  const result = await withCloudResult<CphServer[]>([], listCphServers, cloudCacheKeys.listCphServers);
   const servers = result.data;
   const phones = servers.reduce((total, server) => total + server.phoneCount, 0);
   const publicServers = servers.filter((server) => server.publicIp !== "-").length;

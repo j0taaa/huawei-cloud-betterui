@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Activity } from "lucide-react";
 
@@ -23,7 +24,7 @@ function alarmTone(alarm: CesAlarmRule) {
 }
 
 export default async function CesPage() {
-  const result = await withCloudResult<CesAlarmRule[]>([], listCesAlarmRules, "listCesAlarmRules");
+  const result = await withCloudResult<CesAlarmRule[]>([], listCesAlarmRules, cloudCacheKeys.listCesAlarmRules);
   const alarms = result.data;
   const enabled = alarms.filter((alarm) => alarm.enabled !== false).length;
   const firing = alarms.filter((alarm) => alarm.status.toLowerCase().includes("alarm")).length;

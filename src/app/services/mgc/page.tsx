@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Route } from "lucide-react";
 
@@ -22,7 +23,7 @@ function statusTone(status: string) {
 }
 
 export default async function MgcPage() {
-  const result = await withCloudResult<MgcMigrationItem[]>([], listMgcMigrationItems);
+  const result = await withCloudResult<MgcMigrationItem[]>([], listMgcMigrationItems, cloudCacheKeys.listMgcMigrationItems);
   const items = result.data;
   const active = items.filter((item) => ["running", "syncing", "migrating", "creating", "100"].includes(item.status.toLowerCase())).length;
   const failures = items.filter((item) => item.status.toLowerCase().includes("fail") || item.status === "300" || item.status === "303").length;

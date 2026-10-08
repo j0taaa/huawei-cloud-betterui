@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Store } from "lucide-react";
 
@@ -35,7 +36,7 @@ const columns: InventoryColumn<KooGalleryPurchasedApi>[] = [
 ];
 
 export default async function KooGalleryPage() {
-  const result = await withCloudResult<KooGalleryPurchasedApi[]>([], listKooGalleryPurchasedApis);
+  const result = await withCloudResult<KooGalleryPurchasedApi[]>([], listKooGalleryPurchasedApis, cloudCacheKeys.listKooGalleryPurchasedApis);
   const apis = result.data;
 
   return (

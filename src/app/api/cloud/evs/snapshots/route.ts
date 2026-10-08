@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import { NextResponse } from "next/server";
 
 import { getCurrentSession } from "@/lib/auth-session";
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
     );
 
     if (typeof body.ecsId === "string") {
-      await invalidateCloudResult(session, `ecs-snapshots:${body.ecsId}`);
+      await invalidateCloudResult(session, cloudCacheKeys.ecsSnapshots(body.ecsId));
     }
 
     return NextResponse.json({
@@ -85,7 +86,7 @@ export async function DELETE(request: Request) {
     );
 
     if (typeof body.ecsId === "string") {
-      await invalidateCloudResult(session, `ecs-snapshots:${body.ecsId}`);
+      await invalidateCloudResult(session, cloudCacheKeys.ecsSnapshots(body.ecsId));
     }
 
     return NextResponse.json({ ok: true });

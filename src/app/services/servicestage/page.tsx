@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Boxes } from "lucide-react";
 
@@ -35,7 +36,7 @@ const columns: InventoryColumn<ServiceStageApplication>[] = [
 ];
 
 export default async function ServiceStagePage() {
-  const result = await withCloudResult<ServiceStageApplication[]>([], listServiceStageApplications);
+  const result = await withCloudResult<ServiceStageApplication[]>([], listServiceStageApplications, cloudCacheKeys.listServiceStageApplications);
   const applications = result.data;
   const components = applications.reduce((total, application) => total + application.componentCount, 0);
 

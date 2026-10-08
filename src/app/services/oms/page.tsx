@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Box } from "lucide-react";
 
@@ -20,7 +21,7 @@ function statusTone(status: string) {
 }
 
 export default async function OmsPage() {
-  const result = await withCloudResult<OmsMigrationTask[]>([], listOmsMigrationTasks);
+  const result = await withCloudResult<OmsMigrationTask[]>([], listOmsMigrationTasks, cloudCacheKeys.listOmsMigrationTasks);
   const tasks = result.data;
   const failedObjects = tasks.reduce((total, task) => total + task.failedObjects, 0);
   const clouds = new Set(tasks.map((task) => task.sourceCloud).filter((cloud) => cloud !== "-"));

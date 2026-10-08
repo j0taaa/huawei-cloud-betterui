@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { FolderTree } from "lucide-react";
 
@@ -22,7 +23,7 @@ function statusTone(status: string) {
 }
 
 export default async function DataArtsPage() {
-  const result = await withCloudResult<DataArtsInstance[]>([], listDataArtsInstances);
+  const result = await withCloudResult<DataArtsInstance[]>([], listDataArtsInstances, cloudCacheKeys.listDataArtsInstances);
   const instances = result.data;
   const healthy = instances.filter((instance) => ["running", "normal", "available", "active"].includes(instance.status.toLowerCase())).length;
   const workspaces = instances.reduce((total, instance) => total + instance.workspaceCount, 0);

@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { ShieldCheck } from "lucide-react";
 
@@ -112,7 +113,7 @@ export default async function VpnPage() {
   const result = await withCloudResult<VpnConnectionItem[]>(
     [],
     listVpnConnections,
-    "listVpnConnections",
+    cloudCacheKeys.listVpnConnections,
   );
   const connections = result.data;
   const active = connections.filter(

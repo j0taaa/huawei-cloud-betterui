@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Box, Database, UploadCloud } from "lucide-react";
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ObsPage() {
-  const result = await withCloudResult([], listObsBuckets);
+  const result = await withCloudResult([], listObsBuckets, cloudCacheKeys.listObsBuckets);
   const buckets = result.data;
 
   return (

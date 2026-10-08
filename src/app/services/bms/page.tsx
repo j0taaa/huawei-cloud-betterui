@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Server } from "lucide-react";
 
@@ -21,7 +22,7 @@ function serverTone(status: string) {
 }
 
 export default async function BmsPage() {
-  const result = await withCloudResult<BmsServer[]>([], listBmsServers);
+  const result = await withCloudResult<BmsServer[]>([], listBmsServers, cloudCacheKeys.listBmsServers);
   const servers = result.data;
   const active = servers.filter((server) => serverTone(server.status) === "good").length;
   const publicServers = servers.filter((server) => server.publicIp !== "-").length;

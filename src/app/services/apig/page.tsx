@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Waypoints } from "lucide-react";
 
@@ -7,7 +8,7 @@ import { listApigInstances, type ApigInstance, withCloudResult } from "@/lib/hua
 export const metadata: Metadata = { title: "APIG | Huawei Cloud Better UI" };
 
 export default async function ApigPage() {
-  const result = await withCloudResult<ApigInstance[]>([], listApigInstances);
+  const result = await withCloudResult<ApigInstance[]>([], listApigInstances, cloudCacheKeys.listApigInstances);
   const instances = result.data;
   const running = instances.filter((item) => item.status.toLowerCase().includes("running") || item.status.toLowerCase() === "available").length;
 

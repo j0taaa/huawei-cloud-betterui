@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Workflow } from "lucide-react";
 
@@ -43,7 +44,7 @@ const columns: InventoryColumn<CodeArtsPipelineItem>[] = [
 ];
 
 export default async function CodeArtsPipelinePage() {
-  const result = await withCloudResult<CodeArtsPipelineItem[]>([], listCodeArtsPipelines);
+  const result = await withCloudResult<CodeArtsPipelineItem[]>([], listCodeArtsPipelines, cloudCacheKeys.listCodeArtsPipelines);
   const pipelines = result.data;
   const unhealthy = pipelines.filter((pipeline) => statusTone(pipeline.status) === "bad").length;
 

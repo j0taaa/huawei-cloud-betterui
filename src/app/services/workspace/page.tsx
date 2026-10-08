@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Monitor } from "lucide-react";
 
@@ -13,7 +14,7 @@ function accessTone(tenant: WorkspaceTenant) {
 }
 
 export default async function WorkspacePage() {
-  const result = await withCloudResult<WorkspaceTenant[]>([], listWorkspaceTenants, "listWorkspaceTenants");
+  const result = await withCloudResult<WorkspaceTenant[]>([], listWorkspaceTenants, cloudCacheKeys.listWorkspaceTenants);
   const tenants = result.data;
   const subscribed = tenants.filter((tenant) => tenant.status.toLowerCase().includes("subscribed")).length;
   const internetAccess = tenants.filter((tenant) => tenant.accessMode.toLowerCase().includes("internet")).length;

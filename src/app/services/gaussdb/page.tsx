@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Database } from "lucide-react";
 
@@ -25,7 +26,7 @@ function statusTone(status: string) {
 }
 
 export default async function GaussDbPage() {
-  const result = await withCloudResult<GaussDbInstance[]>([], listGaussDbInstances);
+  const result = await withCloudResult<GaussDbInstance[]>([], listGaussDbInstances, cloudCacheKeys.listGaussDbInstances);
   const instances = result.data;
   const healthy = instances.filter((instance) =>
     ["normal", "available", "active", "running"].includes(instance.status.toLowerCase()),

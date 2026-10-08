@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Route } from "lucide-react";
 
@@ -25,7 +26,7 @@ function statusTone(status: string) {
 }
 
 export default async function EnterpriseRouterPage() {
-  const result = await withCloudResult<EnterpriseRouter[]>([], listEnterpriseRouters);
+  const result = await withCloudResult<EnterpriseRouter[]>([], listEnterpriseRouters, cloudCacheKeys.listEnterpriseRouters);
   const routers = result.data;
   const available = routers.filter((router) => statusTone(router.status) === "good").length;
   const sharedAutoAccept = routers.filter(

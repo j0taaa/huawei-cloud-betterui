@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { ArchiveRestore } from "lucide-react";
 
@@ -22,7 +23,7 @@ function statusTone(status: string) {
 }
 
 export default async function SdrsPage() {
-  const result = await withCloudResult<SdrsProtectedInstance[]>([], listSdrsProtectedInstances);
+  const result = await withCloudResult<SdrsProtectedInstance[]>([], listSdrsProtectedInstances, cloudCacheKeys.listSdrsProtectedInstances);
   const instances = result.data;
   const protectedCount = instances.filter((item) => ["protected", "available"].includes(item.status.toLowerCase())).length;
   const groups = new Set(instances.map((item) => item.protectionGroupId).filter((id) => id !== "-"));

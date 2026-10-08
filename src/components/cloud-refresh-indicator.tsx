@@ -12,11 +12,11 @@ export function CloudRefreshIndicator({ show }: { show: boolean }) {
       return;
     }
 
-    const timeout = window.setTimeout(() => {
+    const timeout = window.setInterval(() => {
       router.refresh();
     }, 1500);
 
-    return () => window.clearTimeout(timeout);
+    return () => window.clearInterval(timeout);
   }, [router, show]);
 
   if (!show) {

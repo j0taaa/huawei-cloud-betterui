@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { KeyRound } from "lucide-react";
 
@@ -61,7 +62,7 @@ function passwordLabel(passwordExpiresAt: string) {
 }
 
 export default async function IamPage() {
-  const result = await withCloudResult<IamUser[]>([], listIamUsers, "listIamUsers");
+  const result = await withCloudResult<IamUser[]>([], listIamUsers, cloudCacheKeys.listIamUsers);
   const users = result.data;
   const enabled = users.filter((user) => user.enabled.toLowerCase() === "true").length;
   const disabled = users.length - enabled;

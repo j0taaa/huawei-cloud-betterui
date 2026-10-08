@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Database, DatabaseBackup, Plus } from "lucide-react";
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 export default async function RdsPage() {
-  const result = await withCloudResult([], listRdsInstances);
+  const result = await withCloudResult([], listRdsInstances, cloudCacheKeys.listRdsInstances);
   const instances = result.data;
 
   return (

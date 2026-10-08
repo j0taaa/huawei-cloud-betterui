@@ -1,0 +1,160 @@
+import "server-only";
+
+export type ServiceKey =
+  | "apig"
+  | "as"
+  | "bss"
+  | "bms"
+  | "cbr"
+  | "cbh"
+  | "cdm"
+  | "cdn"
+  | "cce"
+  | "ces"
+  | "cci"
+  | "cfw"
+  | "codeartsbuild"
+  | "codeartsdeploy"
+  | "codeartspipeline"
+  | "codeartsrepo"
+  | "cph"
+  | "cts"
+  | "dataarts"
+  | "dcs"
+  | "dds"
+  | "dc"
+  | "deh"
+  | "dew"
+  | "dms"
+  | "dns"
+  | "drs"
+  | "ecs"
+  | "eg"
+  | "eip"
+  | "elb"
+  | "er"
+  | "evs"
+  | "fg"
+  | "flexus"
+  | "gaussdb"
+  | "geminidb"
+  | "hss"
+  | "ims"
+  | "lts"
+  | "modelarts"
+  | "oms"
+  | "nat"
+  | "iotda"
+  | "dli"
+  | "dws"
+  | "css"
+  | "mrs"
+  | "rds"
+  | "secmaster"
+  | "sfs"
+  | "swr"
+  | "smn"
+  | "sms"
+  | "sdrs"
+  | "servicestage"
+  | "taurusdb"
+  | "vpn"
+  | "vpcep"
+  | "waf"
+  | "workspace"
+  | "vpc";
+
+export const endpointEnv: Record<ServiceKey, string> = {
+  apig: "HUAWEI_APIG_ENDPOINT",
+  as: "HUAWEI_AS_ENDPOINT",
+  bss: "HUAWEI_BSS_ENDPOINT",
+  bms: "HUAWEI_BMS_ENDPOINT",
+  cbr: "HUAWEI_CBR_ENDPOINT",
+  cbh: "HUAWEI_CBH_ENDPOINT",
+  cdm: "HUAWEI_CDM_ENDPOINT",
+  cdn: "HUAWEI_CDN_ENDPOINT",
+  cce: "HUAWEI_CCE_ENDPOINT",
+  ces: "HUAWEI_CES_ENDPOINT",
+  cci: "HUAWEI_CCI_ENDPOINT",
+  cfw: "HUAWEI_CFW_ENDPOINT",
+  codeartsbuild: "HUAWEI_CODEARTS_BUILD_ENDPOINT",
+  codeartsdeploy: "HUAWEI_CODEARTS_DEPLOY_ENDPOINT",
+  codeartspipeline: "HUAWEI_CODEARTS_PIPELINE_ENDPOINT",
+  codeartsrepo: "HUAWEI_CODEARTS_REPO_ENDPOINT",
+  cph: "HUAWEI_CPH_ENDPOINT",
+  cts: "HUAWEI_CTS_ENDPOINT",
+  dataarts: "HUAWEI_DATAARTS_ENDPOINT",
+  dcs: "HUAWEI_DCS_ENDPOINT",
+  dds: "HUAWEI_DDS_ENDPOINT",
+  dc: "HUAWEI_DIRECT_CONNECT_ENDPOINT",
+  deh: "HUAWEI_DEH_ENDPOINT",
+  dew: "HUAWEI_DEW_ENDPOINT",
+  dms: "HUAWEI_DMS_ENDPOINT",
+  dns: "HUAWEI_DNS_ENDPOINT",
+  drs: "HUAWEI_DRS_ENDPOINT",
+  ecs: "HUAWEI_ECS_ENDPOINT",
+  eg: "HUAWEI_EVENTGRID_ENDPOINT",
+  eip: "HUAWEI_EIP_ENDPOINT",
+  elb: "HUAWEI_ELB_ENDPOINT",
+  er: "HUAWEI_ENTERPRISE_ROUTER_ENDPOINT",
+  evs: "HUAWEI_EVS_ENDPOINT",
+  fg: "HUAWEI_FUNCTIONGRAPH_ENDPOINT",
+  flexus: "HUAWEI_FLEXUS_ENDPOINT",
+  gaussdb: "HUAWEI_GAUSSDB_ENDPOINT",
+  geminidb: "HUAWEI_GEMINIDB_ENDPOINT",
+  hss: "HUAWEI_HSS_ENDPOINT",
+  ims: "HUAWEI_IMS_ENDPOINT",
+  lts: "HUAWEI_LTS_ENDPOINT",
+  modelarts: "HUAWEI_MODELARTS_ENDPOINT",
+  oms: "HUAWEI_OMS_ENDPOINT",
+  nat: "HUAWEI_NAT_ENDPOINT",
+  iotda: "HUAWEI_IOTDA_ENDPOINT",
+  dli: "HUAWEI_DLI_ENDPOINT",
+  dws: "HUAWEI_DWS_ENDPOINT",
+  css: "HUAWEI_CSS_ENDPOINT",
+  mrs: "HUAWEI_MRS_ENDPOINT",
+  rds: "HUAWEI_RDS_ENDPOINT",
+  secmaster: "HUAWEI_SECMASTER_ENDPOINT",
+  sfs: "HUAWEI_SFS_ENDPOINT",
+  swr: "HUAWEI_SWR_ENDPOINT",
+  smn: "HUAWEI_SMN_ENDPOINT",
+  sms: "HUAWEI_SMS_ENDPOINT",
+  sdrs: "HUAWEI_SDRS_ENDPOINT",
+  servicestage: "HUAWEI_SERVICESTAGE_ENDPOINT",
+  taurusdb: "HUAWEI_TAURUSDB_ENDPOINT",
+  vpn: "HUAWEI_VPN_ENDPOINT",
+  vpcep: "HUAWEI_VPCEP_ENDPOINT",
+  waf: "HUAWEI_WAF_ENDPOINT",
+  workspace: "HUAWEI_WORKSPACE_ENDPOINT",
+  vpc: "HUAWEI_VPC_ENDPOINT",
+};
+
+export function serviceEndpoint(service: ServiceKey, region: string) {
+  const globalServiceEndpoint: Partial<Record<ServiceKey, string>> = {
+    bss: "https://bss-intl.myhuaweicloud.com",
+    cdn: "https://cdn.myhuaweicloud.com",
+    dns: "https://dns.myhuaweicloud.com",
+  };
+  const regionalServiceHost: Partial<Record<ServiceKey, string>> = {
+    codeartsbuild: "cloudbuild-ext",
+    codeartsdeploy: "codeartsdeploy",
+    codeartspipeline: "codeartspipeline",
+    codeartsrepo: "codeartsrepo",
+    dc: "dc",
+    dataarts: "dataartsstudio",
+    eg: "eg",
+    fg: "functiongraph",
+    flexus: "rms",
+    gaussdb: "gaussdb-opengauss",
+    geminidb: "gaussdb-nosql",
+    vpcep: "vpcep",
+    taurusdb: "gaussdb-mysql",
+  };
+  const defaultService = regionalServiceHost[service] ?? service;
+
+  return (
+    process.env[endpointEnv[service]] ??
+    globalServiceEndpoint[service] ??
+    `https://${defaultService}.${region}.myhuaweicloud.com`
+  ).replace(/\/+$/, "");
+}

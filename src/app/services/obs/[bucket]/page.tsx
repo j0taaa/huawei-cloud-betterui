@@ -1,3 +1,5 @@
+import { CloudErrorPage } from "@/components/cloud-error";
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Box, FileText, Folder } from "lucide-react";
@@ -19,8 +21,9 @@ export default async function ObsBucketPage({
   const result = await withCloudResult<ObsBucketDetail | null>(
     null,
     (session) => getObsBucket(session, bucket),
-    `obs-bucket:${bucket}`,
+    cloudCacheKeys.obsBucket(bucket),
   );
+  if (!result.data && result.error) return <CloudErrorPage active="Storage" backHref="/services/obs" error={result.error} />;
   const detail = result.data;
 
   if (!detail) {
@@ -80,7 +83,7 @@ export default async function ObsBucketPage({
           <div className="border-b border-[#e4e9f2] p-5">
             <h2 className="text-lg font-black">Objects</h2>
             <p className="mt-1 text-sm font-medium text-[#667085]">
-              Showing the first 1,000 objects returned by OBS{detail.isTruncated ? "; more objects exist" : ""}.
+              Showing {detail.objects.length} objects returned by OBS.
             </p>
           </div>
           {detail.objects.length ? (

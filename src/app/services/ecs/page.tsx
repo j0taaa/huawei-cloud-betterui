@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Plus, Server, TerminalSquare } from "lucide-react";
@@ -24,7 +25,7 @@ const statusClasses: Record<string, string> = {
 };
 
 export default async function EcsPage() {
-  const result = await withCloudResult([], listEcsInstances);
+  const result = await withCloudResult([], listEcsInstances, cloudCacheKeys.listEcsInstances);
   const instances = result.data;
 
   return (

@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { ShieldAlert } from "lucide-react";
 
@@ -8,54 +9,30 @@ import {
   StatStrip,
   StatusPill,
 } from "@/app/services/_components/governance-readonly";
-import type { BetterUiSession } from "@/lib/auth-session";
-import * as huaweiCloud from "@/lib/huawei-cloud";
-import { withCloudResult } from "@/lib/huawei-cloud";
+import {
+  withCloudResult,
+  listWafInstances,
+  type WafInstance,
+} from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
   title: "WAF | Huawei Cloud Better UI",
-  description: "Read-only Web Application Firewall protected host and policy posture.",
+  description:
+    "Read-only Web Application Firewall protected host and policy posture.",
 };
-
-type WafInstance = {
-  accessCode?: string;
-  accessStatus?: string;
-  action?: string;
-  createdAt?: string;
-  hostname?: string;
-  id?: string;
-  mode?: string;
-  policyId?: string;
-  policyLevel?: string;
-  policyName?: string;
-  projectId?: string;
-  projectName?: string;
-  protectStatus?: string;
-  protectedFeatures?: string[];
-  proxy?: string;
-  region?: string;
-  serverCount?: number;
-};
-
-type ListWafInstances = (session: BetterUiSession) => Promise<WafInstance[]>;
-
-const listWafInstances =
-  (huaweiCloud as typeof huaweiCloud & { listWafInstances?: ListWafInstances })
-    .listWafInstances ??
-  (async () => {
-    throw new Error(
-      "listWafInstances is not exported from @/lib/huawei-cloud yet.",
-    );
-  });
 
 function hostAction(instance: WafInstance) {
-  return instance.action || instance.protectStatus || instance.accessStatus || "Unknown";
+  return instance.protectStatus || instance.accessStatus || "Unknown";
 }
 
 function statusIntent(value: string) {
   const normalized = value.toLowerCase();
 
-  if (normalized === "block" || normalized === "enabled" || normalized === "1") {
+  if (
+    normalized === "block" ||
+    normalized === "enabled" ||
+    normalized === "1"
+  ) {
     return "good";
   }
 
@@ -66,45 +43,20 @@ function statusIntent(value: string) {
   return "muted";
 }
 
-function levelIntent(level: string) {
-  const normalized = level.toLowerCase();
-
-  if (normalized === "strict" || normalized === "3") {
-    return "good";
-  }
-
-  if (normalized === "medium" || normalized === "2") {
-    return "info";
-  }
-
-  if (normalized === "low" || normalized === "1") {
-    return "warn";
-  }
-
-  return "muted";
-}
-
-function enabledFeatureCount(instance: WafInstance) {
-  return (instance.protectedFeatures ?? []).filter(Boolean).length;
-}
-
 export default async function WafPage() {
   const result = await withCloudResult<WafInstance[]>(
     [],
     listWafInstances,
-    "listWafInstances",
+    cloudCacheKeys.listWafInstances,
   );
   const instances = result.data;
   const protectedHosts = instances.filter((instance) => {
-    const value = (instance.protectStatus || instance.accessStatus || "").toLowerCase();
+    const value = (
+      instance.protectStatus ||
+      instance.accessStatus ||
+      ""
+    ).toLowerCase();
     return value === "1" || value === "enabled";
-  }).length;
-  const blocking = instances.filter(
-    (instance) => hostAction(instance).toLowerCase() === "block",
-  ).length;
-  const strict = instances.filter((instance) => {
-    const level = (instance.policyLevel ?? "").toLowerCase();
-    return level === "strict" || level === "3";
   }).length;
   const policies = new Set(
     instances.map((instance) => instance.policyId).filter(Boolean),
@@ -124,9 +76,22 @@ export default async function WafPage() {
       <StatStrip
         items={[
           { label: "Protected hosts", value: instances.length, tone: "info" },
-          { label: "Protection on", value: protectedHosts, tone: protectedHosts === instances.length ? "good" : "warn" },
-          { label: "Blocking policies", value: blocking || "Not returned", tone: blocking ? "good" : "warn" },
-          { label: "Bound policies", value: policies, tone: policies ? "good" : "warn" },
+          {
+            label: "Protection on",
+            value: protectedHosts,
+            tone: protectedHosts === instances.length ? "good" : "warn",
+          },
+          {
+            label: "Projects",
+            value: new Set(instances.map((instance) => instance.projectId))
+              .size,
+            tone: "info",
+          },
+          {
+            label: "Bound policies",
+            value: policies,
+            tone: policies ? "good" : "warn",
+          },
         ]}
       />
 
@@ -149,7 +114,6 @@ export default async function WafPage() {
                   <th className="px-5 py-3">Host</th>
                   <th className="px-5 py-3">Protection</th>
                   <th className="px-5 py-3">Policy</th>
-                  <th className="px-5 py-3">Controls</th>
                   <th className="px-5 py-3">Origin path</th>
                   <th className="px-5 py-3">Project</th>
                 </tr>
@@ -180,36 +144,19 @@ export default async function WafPage() {
                       </p>
                     </td>
                     <td className="px-5 py-4 align-top">
-                      <p className="font-black">{instance.policyName || "Policy ID"}</p>
+                      <p className="font-black">Policy ID</p>
                       <p className="mt-1 break-all text-xs font-semibold text-[#98a2b3]">
                         {instance.policyId || "-"}
-                      </p>
-                      <div className="mt-2">
-                        <StatusPill intent={levelIntent(instance.policyLevel ?? "")}>
-                          Level {instance.policyLevel || "not returned"}
-                        </StatusPill>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 align-top">
-                      <p className="font-black">
-                        {enabledFeatureCount(instance)} controls enabled
-                      </p>
-                      <p className="mt-1 max-w-sm text-xs font-semibold leading-5 text-[#667085]">
-                        {instance.protectedFeatures?.length
-                          ? instance.protectedFeatures.join(", ")
-                          : "Policy option details not returned by loader"}
                       </p>
                     </td>
                     <td className="px-5 py-4 align-top">
                       <p className="font-semibold">
                         Proxy {instance.proxy || "-"}
                       </p>
-                      <p className="mt-1 text-xs font-semibold text-[#667085]">
-                        {instance.serverCount ?? "-"} origin servers · {instance.mode || "cloud"} mode
-                      </p>
                     </td>
                     <td className="px-5 py-4 align-top font-semibold">
-                      {instance.projectName || instance.projectId || "-"} · {instance.region || "-"}
+                      {instance.projectName || instance.projectId || "-"} ·{" "}
+                      {instance.region || "-"}
                     </td>
                   </tr>
                 ))}
@@ -223,12 +170,6 @@ export default async function WafPage() {
           />
         )}
       </section>
-
-      {strict === 0 && instances.length ? (
-        <section className="rounded-xl border border-[#fed7aa] bg-[#fff7ed] p-4 text-sm font-bold text-[#c2410c]">
-          No protected host reports a strict policy level. If the shared loader starts returning policy details, this view will surface strict, medium, and low posture per host.
-        </section>
-      ) : null}
     </GovernanceShell>
   );
 }

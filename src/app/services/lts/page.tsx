@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { ScrollText } from "lucide-react";
 
@@ -52,7 +53,7 @@ function createdAt(group: LtsLogGroup) {
 }
 
 export default async function LtsPage() {
-  const result = await withCloudResult<LtsLogGroup[]>([], listLtsLogGroups, "listLtsLogGroups");
+  const result = await withCloudResult<LtsLogGroup[]>([], listLtsLogGroups, cloudCacheKeys.listLtsLogGroups);
   const groups = result.data;
   const shortRetention = groups.filter((group) => {
     const ttl = ttlNumber(group.ttlDays);

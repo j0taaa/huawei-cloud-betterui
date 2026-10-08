@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Router } from "lucide-react";
 
@@ -89,7 +90,7 @@ export default async function NatPage() {
   const result = await withCloudResult<NatGatewayItem[]>(
     [],
     listNatGateways,
-    "listNatGateways",
+    cloudCacheKeys.listNatGateways,
   );
   const gateways = result.data;
   const active = gateways.filter((gateway) =>

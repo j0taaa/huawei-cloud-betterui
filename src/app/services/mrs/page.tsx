@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Layers3 } from "lucide-react";
 
@@ -21,7 +22,7 @@ function statusTone(status: string) {
 }
 
 export default async function MrsPage() {
-  const result = await withCloudResult<MrsCluster[]>([], listMrsClusters);
+  const result = await withCloudResult<MrsCluster[]>([], listMrsClusters, cloudCacheKeys.listMrsClusters);
   const clusters = result.data;
   const running = clusters.filter((cluster) => cluster.status.toLowerCase() === "running").length;
   const nodes = clusters.reduce((total, cluster) => total + cluster.totalNodes, 0);

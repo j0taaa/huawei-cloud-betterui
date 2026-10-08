@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { RadioTower } from "lucide-react";
 
@@ -43,7 +44,7 @@ const columns: InventoryColumn<IotdaDevice>[] = [
 ];
 
 export default async function IotdaPage() {
-  const result = await withCloudResult<IotdaDevice[]>([], listIotdaDevices);
+  const result = await withCloudResult<IotdaDevice[]>([], listIotdaDevices, cloudCacheKeys.listIotdaDevices);
   const devices = result.data;
   const online = devices.filter((device) => device.status.toLowerCase() === "online").length;
   const products = new Set(devices.map((device) => device.productId).filter((product) => product !== "-"));

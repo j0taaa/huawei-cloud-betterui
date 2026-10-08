@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Braces } from "lucide-react";
 
@@ -25,7 +26,7 @@ function statusTone(status: string) {
 }
 
 export default async function GeminiDbPage() {
-  const result = await withCloudResult<GeminiDbInstance[]>([], listGeminiDbInstances);
+  const result = await withCloudResult<GeminiDbInstance[]>([], listGeminiDbInstances, cloudCacheKeys.listGeminiDbInstances);
   const instances = result.data;
   const healthy = instances.filter((instance) =>
     ["normal", "available", "active", "running"].includes(instance.status.toLowerCase()),

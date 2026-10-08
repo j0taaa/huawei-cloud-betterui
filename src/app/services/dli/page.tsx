@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { DatabaseZap } from "lucide-react";
 
@@ -21,7 +22,7 @@ function statusTone(status: string) {
 }
 
 export default async function DliPage() {
-  const result = await withCloudResult<DliQueue[]>([], listDliQueues);
+  const result = await withCloudResult<DliQueue[]>([], listDliQueues, cloudCacheKeys.listDliQueues);
   const queues = result.data;
   const available = queues.filter((queue) =>
     ["available", "running", "normal"].includes(queue.status.toLowerCase()),

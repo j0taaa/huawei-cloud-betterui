@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Search } from "lucide-react";
 
@@ -21,7 +22,7 @@ function statusTone(status: string) {
 }
 
 export default async function CssPage() {
-  const result = await withCloudResult<CssCluster[]>([], listCssClusters);
+  const result = await withCloudResult<CssCluster[]>([], listCssClusters, cloudCacheKeys.listCssClusters);
   const clusters = result.data;
   const available = clusters.filter((cluster) =>
     ["available", "running", "200"].includes(cluster.status.toLowerCase()),

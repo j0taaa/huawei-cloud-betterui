@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { ShieldAlert } from "lucide-react";
 
@@ -21,7 +22,7 @@ function serviceTypeLabel(value: string) {
 }
 
 export default async function CfwPage() {
-  const result = await withCloudResult<CloudFirewall[]>([], listCloudFirewalls, "listCloudFirewalls");
+  const result = await withCloudResult<CloudFirewall[]>([], listCloudFirewalls, cloudCacheKeys.listCloudFirewalls);
   const firewalls = result.data;
   const protectedEips = firewalls.reduce((total, firewall) => total + firewall.eipCount, 0);
   const protectedVpcs = firewalls.reduce((total, firewall) => total + firewall.vpcCount, 0);

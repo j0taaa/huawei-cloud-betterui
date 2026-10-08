@@ -1,3 +1,4 @@
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { RadioTower } from "lucide-react";
 
@@ -7,7 +8,7 @@ import { listCdnDomains, type CdnDomain, withCloudResult } from "@/lib/huawei-cl
 export const metadata: Metadata = { title: "CDN | Huawei Cloud Better UI" };
 
 export default async function CdnPage() {
-  const result = await withCloudResult<CdnDomain[]>([], listCdnDomains);
+  const result = await withCloudResult<CdnDomain[]>([], listCdnDomains, cloudCacheKeys.listCdnDomains);
   const domains = result.data;
   const enabled = domains.filter((domain) => domain.status.toLowerCase().includes("online") || domain.status.toLowerCase() === "enabled").length;
 

@@ -1,3 +1,5 @@
+import { CloudErrorPage } from "@/components/cloud-error";
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Download, FileText } from "lucide-react";
@@ -7,7 +9,7 @@ import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
 import { ConsoleShell } from "@/components/console-shell";
 import { LocalDateTime } from "@/components/local-date-time";
 import { getObsObjectDetail, type ObsObjectDetail, withCloudResult } from "@/lib/huawei-cloud";
-import { Field, Preview } from "@/app/services/obs/[bucket]/objects/[...key]/page";
+import { Field, Preview } from "@/components/obs-object-detail";
 
 export default async function ObsObjectQueryPage({
   params,
@@ -26,8 +28,9 @@ export default async function ObsObjectQueryPage({
   const result = await withCloudResult<ObsObjectDetail | null>(
     null,
     (session) => getObsObjectDetail(session, bucket, key),
-    `obs-object:${bucket}:${key}`,
+    cloudCacheKeys.obsObject(bucket, key),
   );
+  if (!result.data && result.error) return <CloudErrorPage active="Storage" backHref="/services/obs" error={result.error} />;
   const object = result.data;
 
   if (!object) {
