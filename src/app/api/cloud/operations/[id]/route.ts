@@ -18,7 +18,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     if (!project && !adapter.accountWide) throw new ManagementInputError("The operation's project is no longer in this session.", 403);
     const selected = adapter.accountWide ? session : { ...session, ...project!, projects: [project!] };
     const outcome = await adapter.poll(selected, entry);
-    const next = { ...entry, state: outcome.state, message: outcome.message ?? entry.message, ...(outcome.resourceId ? { resultResourceId: outcome.resourceId, resourceId: entry.resourceId ?? outcome.resourceId } : {}), ...(outcome.state !== "submitted" ? { finishedAt: new Date().toISOString() } : {}) };
+    const next = { ...entry, ...(outcome.observedTask ? { observedTask: outcome.observedTask } : {}), state: outcome.state, message: outcome.message ?? entry.message, ...(outcome.resourceId ? { resultResourceId: outcome.resourceId, resourceId: entry.resourceId ?? outcome.resourceId } : {}), ...(outcome.state !== "submitted" ? { finishedAt: new Date().toISOString() } : {}) };
     await saveManagementHistory(session, next);
     if (outcome.state !== "submitted") await Promise.allSettled(adapter.invalidationKeys(entry.resourceId ? { id: entry.resourceId, name: entry.resourceName ?? entry.resourceId } : undefined).map((key) => invalidateCloudResult(session, key)));
     return Response.json({ entry: next, canRefresh: outcome.state === "submitted" });

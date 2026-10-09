@@ -9,6 +9,6 @@ export type ManagementAdapter = {
   inventory: (session: BetterUiSession) => Promise<ManagementResource[]>;
   options?: (session: BetterUiSession, operation: string, resource?: ManagementResource) => Promise<Record<string, ManagementChoice[]>>;
   execute: (session: BetterUiSession, operation: string, values: ManagementValues, resource?: ManagementResource) => Promise<ManagementOutcome>;
-  poll?: (session: BetterUiSession, entry: ManagementHistoryEntry) => Promise<{ state: "submitted" | "succeeded" | "failed"; message?: string; resourceId?: string }>;
+  poll?: (session: BetterUiSession, entry: ManagementHistoryEntry) => Promise<{ state: "submitted" | "succeeded" | "failed"; message?: string; resourceId?: string; observedTask?: string }>;
   invalidationKeys: (resource?: ManagementResource) => string[];
 };

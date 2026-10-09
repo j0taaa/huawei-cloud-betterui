@@ -1,4 +1,5 @@
 import "server-only";
+import { cbhManagement } from "./adapters/cbh";
 import { modelartsManagement } from "./adapters/modelarts";
 import { workspaceManagement } from "./adapters/workspace";
 import { packagesManagement } from "./adapters/packages";
@@ -69,6 +70,7 @@ import { sdrsManagement } from "./adapters/sdrs";
 import type { ManagementAdapter } from "./types";
 
 export const managementAdapters: Record<string, ManagementAdapter> = {
+  cbh: cbhManagement,
   modelarts: modelartsManagement,
   workspace: workspaceManagement,
   packages: packagesManagement,

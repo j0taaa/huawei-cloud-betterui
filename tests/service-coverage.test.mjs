@@ -369,7 +369,7 @@ test("security and workspace service loaders use read-only inventory endpoints",
       "POST",
       "/v1/${session.projectId}/firewalls/list?enterprise_project_id=all_granted_eps",
     ],
-    ["cbh", "GET", "/v2/${session.projectId}/cbs/instance/list"],
+    ["cbh", "GET", "/cbs/instance/list?limit=100"],
     ["workspace", "GET", "/v2/${session.projectId}/workspaces"],
     [
       "cph",

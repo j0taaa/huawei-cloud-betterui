@@ -309,10 +309,10 @@ test("CBH and ModelArts include later pages with their configured limits", async
       assert.equal(url.searchParams.get("limit"), String(size));
       offsets.push(url.searchParams.get("offset"));
       return Response.json({
-        ...(field === "data" ? { total: size + 1 } : {}),
+        total: size + 1,
         [field]: Array.from(
           { length: offsets.length === 1 ? size : 1 },
-          (_, i) => ({ id: `${offsets.length}-${i}` }),
+          (_, i) => field === "instance" ? { server_id: `${offsets.length}-${i}`, name: `Bastion ${offsets.length}-${i}` } : { id: `${offsets.length}-${i}` },
         ),
       });
     });

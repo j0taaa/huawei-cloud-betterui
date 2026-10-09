@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 function upgradeTone(instance: CbhInstance) {
   const value = upgradeState(instance).toLowerCase();
-  return value.includes("new") || value.includes("cross") ? "warn" : "good";
+  return value.includes("new") || value.includes("cross") ? "warn" : value === "old" ? "good" : "neutral";
 }
 
 function upgradeState(instance: CbhInstance) {
@@ -29,7 +29,7 @@ export default async function CbhPage() {
   return (
     <ServiceInventoryPage
       actionLabel="Create bastion"
-      actionTitle="CBH instance creation is disabled in this read-only view."
+      managementService="cbh"
       active="Security"
       backHref="/services/security"
       backLabel="Back to Security"

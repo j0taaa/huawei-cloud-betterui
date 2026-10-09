@@ -43,6 +43,7 @@ export type ManagementOutcome = {
   facts?: Array<{ label: string; value: string }>;
 };
 export type ManagementHistoryEntry = {
+  observedTask?: string;
   verification?: ManagementVerification;
   resultResourceId?: string;
   id: string;

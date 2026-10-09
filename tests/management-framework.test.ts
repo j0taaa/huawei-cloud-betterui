@@ -185,3 +185,26 @@ test("configuration observers survive saved history without retaining desired fo
   current = { ...current, description: desired };
   assert.equal((await managementAdapters.modelarts.poll!(session, saved)).state, "succeeded");
 });
+
+
+test("saved restart progress survives status refreshes without accepting old ready state", async t => {
+  const { GET } = await import("@/app/api/cloud/operations/[id]/route");
+  const requestId = randomUUID();
+  let task = "NO_TASK";
+  t.mock.method(globalThis, "fetch", async (_input: string, init: RequestInit) => {
+    if (init.method) return Response.json({});
+    return Response.json({ total: 1, instance: [{ server_id: "bastion-owned", name: "Bastion", status_info: { status: "ACTIVE", task_status: task } }] });
+  });
+  await runManagementOperation(session, "cbh", { operation: "reboot", requestId, resourceId: "bastion:bastion-owned", projectId: session.projectId, confirmName: "Bastion", acknowledgedImpact: true, values: { rebootType: "SOFT" } });
+  const signed = await createSession(session);
+  try {
+    const refresh = () => withSessionCookie(signed, () => GET(new Request(`http://localhost/api/cloud/operations/${requestId}`), { params: Promise.resolve({ id: requestId }) }));
+    let response = await refresh(); assert.equal(response.status, 200);
+    assert.equal((await response.json()).entry.state, "submitted");
+    task = "rebooting"; response = await refresh();
+    const pending = (await response.json()).entry; assert.equal(pending.observedTask, "rebooting");
+    assert.equal((await listManagementHistory(session, "cbh")).find(item => item.id === requestId)?.observedTask, "rebooting");
+    task = "NO_TASK"; response = await refresh();
+    assert.equal((await response.json()).entry.state, "succeeded");
+  } finally { await deleteSession(signed); }
+});
