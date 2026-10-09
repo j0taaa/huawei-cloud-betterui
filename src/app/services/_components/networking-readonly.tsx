@@ -9,6 +9,7 @@ import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
 import {
   ConsoleMain,
   ConsoleCallout,
+  ConsoleLinkButton,
   ConsolePageHeader,
   ConsoleResourceLink,
   ConsoleTablePanel,
@@ -86,6 +87,7 @@ export function ResourceLink({
 }
 
 export async function ReadonlyNetworkingPage({
+  actionHref,
   actionLabel,
   actionTitle,
   children,
@@ -95,8 +97,9 @@ export async function ReadonlyNetworkingPage({
   isRefreshing,
   title,
 }: {
+  actionHref?: string;
   actionLabel: string;
-  actionTitle: string;
+  actionTitle?: string;
   children: React.ReactNode;
   description: string;
   error: string | null;
@@ -111,10 +114,10 @@ export async function ReadonlyNetworkingPage({
         <ConsolePageHeader
           actions={
             <>
-            <DisabledCloudButton title={actionTitle}>
+            {actionHref ? <ConsoleLinkButton href={actionHref}><Plus className="size-4" />{actionLabel}</ConsoleLinkButton> : <DisabledCloudButton title={actionTitle ?? "This workflow is unavailable."}>
               <Plus className="size-4" />
               {actionLabel}
-            </DisabledCloudButton>
+            </DisabledCloudButton>}
             <RefreshButton />
             </>
           }

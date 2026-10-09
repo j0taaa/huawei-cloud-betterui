@@ -122,8 +122,8 @@ export default async function VpnPage() {
 
   return (
     <ReadonlyNetworkingPage
-      actionLabel="Create VPN"
-      actionTitle="VPN connection creation is intentionally not implemented in this read-only view."
+      actionHref="/services/vpn/manage?operation=create"
+      actionLabel="Create VPN gateway"
       description="Site-to-site VPN connection inventory with gateway, tunnel, and route context."
       error={result.error}
       icon={ShieldCheck}

@@ -26,6 +26,7 @@ const existingWorkflows: Record<string, string[]> = {
   "dms-kafka": ["Restart instance"],
 };
 const remainingAreas: Record<string, string[]> = {
+  vpn: ["ER attachment, IPv6/private gateways, GM certificates, and non-fixed peer modes", "Gateway specifications, policy templates, tags, P2C, NQA, monitors, logs, and peer configuration export", "Complete enterprise-project selection, quotas, pricing, and subscription workflows"],
   hss: ["Agent installation/upgrade/removal, complete enterprise-project support, and subscription orders", "Complete policy, vulnerability, baseline, ransomware, container, and application protection workflows", "Extended events/remediation, tags, monitoring, quotas, pricing, and scan submission correlation"],
   drs: ["Typed migration/synchronization/disaster-recovery provisioning and endpoint/object configuration", "Comparisons, mapping/filtering, bandwidth, users, parameter/driver management, tags, EIPs, and templates", "Subscription administration, complete health/monitoring workflows, quotas, and pricing"],
   "direct-connect": ["Physical circuit ordering and administration, hosted connections, global/ER gateways, and link aggregation", "BFD/NQA, QoS, complete routing and IPv6 enablement workflows", "Tags, quotas, monitoring, pricing, and billing"],
