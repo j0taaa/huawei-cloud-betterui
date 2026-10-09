@@ -26,6 +26,10 @@ const existingWorkflows: Record<string, string[]> = {
   "dms-kafka": ["Restart instance"],
 };
 const remainingAreas: Record<string, string[]> = {
+  cce: ["Workloads, Kubernetes RBAC, networking, storage classes, and application releases", "Cluster upgrades, node lifecycle, autoscaling, Turbo, and advanced addon configuration", "Public access, kubeconfigs, prepaid orders, quotas, pricing, logs, and metrics"],
+  oms: ["Task groups, synchronization, additional cloud sources, URL lists, and connectors", "Archive restore, encryption, notifications, and failed-object browsing", "Quotas, detailed metrics, pricing, and billing"],
+  dds: ["Sharded clusters, node expansion, AZ migration, and version upgrades", "Restore, parameter templates, SSL and public access configuration, roles, and recycle bin", "Audit and slow logs, metrics, tags, quotas, and subscription orders"],
+  apig: ["API editing, parameter mapping, additional authentication and backend types", "Consumers, grants, plugins, quotas, custom domains, certificates, and VPC channels", "Gateway scaling, prepaid orders, access logging, monitoring, pricing, and tags"],
   eventgrid: ["Cloud-service and message-broker sources; additional targets and connections", "Filters and target editing, transforms, dead-letter queues, and event schemas", "Cross-account channels, traces, metrics, pricing, and quotas"],
   dli: ["Elastic resource pools, Flink, and Spark batch jobs", "Databases, tables, data sources, catalogs, and permissions", "Billing, quotas, logs, and metrics"],
   secmaster: ["Alerts, incidents, investigations, and security dashboards", "Playbooks, workflows, collection, shipping, and indexes", "Edition purchases, protection settings, billing, and quotas"],

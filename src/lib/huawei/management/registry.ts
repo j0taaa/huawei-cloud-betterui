@@ -32,6 +32,10 @@ import { secmasterManagement } from "./adapters/secmaster";
 import { enterpriseRouterManagement } from "./adapters/enterprise-router";
 import { vpcEndpointManagement } from "./adapters/vpc-endpoint";
 import { eventgridManagement } from "./adapters/eventgrid";
+import { apigManagement } from "./adapters/apig";
+import { omsManagement } from "./adapters/oms";
+import { cceManagement } from "./adapters/cce";
+import { ddsManagement } from "./adapters/dds";
 import type { ManagementAdapter } from "./types";
 
 export const managementAdapters: Record<string, ManagementAdapter> = {
@@ -52,6 +56,10 @@ export const managementAdapters: Record<string, ManagementAdapter> = {
   "enterprise-router": enterpriseRouterManagement,
   "vpc-endpoint": vpcEndpointManagement,
   eventgrid: eventgridManagement,
+  apig: apigManagement,
+  oms: omsManagement,
+  dds: ddsManagement,
+  cce: cceManagement,
   ecs: ecsManagement,
   dew: dewManagement,
   cdn: cdnManagement,

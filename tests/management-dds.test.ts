@@ -11,9 +11,9 @@ const prepaidInstance = { id: "dds-pre", name: "Prepaid One", status: "normal", 
 const clusterInstance = { id: "dds-sh", name: "Cluster One", status: "normal", mode: "Sharding", datastore: { type: "DDS-Community", version: "4.0" }, db_user_name: "rwuser", pay_mode: "0", groups: [{ type: "shard", volume: { size: "20" }, nodes: [{ id: "node-4", name: "Cluster One_shard_1", status: "normal", role: "Primary", private_ip: "192.168.0.4", spec_code: "dds.mongodb.c6.medium.4.shard", availability_zone: "az-1" }] }] };
 const instances = [replicaInstance, singleInstance, prepaidInstance, clusterInstance];
 const backups = [
-  { id: "backup-manual", name: "Manual Backup", type: "Manual", status: "COMPLETED", begin_time: "2026-01-02 00:00:21", size: 1024 },
-  { id: "backup-auto", name: "Auto Backup", type: "Auto", status: "COMPLETED", begin_time: "2026-01-01 00:00:21", size: 2048 },
-  { id: "backup-building", name: "Building Backup", type: "Manual", status: "BUILDING", begin_time: "2026-01-03 00:00:21", size: 0 },
+  { id: "backup-manual", instance_id: "dds-1", name: "Manual Backup", type: "Manual", status: "COMPLETED", begin_time: "2026-01-02 00:00:21", size: 1024 },
+  { id: "backup-auto", instance_id: "dds-1", name: "Auto Backup", type: "Auto", status: "COMPLETED", begin_time: "2026-01-01 00:00:21", size: 2048 },
+  { id: "backup-building", instance_id: "dds-1", name: "Building Backup", type: "Manual", status: "BUILDING", begin_time: "2026-01-03 00:00:21", size: 0 },
 ];
 const dbUsers = [
   { user: "rwuser", db: "admin", roles: [{ role: "root", db: "admin" }] },
@@ -275,10 +275,9 @@ test("database user listing decodes the DDS JSON string payload", async (t) => {
   assert.ok(list.facts!.some((fact) => fact.label === "appuser @ admin" && fact.value.includes("readWrite@appdb")));
 });
 
-test("a malformed database user payload degrades to an empty list instead of guessing entries", async (t) => {
+test("a malformed database user payload blocks management instead of guessing entries", async (t) => {
   t.mock.method(globalThis, "fetch", async () => Response.json({ total_count: 1, users: "not-json" }));
-  const list = await ddsManagement.execute(session, "db-users", {}, replicaResource);
-  assert.equal(list.message, "0 database users loaded.");
+  await assert.rejects(ddsManagement.execute(session, "db-users", {}, replicaResource));
 });
 
 test("database user creation guards the administrator account, duplicates, and password rules", async (t) => {
@@ -336,9 +335,9 @@ test("maintenance window and security group updates use their native contracts",
 
 test("job polling maps native job states and surfaces the job's instance ID", async (t) => {
   const replies = [
-    { job: { status: "Completed", instance: { id: "dds-new", name: "Example" } } },
-    { job: { status: "Failed", instance: { id: "dds-1" }, fail_reason: "Insufficient quota" } },
-    { job: { status: "Running", instance: { id: "dds-1" } } },
+    { job: { id: "cloud-job", status: "Completed", instance: { id: "dds-new", name: "Example" } } },
+    { job: { id: "cloud-job", status: "Failed", instance: { id: "dds-1" }, fail_reason: "Insufficient quota" } },
+    { job: { id: "cloud-job", status: "Running", instance: { id: "dds-1" } } },
   ];
   let index = 0;
   t.mock.method(globalThis, "fetch", async (input: string) => { assert.equal(new URL(input).pathname + new URL(input).search, "/v3/project-1/jobs?id=cloud-job"); return Response.json(replies[index++]); });
@@ -368,4 +367,48 @@ test("unsupported operations fail closed without touching the cloud", async (t) 
   const writes = mockCloud(t);
   await assert.rejects(ddsManagement.execute(session, "attach-eip", {}, replicaResource), /Unsupported DDS operation/);
   assert.equal(writes.length, 0);
+});
+
+test("DDS user pagination decodes native JSON pages and refuses incomplete or malformed lists", async (t) => {
+  const offsets: string[] = [];
+  let malformed = false;
+  t.mock.method(globalThis, "fetch", async (input: string) => {
+    const url = new URL(input); const offset = url.searchParams.get("offset") ?? "0";
+    offsets.push(offset);
+    return Response.json({ users: malformed ? "invalid-json" : JSON.stringify(Array.from({ length: offset === "0" ? 100 : 1 }, (_, i) => ({ user: `user${Number(offset) + i}`, db: "admin", roles: [] }))), total_count: 101 });
+  });
+  const result = await ddsManagement.execute(session, "db-users", {}, replicaResource);
+  assert.equal(result.facts?.length, 101); assert.deepEqual(offsets, ["0", "100"]);
+  malformed = true;
+  await assert.rejects(ddsManagement.execute(session, "db-users", {}, replicaResource));
+});
+
+test("DDS never deletes a backup belonging to another instance even if the provider ignores its filter", async (t) => {
+  t.mock.method(globalThis, "fetch", async (_input: string, init: RequestInit) => {
+    assert.ok(!init.method);
+    return Response.json({ backups: [{ id: "foreign", instance_id: "other", type: "Manual", status: "COMPLETED" }], total_count: 1 });
+  });
+  assert.deepEqual((await ddsManagement.options!(session, "delete-backup", replicaResource)).backups, []);
+  await assert.rejects(ddsManagement.execute(session, "delete-backup", { backup: "foreign" }, replicaResource), /Select a manual backup/);
+});
+
+test("DDS resize rejects a specification unavailable for any current node zone or engine version", async (t) => {
+  let incompatibleVersion = false;
+  t.mock.method(globalThis, "fetch", async (input: string, init: RequestInit) => {
+    assert.ok(!init.method); const url = new URL(input);
+    if (url.pathname.endsWith("/flavors")) return Response.json({ flavors: [{ ...flavors[0], engine_versions: incompatibleVersion ? ["5.0"] : ["4.0"], az_status: { "az-1": "normal", "az-2": "sellout" } }] });
+    return Response.json({ instances: [{ ...replicaInstance, groups: [{ ...replicaInstance.groups[0], nodes: [{ ...replicaInstance.groups[0].nodes[0], availability_zone: incompatibleVersion ? "az-1" : "az-2" }] }] }] });
+  });
+  assert.deepEqual((await ddsManagement.options!(session, "resize-flavor", replicaResource)).resizeOfferings, []);
+  await assert.rejects(ddsManagement.execute(session, "resize-flavor", { offering: flavors[0].spec_code }, replicaResource), /no longer available/);
+  incompatibleVersion = true;
+  await assert.rejects(ddsManagement.execute(session, "resize-flavor", { offering: flavors[0].spec_code }, replicaResource), /no longer available/);
+});
+
+test("DDS native jobs must match the stored job and instance", async (t) => {
+  let wrongJob = true;
+  t.mock.method(globalThis, "fetch", async () => Response.json({ job: { id: wrongJob ? "other" : "cloud-job", status: "Completed", instance: { id: "other-instance" } } }));
+  const entry: ManagementHistoryEntry = { id: randomUUID(), service: "dds", operation: "Restart instance", startedAt: new Date().toISOString(), state: "submitted", jobId: "cloud-job", resourceId: "dds-1" };
+  await assert.rejects(ddsManagement.poll!(session, entry), /different DDS job/);
+  wrongJob = false; await assert.rejects(ddsManagement.poll!(session, entry), /does not belong/);
 });

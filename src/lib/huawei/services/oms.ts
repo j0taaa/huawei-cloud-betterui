@@ -39,7 +39,7 @@ export async function listOmsMigrationTasksForProject(
       kind: "offset",
       parameter: "offset",
       size: 100,
-      total: ["total_count", "total", "data.total", "result.total"],
+      total: ["count", "total_count", "total", "data.total", "result.total"],
     },
   );
 

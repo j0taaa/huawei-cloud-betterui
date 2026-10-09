@@ -69,14 +69,15 @@ async function storageRows(session: BetterUiSession) {
 
 async function backupRows(session: BetterUiSession, instanceId: string) {
   const body = await huaweiList<Record<string, unknown>>(session, "dds", `/v3/${session.projectId}/backups?${new URLSearchParams({ instance_id: instanceId, offset: "0", limit: "100" })}`, { items: ["backups"], kind: "offset", parameter: "offset", size: 100, total: ["total_count"] });
-  return asArray(body.backups).map(asRecord);
+  return asArray(body.backups).map(asRecord).filter(row => row.instance_id === instanceId);
 }
 
 type DbUserRow = { user: string; db: string; roles: string[] };
 
 function parseUserPage(raw: unknown) {
   const parsed: unknown = typeof raw === "string" ? (JSON.parse(raw) as unknown) : raw;
-  return asArray(parsed).map(asRecord).map((user) => ({
+  if (!Array.isArray(parsed)) throw new Error("Huawei returned an invalid database user list.");
+  return parsed.map(asRecord).map((user) => ({
     user: firstString([user.user, user.name], ""),
     db: firstString([user.db], "admin"),
     roles: asArray(user.roles).map(asRecord).map((role) => `${firstString([role.role], "-")}@${firstString([role.db], "-")}`),
@@ -86,15 +87,16 @@ function parseUserPage(raw: unknown) {
 async function dbUserRows(session: BetterUiSession, instanceId: string) {
   const path = `/v3/${session.projectId}/instances/${encodeURIComponent(instanceId)}/db-user/detail`;
   const users: DbUserRow[] = [];
-  for (let offset = 0; offset < 1000; offset += 100) {
+  for (let offset = 0; offset < 10000; offset += 100) {
     const body = await huaweiFetch<Record<string, unknown>>(session, "dds", `${path}?${new URLSearchParams({ offset: String(offset), limit: "100" })}`);
-    let page: DbUserRow[] = [];
-    try { page = parseUserPage(body.users); } catch { page = []; }
-    users.push(...page);
+    const page = parseUserPage(body.users);
     const total = Number(body.total_count);
-    if (!page.length || !Number.isFinite(total) || users.length >= total) break;
+    if (!Number.isSafeInteger(total) || total < 0 || page.length > 100) throw new Error("Huawei returned an invalid database user count.");
+    if (!page.length && offset < total) throw new Error("Huawei returned an incomplete database user list.");
+    users.push(...page);
+    if (offset + page.length >= total) return users;
   }
-  return users;
+  throw new Error("The database user list exceeds the supported page limit. No user mutation was performed.");
 }
 
 function modeOf(record: Record<string, unknown>) {
@@ -102,7 +104,7 @@ function modeOf(record: Record<string, unknown>) {
 }
 
 function assertPayPerUse(record: Record<string, unknown>) {
-  if (firstString([record.pay_mode], "") !== "0") throw new ManagementInputError("This operation supports pay-per-use instances only. Prepaid instances require a subscription order workflow.", 409);
+  if (String(record.pay_mode) !== "0") throw new ManagementInputError("This operation supports pay-per-use instances only. Prepaid instances require a subscription order workflow.", 409);
 }
 
 function assertReplicaOrSingle(record: Record<string, unknown>) {
@@ -113,6 +115,13 @@ function currentSpec(record: Record<string, unknown>) {
   const group = asRecord(asArray(record.groups)[0]);
   const node = asRecord(asArray(group.nodes)[0]);
   return firstString([node.spec_code, record.flavor_ref], "");
+}
+
+function compatibleFlavor(record: Record<string, unknown>, flavor: Awaited<ReturnType<typeof flavorRows>>[number]) {
+  const version = firstString([asRecord(record.datastore).version], "");
+  const nodes = asArray(record.groups).map(asRecord).flatMap(group => asArray(group.nodes).map(asRecord));
+  const zones = [...new Set(nodes.map(node => firstString([node.availability_zone], "")))];
+  return Boolean(version && zones.length && zones.every(zone => zone && flavor.azStatus[zone] === "normal") && flavor.engineVersions.includes(version));
 }
 
 function currentSize(record: Record<string, unknown>) {
@@ -199,7 +208,7 @@ export const ddsManagement: ManagementAdapter = {
     if (!resource) return {};
     if (operation === "delete-backup") {
       const rows = await backupRows(session, resource.id);
-      return { backups: rows.filter((row) => String(row.type) === "Manual" && String(row.status) === "COMPLETED").map((row) => ({ value: firstString([row.id], ""), label: `${firstString([row.name], "-")} · ${firstString([row.begin_time], "-")}` })) };
+      return { backups: rows.filter((row) => String(row.type) === "Manual" && String(row.status) === "COMPLETED" && row.deletable !== false && row.is_instance_restoring !== true).map((row) => ({ value: firstString([row.id], ""), label: `${firstString([row.name], "-")} · ${firstString([row.begin_time], "-")}` })) };
     }
     if (operation === "delete-db-user" || operation === "reset-password") {
       const [rows, record] = await Promise.all([dbUserRows(session, resource.id), instanceRecord(session, resource.id)]);
@@ -211,7 +220,7 @@ export const ddsManagement: ManagementAdapter = {
       if (!["ReplicaSet", "Single"].includes(modeOf(record))) return {};
       const flavors = await flavorRows(session);
       const flavorType = modeOf(record) === "Single" ? "single" : "replica";
-      return { resizeOfferings: flavors.filter((flavor) => flavor.type === flavorType && flavor.specCode !== currentSpec(record)).map((flavor) => ({ value: flavor.specCode, label: `${flavor.specCode} · ${flavor.vcpus} vCPU · ${flavor.ramGb} GB RAM` })) };
+      return { resizeOfferings: flavors.filter((flavor) => flavor.type === flavorType && flavor.specCode !== currentSpec(record) && compatibleFlavor(record, flavor)).map((flavor) => ({ value: flavor.specCode, label: `${flavor.specCode} · ${flavor.vcpus} vCPU · ${flavor.ramGb} GB RAM` })) };
     }
     if (operation === "security-group") {
       const groups = await listSecurityGroupsForProject(session);
@@ -222,8 +231,10 @@ export const ddsManagement: ManagementAdapter = {
   poll: async (session, entry) => {
     const response = await huaweiFetch<Record<string, unknown>>(session, "dds", `/v3/${session.projectId}/jobs?${new URLSearchParams({ id: entry.jobId! })}`);
     const job = asRecord(response.job);
+    if (!entry.jobId || job.id !== entry.jobId) throw new ManagementInputError("Huawei returned a different DDS job.");
     const status = String(job.status ?? "").toLowerCase();
     const resourceId = firstString([asRecord(job.instance).id], "") || undefined;
+    if (entry.resourceId && resourceId !== entry.resourceId) throw new ManagementInputError("The DDS job does not belong to the selected instance.");
     if (status === "completed") return { state: "succeeded", message: "The DDS cloud job completed successfully.", resourceId };
     if (status === "failed") return { state: "failed", message: firstString([job.fail_reason], "The DDS cloud job failed. Review the instance status before retrying.") };
     return { state: "submitted", message: `The DDS cloud job is ${status || "still processing"}.` };
@@ -286,7 +297,7 @@ export const ddsManagement: ManagementAdapter = {
       const flavorType = modeOf(record) === "Single" ? "single" : "replica";
       if (specCode === currentSpec(record)) throw new ManagementInputError("The new specification must differ from the current one.", 409);
       const flavors = await flavorRows(session);
-      if (!flavors.some((flavor) => flavor.specCode === specCode && flavor.type === flavorType)) throw new ManagementInputError("The selected specification is no longer available for this instance.");
+      if (!flavors.some((flavor) => flavor.specCode === specCode && flavor.type === flavorType && compatibleFlavor(record, flavor))) throw new ManagementInputError("The selected specification is no longer available for this instance.");
       const response = await huaweiFetch<Record<string, unknown>>(session, "dds", `${base}/instances/${encodeURIComponent(instance.id)}/resize`, { method: "POST", body: JSON.stringify({ resize: { target_spec_code: specCode, target_id: instance.id } }) });
       return { message: "Specification change submitted.", resourceId: instance.id, jobId: firstString([response.job_id], "") || undefined, asynchronous: true };
     }
@@ -325,6 +336,7 @@ export const ddsManagement: ManagementAdapter = {
       if (!backup) throw new ManagementInputError("Select a manual backup of this instance.", 404);
       if (String(backup.type) !== "Manual") throw new ManagementInputError("Only manual backups can be deleted.", 409);
       if (String(backup.status) !== "COMPLETED") throw new ManagementInputError("Only completed backups can be deleted.", 409);
+      if (backup.deletable === false || backup.is_instance_restoring === true) throw new ManagementInputError("This backup is protected or currently used by a restore.", 409);
       const response = await huaweiFetch<Record<string, unknown>>(session, "dds", `${base}/backups/${encodeURIComponent(String(values.backup))}`, { method: "DELETE" });
       return { message: "Manual backup deletion submitted.", resourceId: instance.id, jobId: firstString([response.job_id], "") || undefined, asynchronous: true };
     }
