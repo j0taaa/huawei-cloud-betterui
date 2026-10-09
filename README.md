@@ -13,6 +13,8 @@ npm run dev
 
 Open http://localhost:3000 and sign in with your Huawei IAM account. Service endpoints default to the session's region. Optional endpoint overrides are listed in `src/lib/huawei/endpoints.ts`; IAM uses `HUAWEI_CLOUD_IAM_ENDPOINT`, and OBS uses `HUAWEI_OBS_ENDPOINT`.
 
+The production Docker image allows two seconds per address during Node's IPv4/IPv6 connection selection. The default 250 ms can time out on distant Huawei regions even when their HTTPS endpoints are reachable. If overriding `NODE_OPTIONS`, retain `--network-family-autoselection-attempt-timeout=2000`. Regional inventory excludes OBS's built-in `MOS` project. Dashboard failures are grouped by project and affected services under **View API errors**; partial counts and failed refreshes remain marked as incomplete or cached.
+
 ## SWR, Auto Scaling, and Billing/Cost
 
 - **SWR** (`/services/swr`): live Basic edition repositories, organizations with repositories, image tags, digests, sizes, and pull commands. Repositories are queried once per accessible region to avoid duplicate results from IAM subprojects. Repository links include region, organization, and name; nested repository names are supported. Enterprise edition registries use a different API and are not covered by this adapter.

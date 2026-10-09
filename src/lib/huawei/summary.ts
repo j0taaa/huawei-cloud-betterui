@@ -1,9 +1,9 @@
 import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import "server-only";
 
-import { finishCloudLoad, settledValue } from "@/lib/huawei/errors";
+import { CloudLoadError, settledValue } from "@/lib/huawei/errors";
 
-import { normalizeError } from "@/lib/huawei/parsers";
+import { summaryErrors } from "@/lib/huawei/summary-errors";
 import { withCloudResult } from "@/lib/huawei/result";
 import { listCceClusters } from "@/lib/huawei/services/cce";
 import { listEcsInstances } from "@/lib/huawei/services/ecs";
@@ -58,31 +58,37 @@ export async function loadCloudSummary() {
           listRdsInstances(session),
         ]);
 
-      const errors = [ecs, evs, vpcs, subnets, securityGroups, elbs, cce, rds]
-        .filter(
-          (result): result is PromiseRejectedResult =>
-            result.status === "rejected",
-        )
-        .map((result) => normalizeError(result.reason));
+      const errors = summaryErrors(
+        [ecs, evs, vpcs, subnets, securityGroups, elbs, cce, rds],
+        [
+          "ECS",
+          "EVS",
+          "VPC",
+          "Subnets",
+          "Security groups",
+          "ELB",
+          "CCE",
+          "RDS",
+        ],
+      );
 
       const ecsData = settledValue(ecs, []);
 
-      return finishCloudLoad(
-        [ecs, evs, vpcs, subnets, securityGroups, elbs, cce, rds],
-        {
-          cceClusters: settledValue(cce, []).length,
-          ecsInstances: ecsData.length,
-          ecsRunning: ecsData.filter((instance) => instance.status === "ACTIVE")
-            .length,
-          elbLoadBalancers: settledValue(elbs, []).length,
-          errors,
-          evsDisks: settledValue(evs, []).length,
-          rdsInstances: settledValue(rds, []).length,
-          securityGroups: settledValue(securityGroups, []).length,
-          subnets: settledValue(subnets, []).length,
-          vpcs: settledValue(vpcs, []).length,
-        },
-      );
+      const data: CloudSummary = {
+        cceClusters: settledValue(cce, []).length,
+        ecsInstances: ecsData.length,
+        ecsRunning: ecsData.filter((instance) => instance.status === "ACTIVE")
+          .length,
+        elbLoadBalancers: settledValue(elbs, []).length,
+        errors,
+        evsDisks: settledValue(evs, []).length,
+        rdsInstances: settledValue(rds, []).length,
+        securityGroups: settledValue(securityGroups, []).length,
+        subnets: settledValue(subnets, []).length,
+        vpcs: settledValue(vpcs, []).length,
+      };
+      if (errors.length) throw new CloudLoadError(errors.join("; "), data);
+      return data;
     },
     cloudCacheKeys.summary,
   );

@@ -330,10 +330,14 @@ test("IAM session creation resolves subproject regions without changing project 
     async (input: string, init: RequestInit) => {
       if (input.endsWith("/v3/auth/projects"))
         return Response.json({
-          projects: [{ id: "subproject", name: "sa-brazil-1_team" }],
+          projects: [
+            { id: "obs-project", name: "MOS" },
+            { id: "subproject", name: "sa-brazil-1_team" },
+          ],
         });
       const body = JSON.parse(String(init.body));
       const scoped = body.auth.scope?.project;
+      if (scoped) assert.equal(scoped.id, "subproject");
       if (!scoped)
         assert.deepEqual(body.auth.scope, { domain: { name: "account" } });
       return Response.json(
@@ -361,6 +365,7 @@ test("IAM session creation resolves subproject regions without changing project 
     iamEndpoint: "https://iam.example.invalid",
   });
   assert.equal(result.projects[0].projectName, "sa-brazil-1_team");
+  assert.equal(result.projects.length, 1);
   assert.equal(result.projects[0].region, "sa-brazil-1");
   assert.equal(result.accountToken, "account-token");
 });

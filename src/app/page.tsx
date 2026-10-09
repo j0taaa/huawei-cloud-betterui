@@ -40,7 +40,7 @@ const statCards = [
     title: "EVS Disks",
   },
   {
-    detail: "VPCs in selected project",
+    detail: "VPCs across accessible projects",
     icon: Network,
     key: "vpcs",
     title: "VPC Networks",
@@ -78,7 +78,7 @@ export default async function Home() {
               Cloud Dashboard
             </h1>
             <p className="mt-1 text-sm font-medium text-[#667085]">
-              Real Huawei Cloud data for the selected IAM project.
+              Real Huawei Cloud data across accessible IAM projects.
             </p>
           </div>
           <ConsoleActionGroup>
@@ -94,11 +94,22 @@ export default async function Home() {
           <ConsoleCallout tone="warning">
             <div className="flex gap-3">
               <AlertTriangle className="mt-0.5 size-5 shrink-0" />
-              <div>
+              <div className="min-w-0">
                 <p>Some Huawei Cloud APIs could not be loaded.</p>
-                <p className="mt-1 font-semibold">
-                  {[summary.error, ...data.errors].filter(Boolean).join(" ")}
+                <p className="mt-1">
+                  {summary.isCached
+                    ? "Showing the last successful data."
+                    : "Counts include only resources that could be loaded and may be incomplete."}
                 </p>
+                <details className="mt-2">
+                  <summary className="cursor-pointer font-semibold">View API errors</summary>
+                  <ul className="mt-2 grid gap-2 break-words">
+                    {(summary.error ? [summary.error] : data.errors)
+                      .flatMap((error) => error.split("; "))
+                      .filter((error, index, errors) => errors.indexOf(error) === index)
+                      .map((error) => <li key={error}>{error}</li>)}
+                  </ul>
+                </details>
               </div>
             </div>
           </ConsoleCallout>

@@ -18,6 +18,8 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
+# Cross-region TCP handshakes can exceed Node's default 250 ms address attempt.
+ENV NODE_OPTIONS=--network-family-autoselection-attempt-timeout=2000
 
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force

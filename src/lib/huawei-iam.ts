@@ -128,6 +128,8 @@ async function listAccessibleProjects(endpoint: string, token: string) {
       HuaweiProject =>
       !!project.id &&
       !!project.name &&
+      // MOS is OBS's built-in project, not a regional API endpoint.
+      project.name !== "MOS" &&
       project.enabled !== false &&
       !project.is_domain,
   );

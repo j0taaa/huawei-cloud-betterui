@@ -11,6 +11,7 @@ const projectName = "sa-brazil-1_team";
 const requests = [];
 let generation = 1;
 let failRds = false;
+let failDashboard = false;
 let failCosts = false;
 let showRdsDetails = false;
 let failRdsBackups = false;
@@ -36,7 +37,11 @@ const mock = createServer(async (req, res) => {
   let body;
   let status = 200;
   if (url.pathname === "/v3/auth/projects")
-    body = { projects: [{ id: projectId, name: projectName }] };
+    body = { projects: [{ id: "obs-project", name: "MOS" }, { id: projectId, name: projectName }] };
+  else if (failDashboard && /^\/(evs|vpc)\//.test(url.pathname)) {
+    status = 403;
+    body = { error: { message: "private provider detail" } };
+  }
   else if (url.pathname === "/v3/auth/tokens" && req.method === "GET") {
     assert.equal(req.headers["x-auth-token"], "mock-account-token");
     body = { token: { domain: { id: "mock-domain" }, user: { id: "mock-user", domain: { id: "mock-domain" } } } };
@@ -50,6 +55,7 @@ const mock = createServer(async (req, res) => {
     for await (const chunk of req) raw += chunk;
     const input = JSON.parse(raw);
     const scoped = !!input.auth.scope?.project;
+    if (scoped) assert.equal(input.auth.scope.project.id, projectId);
     if (!scoped)
       assert.deepEqual(input.auth.scope, { domain: { name: accountName } });
     res.setHeader(
@@ -467,6 +473,7 @@ try {
   const session = await (await request("/api/auth/session")).json();
   assert.equal(session.region, "sa-brazil-1");
   assert.equal(session.projects[0].projectName, projectName);
+  assert.equal(session.projects.length, 1);
   const first = await (await request("/api/cloud/summary")).json();
   assert.equal(first.error, null);
   assert.equal(first.data.ecsInstances, 101);
@@ -523,8 +530,25 @@ try {
     await (await request("/services/ecs/server-0")).text(),
     /generation-2-1-0/,
   );
-  const summaryAfterAction = await (await request("/api/cloud/summary")).json();
+  failDashboard = true;
+  const partialSummaryResponse = await request("/api/cloud/summary");
+  assert.equal(partialSummaryResponse.status, 502);
+  const summaryAfterAction = await partialSummaryResponse.json();
   assert.equal(summaryAfterAction.isCached, false);
+  assert.equal(summaryAfterAction.data.ecsInstances, 101);
+  assert.equal(summaryAfterAction.data.errors.length, 1);
+  assert.match(summaryAfterAction.data.errors[0], /EVS, VPC, Subnets, Security groups: 403/);
+  const dashboardHtml = await (await request("/")).text();
+  const visibleHtml = dashboardHtml.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, "");
+  assert.match(visibleHtml, /Counts include only resources that could be loaded/);
+  assert.match(visibleHtml, /<details[^>]*><summary[^>]*>View API errors/);
+  assert.equal((visibleHtml.match(/403 permission denied/g) ?? []).length, 1);
+  assert.doesNotMatch(visibleHtml, /private provider detail|MOS/);
+  if (process.env.BETTERUI_DASHBOARD_BROWSER_HOOK) {
+    const browser = await fetch(process.env.BETTERUI_DASHBOARD_BROWSER_HOOK, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ appUrl, cookie, projectId }), signal: AbortSignal.timeout(120000) });
+    assert.equal(browser.status, 200, await browser.text());
+  }
+  failDashboard = false;
   failRds = true;
   const denied = await request("/services/rds");
   assert.equal(denied.status, 200);

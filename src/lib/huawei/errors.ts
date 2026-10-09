@@ -1,5 +1,12 @@
 const cloudLoadErrorBrand = Symbol.for("betterui.CloudLoadError");
 
+export type CloudProjectIssue = {
+  projectId: string;
+  projectName: string;
+  region: string;
+  message: string;
+};
+
 /** Partial loads must never replace a complete, successful cache entry. */
 export class CloudLoadError<T = unknown> extends Error {
   readonly [cloudLoadErrorBrand] = true;
@@ -17,6 +24,7 @@ export class CloudLoadError<T = unknown> extends Error {
   constructor(
     message: string,
     readonly partialData?: T,
+    readonly projectIssues?: CloudProjectIssue[],
   ) {
     super(message);
     this.name = "CloudLoadError";
