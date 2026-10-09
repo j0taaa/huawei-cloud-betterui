@@ -47,6 +47,7 @@ export default async function AomPage() {
   );
   return (
     <ServiceInventoryPage
+      managementService="aom"
       active="Monitoring"
       backHref="/services/monitoring"
       backLabel="Back to monitoring"

@@ -56,6 +56,7 @@ export default async function EnterpriseProjectsPage() {
   );
   return (
     <ServiceInventoryPage
+      managementService="enterprise-projects"
       active="Billing"
       backHref="/services/billing"
       backLabel="Back to billing and governance"

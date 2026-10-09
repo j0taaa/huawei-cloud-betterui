@@ -51,6 +51,7 @@ export default async function CdmPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="cdm"
       actionLabel="Create cluster"
       actionTitle="CDM cluster creation is disabled in this read-only view."
       active="Databases"

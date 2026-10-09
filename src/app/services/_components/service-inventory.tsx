@@ -5,6 +5,7 @@ import { DisabledCloudButton, RefreshButton } from "@/components/cloud-action-bu
 import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
 import {
   ConsoleMain,
+  ConsoleLinkButton,
   ConsolePageHeader,
   ConsoleTablePanel,
   MetricCard,
@@ -14,6 +15,7 @@ import {
 } from "@/components/console-ui";
 import { ConsoleShell } from "@/components/console-shell";
 import type { CloudResult } from "@/lib/huawei-cloud";
+import { managementAdapters } from "@/lib/huawei/management/registry";
 import type { ServiceCategory } from "@/lib/service-catalog";
 
 export type InventoryColumn<T> = {
@@ -137,6 +139,7 @@ export function inventoryStatusTone(status: string): StatusTone {
 export function ServiceInventoryPage<T>({
   actionLabel,
   actionTitle,
+  managementService,
   active,
   backHref,
   backLabel,
@@ -155,6 +158,7 @@ export function ServiceInventoryPage<T>({
 }: {
   actionLabel?: string;
   actionTitle?: string;
+  managementService?: string;
   active: ServiceCategory;
   backHref: string;
   backLabel: string;
@@ -171,6 +175,7 @@ export function ServiceInventoryPage<T>({
   title: string;
   tone?: "blue" | "green" | "red";
 }) {
+  const createOperation = managementService && Object.hasOwn(managementAdapters, managementService) ? managementAdapters[managementService].operations.find(operation => operation.kind === "create") : undefined;
   const pageToneClasses = {
     blue: "bg-[#eef4ff] text-[#2563eb]",
     green: "bg-[#e9f8f1] text-[#15803d]",
@@ -190,7 +195,7 @@ export function ServiceInventoryPage<T>({
         <ConsolePageHeader
           actions={
             <>
-            {actionLabel ? <DisabledCloudButton title={actionTitle ?? "This page is read-only."}>
+            {createOperation ? <ConsoleLinkButton href={`/services/${managementService}/manage?operation=${encodeURIComponent(createOperation.id)}`}><Plus className="size-4" />{createOperation.label}</ConsoleLinkButton> : actionLabel ? <DisabledCloudButton title={actionTitle ?? "This page is read-only."}>
               <Plus className="size-4" />
               {actionLabel}
             </DisabledCloudButton> : null}

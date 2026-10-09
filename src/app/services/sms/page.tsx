@@ -58,6 +58,7 @@ export default async function SmsPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="sms"
       actionLabel="Create task"
       actionTitle="SMS task creation is disabled in this read-only view."
       active="Compute"

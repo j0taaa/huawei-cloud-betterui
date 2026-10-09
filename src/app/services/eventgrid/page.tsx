@@ -40,6 +40,7 @@ export default async function EventGridPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="eventgrid"
       actionLabel="Create subscription"
       actionTitle="Event subscription creation is disabled in this read-only view."
       active="Monitoring"

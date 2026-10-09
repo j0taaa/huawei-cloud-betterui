@@ -42,6 +42,7 @@ export default async function IotdaPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="iotda"
       actionLabel="Register device"
       actionTitle="Device registration is disabled in this read-only view."
       active="Monitoring"

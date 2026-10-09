@@ -19,6 +19,7 @@ export default async function SecMasterPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="secmaster"
       actionLabel="Create workspace"
       actionTitle="Workspace creation is disabled in this read-only view."
       active="Security"

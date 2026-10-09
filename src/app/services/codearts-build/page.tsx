@@ -42,6 +42,7 @@ export default async function CodeArtsBuildPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="codearts-build"
       actionLabel="Create build"
       actionTitle="Build task creation is disabled in this read-only view."
       active="Compute"

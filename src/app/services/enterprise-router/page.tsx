@@ -25,6 +25,7 @@ export default async function EnterpriseRouterPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="enterprise-router"
       actionLabel="Create router"
       actionTitle="Enterprise Router creation is intentionally disabled in this read-only view."
       active="Networking"

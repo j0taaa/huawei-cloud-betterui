@@ -46,6 +46,7 @@ export default async function CssPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="css"
       actionLabel="Create cluster"
       actionTitle="CSS cluster creation is disabled in this read-only view."
       active="Databases"

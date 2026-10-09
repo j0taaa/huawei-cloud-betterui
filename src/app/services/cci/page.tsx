@@ -51,6 +51,7 @@ export default async function CciPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="cci"
       actionLabel="Create namespace"
       actionTitle="CCI namespace creation is intentionally disabled in this read-only view."
       active="Containers"

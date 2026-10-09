@@ -19,6 +19,7 @@ export default async function CphPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="cph"
       actionLabel="Buy server"
       actionTitle="Cloud phone server purchases are disabled in this read-only view."
       active="Compute"

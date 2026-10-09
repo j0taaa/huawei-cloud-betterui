@@ -33,6 +33,7 @@ export default async function CesPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="ces"
       actionLabel="Create alarm"
       actionTitle="Alarm creation is disabled in this read-only view."
       active="Monitoring"

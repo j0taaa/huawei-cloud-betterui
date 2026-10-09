@@ -49,6 +49,7 @@ export default async function OmsPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="oms"
       actionLabel="Create migration"
       actionTitle="OMS migration creation is disabled in this read-only view."
       active="Storage"

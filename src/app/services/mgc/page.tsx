@@ -43,6 +43,7 @@ export default async function MgcPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="mgc"
       actionLabel="Create workflow"
       actionTitle="MgC workflow creation is disabled in this read-only view."
       active="Storage"

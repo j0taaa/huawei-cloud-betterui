@@ -29,6 +29,7 @@ export default async function VpcEndpointPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="vpc-endpoint"
       actionLabel="Create endpoint"
       actionTitle="VPC endpoint creation is intentionally disabled in this read-only view."
       active="Networking"

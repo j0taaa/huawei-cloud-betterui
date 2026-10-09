@@ -41,6 +41,7 @@ export default async function DliPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="dli"
       actionLabel="Create queue"
       actionTitle="DLI queue creation is disabled in this read-only view."
       active="Databases"

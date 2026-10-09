@@ -41,6 +41,7 @@ export default async function CodeArtsDeployPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="codearts-deploy"
       actionLabel="Create app"
       actionTitle="Deploy application creation is disabled in this read-only view."
       active="Compute"

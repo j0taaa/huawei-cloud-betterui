@@ -41,6 +41,7 @@ export default async function CodeArtsPipelinePage() {
 
   return (
     <ServiceInventoryPage
+      managementService="codearts-pipeline"
       actionLabel="Create pipeline"
       actionTitle="Pipeline creation is disabled in this read-only view."
       active="Compute"

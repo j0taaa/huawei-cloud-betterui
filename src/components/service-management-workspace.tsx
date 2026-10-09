@@ -24,11 +24,11 @@ function FormField({ field, value, choices, onChange }: { field: ManagementField
   </ConsoleField>;
 }
 
-export function ServiceManagementWorkspace({ service, initialProjectId = "", initialResourceId = "" }: { service: string; initialProjectId?: string; initialResourceId?: string }) {
+export function ServiceManagementWorkspace({ service, initialProjectId = "", initialResourceId = "", initialOperationId = "" }: { service: string; initialProjectId?: string; initialResourceId?: string; initialOperationId?: string }) {
   const router = useRouter();
   const [context, setContext] = useState<ManagementContext | null>(null);
   const [projectId, setProjectId] = useState(initialProjectId);
-  const [operationId, setOperationId] = useState("");
+  const [operationId, setOperationId] = useState(initialOperationId);
   const [resourceId, setResourceId] = useState(initialResourceId);
   const [values, setValues] = useState<ManagementValues>({});
   const [loadError, setLoadError] = useState("");

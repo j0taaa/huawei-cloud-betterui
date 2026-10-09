@@ -40,6 +40,7 @@ export default async function CodeArtsRepoPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="codearts-repo"
       actionLabel="Create repository"
       actionTitle="Repository creation is disabled in this read-only view."
       active="Compute"

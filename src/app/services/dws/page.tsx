@@ -60,6 +60,7 @@ export default async function DwsPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="dws"
       actionLabel="Create cluster"
       actionTitle="DWS cluster creation is disabled in this read-only view."
       active="Databases"

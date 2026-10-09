@@ -59,6 +59,7 @@ export default async function SwrPage() {
   const repositories = result.data;
   return (
     <ServiceInventoryPage
+      managementService="swr"
       active="Containers"
       backHref="/services/containers"
       backLabel="Back to containers"

@@ -39,6 +39,7 @@ export default async function SdrsPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="sdrs"
       actionLabel="Create protection"
       actionTitle="SDRS protection creation is disabled in this read-only view."
       active="Storage"
