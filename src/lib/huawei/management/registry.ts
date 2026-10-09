@@ -34,6 +34,7 @@ import { vpcEndpointManagement } from "./adapters/vpc-endpoint";
 import { eventgridManagement } from "./adapters/eventgrid";
 import { apigManagement } from "./adapters/apig";
 import { omsManagement } from "./adapters/oms";
+import { wafManagement } from "./adapters/waf";
 import { cciManagement } from "./adapters/cci";
 import { cssManagement } from "./adapters/css";
 import { cceManagement } from "./adapters/cce";
@@ -64,6 +65,7 @@ export const managementAdapters: Record<string, ManagementAdapter> = {
   cce: cceManagement,
   css: cssManagement,
   cci: cciManagement,
+  waf: wafManagement,
   ecs: ecsManagement,
   dew: dewManagement,
   cdn: cdnManagement,

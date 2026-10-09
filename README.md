@@ -118,6 +118,8 @@ APIG adds pay-per-use dedicated gateways, API groups, environments, unpublished 
 
 CSS adds private Elasticsearch/OpenSearch cluster provisioning, data-node resizing, manual snapshots, and snapshot policies. CCI 2.0 adds namespaces, private default networks, container deployments and rollouts, scaling, ConfigMaps, and opaque Secrets. CCI inventory tolerates unsupported older workload routes while retaining permission errors. Snapshot storage setup, advanced workload configuration, and native task completion remain outstanding where the coverage page indicates them.
 
+WAF adds pay-per-use cloud-domain registration, public-origin configuration, current certificate validation, policy bindings, protection controls, and IP rules. Registration requires separate DNS onboarding; the workspace reports the provider's access state. Changes preserve other policy bindings and block locked domains or unverified cross-policy rule IDs. Dedicated access modes, certificate lifecycle, and advanced protection modules remain outstanding.
+
 `/tasks` retains the latest 100 management request records per account and user, with project, resource, outcome, and supported native job checks. A submitted request is accepted by Huawei and may still be running. Lost-response retries retain their request ID; uncertain outcomes require checking cloud state before starting another request. Legacy action routes are not yet included in this history.
 
 Set `BETTERUI_DATA_DIR` to a persistent writable directory when deploying in a container. The running deployment mounts `/app/data` for management history and replay claims. Tests use local API mocks; real cloud creation, deletion, billing, and permissions have not been exercised.
