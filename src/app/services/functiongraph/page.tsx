@@ -396,7 +396,7 @@ export default async function FunctionGraphPage() {
             <>
               <Link
                 className="flex h-11 items-center gap-2 rounded-lg border border-[#7c3aed] bg-[#7c3aed] px-4 text-sm font-bold text-white shadow-sm hover:bg-[#6d28d9]"
-                href="/services/functiongraph/create"
+                href="/services/functiongraph/manage?operation=create"
               >
                 <Plus className="size-4" />
                 Create function

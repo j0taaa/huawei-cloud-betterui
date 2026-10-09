@@ -81,7 +81,7 @@ const remainingAreas: Record<string, string[]> = {
   "enterprise-projects": ["Resource migration", "Authorization and quotas"],
   "dms-rabbitmq": ["Broker scaling", "Public access and encryption configuration", "Bindings and complete access policies", "Monitoring and recovery"],
   "dms-rocketmq": ["Broker scaling", "Public access and encryption configuration", "Topic and consumer updates", "Messages, tracing, monitoring and recovery"],
-  functiongraph: ["Complete workflow and application lifecycle", "Policy and billing coverage", "Cloud job tracking"],
+  functiongraph: ["Workflow and application lifecycle", "Binary/image runtime provisioning, weighted aliases, and reserved capacity lifecycle", "Complete agency/network/storage policies, pricing, quotas, and cloud job tracking"],
   evs: ["Encryption and provisioning options", "Tag changes", "Complete pricing and quota checks", "Cloud job tracking"],
   "billing/center": ["Invoices, orders, renewal and payment workflows"],
   cost: ["Budgets, alerts and cost allocation workflows"],

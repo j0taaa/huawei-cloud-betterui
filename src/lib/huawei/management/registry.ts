@@ -51,6 +51,7 @@ import { mgcManagement } from "./adapters/mgc";
 import { smsManagement } from "./adapters/sms";
 import { serviceStageManagement } from "./adapters/servicestage";
 import { asmManagement } from "./adapters/asm";
+import { functionGraphManagement } from "./adapters/functiongraph";
 import { cphManagement } from "./adapters/cph";
 import { bmsManagement } from "./adapters/bms";
 import { dwsManagement } from "./adapters/dws";
@@ -98,6 +99,7 @@ export const managementAdapters: Record<string, ManagementAdapter> = {
   cph: cphManagement,
   servicestage: serviceStageManagement,
   asm: asmManagement,
+  functiongraph: functionGraphManagement,
   ecs: ecsManagement,
   dew: dewManagement,
   cdn: cdnManagement,

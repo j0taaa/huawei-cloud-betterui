@@ -9,6 +9,7 @@ import {
 } from "@/lib/huawei/functiongraph/manifests";
 import { finishCloudLoad, settledValue } from "@/lib/huawei/errors";
 import { huaweiList } from "@/lib/huawei/http";
+import { preserveFunctionGraphConfiguration } from "@/lib/huawei/functiongraph/configuration";
 import "server-only";
 import { Buffer } from "node:buffer";
 import {
@@ -1162,16 +1163,6 @@ export async function updateFunctionGraphFunctionCode(
   return parseFunctionGraphCode(asRecord(body), fn);
 }
 
-function numberFromUnit(value: string, fallback: number) {
-  const match = value.match(/\d+/);
-
-  if (!match) {
-    return fallback;
-  }
-
-  const parsed = Number(match[0]);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
 
 function blankToUndefined(value: string | undefined) {
   if (value === undefined) {
@@ -1213,26 +1204,31 @@ export async function updateFunctionGraphFunctionConfig(
 
   const project = projectForFunction(session, fn);
   const urn = encodeURI(fn.urn || fn.id);
+  const { body: currentBody } = await functionGraphFetchWithHeaders(project, `/v2/${project.projectId}/fgs/functions/${urn}/config`, { method: "GET" });
+  const current = asRecord(currentBody);
+  const currentParts = firstString([current.func_urn], "").split(":");
+  const targetParts = (fn.urn || fn.id).split(":");
+  if (currentParts.length < 7 || currentParts[3] !== project.projectId || currentParts.slice(0, 7).join(":") !== targetParts.slice(0, 7).join(":")) throw new Error("Huawei returned a different function's configuration; no update was sent.");
   const strategyConfig =
     input.strategyConfig && typeof input.strategyConfig === "object"
-      ? { ...asRecord(input.strategyConfig) }
-      : {};
+      ? { ...asRecord(current.strategy_config), ...asRecord(input.strategyConfig) }
+      : { ...asRecord(current.strategy_config) };
 
   if (input.strategyConcurrency !== undefined) {
     strategyConfig.concurrency = input.strategyConcurrency;
   }
 
   const payload: Record<string, unknown> = {
-    func_name: blankToUndefined(input.name) ?? fn.name,
-    handler: blankToUndefined(input.handler) ?? fn.handler,
-    memory_size: input.memorySize ?? numberFromUnit(fn.memorySize, 128),
-    runtime: blankToUndefined(input.runtime) ?? fn.runtime,
-    timeout: input.timeout ?? numberFromUnit(fn.timeout, 3),
+    func_name: blankToUndefined(input.name) ?? current.func_name,
+    memory_size: input.memorySize ?? current.memory_size,
+    runtime: blankToUndefined(input.runtime) ?? current.runtime,
+    timeout: input.timeout ?? current.timeout,
   };
+  setIfPresent(payload, "handler", blankToUndefined(input.handler));
 
   setIfPresent(payload, "app_xrole", blankToUndefined(input.appXrole));
   setIfPresent(payload, "custom_image", input.customImageConfig);
-  setIfPresent(payload, "description", input.description ?? fn.description);
+  setIfPresent(payload, "description", input.description);
   setIfPresent(payload, "domain_names", input.domainNamesConfig);
   setIfPresent(payload, "enable_auth_in_header", input.enableAuthInHeader);
   setIfPresent(payload, "enable_lts_log", input.enableLtsLog);
@@ -1263,14 +1259,14 @@ export async function updateFunctionGraphFunctionConfig(
     "strategy_config",
     Object.keys(strategyConfig).length ? strategyConfig : undefined,
   );
-  setIfPresent(payload, "user_data", input.userData ?? "");
+  setIfPresent(payload, "user_data", input.userData);
   setIfPresent(payload, "xrole", blankToUndefined(input.xrole));
 
   const { body } = await functionGraphFetchWithHeaders(
     project,
     `/v2/${project.projectId}/fgs/functions/${urn}/config`,
     {
-      body: JSON.stringify(payload),
+      body: JSON.stringify(preserveFunctionGraphConfiguration(current, payload)),
       method: "PUT",
     },
   );

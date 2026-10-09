@@ -13,7 +13,7 @@ export async function asmFetch<T>(session: HuaweiProjectSession, path: string, i
     return body;
   } catch (error) {
     if (error instanceof HuaweiApiError) throw new HuaweiApiError("Huawei rejected this ASM request.", error.status);
-    throw error;
+    throw new Error("Huawei returned an unverifiable ASM response. Check current state before retrying.");
   }
 }
 

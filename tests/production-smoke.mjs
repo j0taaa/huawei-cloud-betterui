@@ -72,6 +72,7 @@ const mock = createServer(async (req, res) => {
   else if (url.pathname.startsWith("/ecs/") && url.pathname.endsWith("os-keypairs")) body = { keypairs: [{ keypair: { name: "key-1" } }] };
   else if (url.pathname.startsWith("/servicestage/")) body = { applications: [], environments: [], components: [], runtime_stacks: [], resources: [], records: [], count: 0, total: 0 };
   else if (url.pathname.startsWith("/asm/")) body = { items: [] };
+  else if (url.pathname.startsWith("/fg/")) body = { functions: [], versions: [], dependencies: [], count: 0, next_marker: "" };
   else if (url.pathname.startsWith("/cph/")) body = { servers: [], phones: [], phone_models: [], models: [], phone_images: [], count: 0, page_info: { next_marker: "" } };
   else if (url.pathname.startsWith("/bms/")) body = url.pathname.endsWith("/flavors") ? { flavors: [] } : { servers: [], count: 0 };
   else if (url.pathname.startsWith("/deh/")) body = url.pathname.endsWith("dedicated-host-types") ? { dedicated_host_types: [{ host_type: "c6", host_type_name: "General purpose" }] } : { dedicated_hosts: [] };
@@ -604,7 +605,7 @@ try {
   assert.ok(requests.some(entry => entry.path === `/codeartsrepo/v4/projects/${"a".repeat(32)}/repositories`));
   const serviceSearch = await request("/services/databases");
   assert.match(await serviceSearch.text(), /dms-rabbitmq/);
-  for (const service of ["ecs", "aom", "enterprise-projects", "dms-rabbitmq", "dms-rocketmq", "network", "dns", "smn", "lts", "dew", "ces", "cts", "cdn", "eip", "elb", "cbr", "sfs", "swr", "obs", "as", "nat", "evs", "iam", "deh", "dcs", "dms-kafka", "iotda", "rds", "ims", "dli", "secmaster", "enterprise-router", "vpc-endpoint", "eventgrid", "apig", "oms", "dds", "cce", "css", "cci", "waf", "gaussdb", "taurusdb", "geminidb", "sdrs", "codearts-repo", "codearts-build", "cdm", "codearts-pipeline", "sms", "dws", "codearts-deploy", "bms", "mgc", "cph", "servicestage", "asm"]) {
+  for (const service of ["ecs", "aom", "enterprise-projects", "dms-rabbitmq", "dms-rocketmq", "network", "dns", "smn", "lts", "dew", "ces", "cts", "cdn", "eip", "elb", "cbr", "sfs", "swr", "obs", "as", "nat", "evs", "iam", "deh", "dcs", "dms-kafka", "iotda", "rds", "ims", "dli", "secmaster", "enterprise-router", "vpc-endpoint", "eventgrid", "apig", "oms", "dds", "cce", "css", "cci", "waf", "gaussdb", "taurusdb", "geminidb", "sdrs", "codearts-repo", "codearts-build", "cdm", "codearts-pipeline", "sms", "dws", "codearts-deploy", "bms", "mgc", "cph", "servicestage", "asm", "functiongraph"]) {
     const managementPage = await request(`/services/${service}/manage`);
     assert.equal(managementPage.status, 200, `${service} management route`);
     assert.match(await managementPage.text(), /Loading management controls/);
