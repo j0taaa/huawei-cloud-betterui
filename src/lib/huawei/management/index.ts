@@ -7,6 +7,7 @@ import { CloudLoadError } from "@/lib/huawei/errors";
 import { invalidateCloudResult } from "@/lib/huawei/result";
 import { managementAdapters } from "./registry";
 import { claimManagementOperation, listManagementHistory, readManagementHistory, saveManagementHistory } from "./history";
+import { deleteCreationDraft } from "./drafts";
 
 function adapterFor(service: string) {
   const adapter = Object.hasOwn(managementAdapters, service) ? managementAdapters[service] : undefined;
@@ -99,9 +100,10 @@ export async function runManagementOperation(session: BetterUiSession, service: 
     // A cloud success stays a success even when local maintenance fails.
     const maintenance = await Promise.allSettled([
       ...[...new Set(adapter.invalidationKeys(resource))].map((key) => invalidateCloudResult(session, key)),
+      ...(operation.kind === "create" ? [deleteCreationDraft(session, { service, projectId: adapter.accountWide ? "account" : selected.projectId, operation })] : []),
       saveManagementHistory(session, { ...entry, resourceId: entry.resourceId ?? outcome.resourceId, resultResourceId: outcome.resourceId, ...(outcome.asynchronous ? {} : { finishedAt: new Date().toISOString() }), state: outcome.asynchronous ? "submitted" : "succeeded", jobId: outcome.jobId, verification: outcome.verification, message: outcome.message }),
     ]);
-    if (maintenance.some((result) => result.status === "rejected")) outcome = { ...outcome, message: `${outcome.message} Local history or cache refresh failed; reload the inventory to verify cloud state. This request was accepted; do not resubmit it.` };
+    if (maintenance.some((result) => result.status === "rejected")) outcome = { ...outcome, message: `${outcome.message} Local history, cache refresh, or draft cleanup failed; reload the inventory to verify cloud state. This request was accepted; do not resubmit it.` };
   }
   return { ok: true, ...outcome };
 }

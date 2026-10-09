@@ -1,11 +1,12 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, Settings2 } from "lucide-react";
 import { ConsoleButton, ConsoleField, ConsoleInput, ConsoleMain, ConsolePageHeader, ConsolePanel, ConsolePanelBody, ConsoleSelect, ConsoleTextarea, FieldGrid, StatusBadge } from "@/components/console-ui";
 import { LocalDateTime } from "@/components/local-date-time";
 import { validateManagementValues, type ManagementContext, type ManagementField, type ManagementOperation, type ManagementOutcome, type ManagementValues } from "@/lib/management-contract";
+import { creationDraftFields, pickCreationDraft, restoreCreationDraft } from "@/lib/management-draft-values";
 
 function initialValues(operation: ManagementOperation | undefined, resourceId: string, context: ManagementContext): ManagementValues {
   const resource = operation?.kind === "create" ? undefined : context.resources.find((resource) => resource.id === resourceId);
@@ -41,6 +42,12 @@ export function ServiceManagementWorkspace({ service, initialProjectId = "", ini
   const [acknowledged, setAcknowledged] = useState(false);
   const [requestId, setRequestId] = useState("");
   const [outcome, setOutcome] = useState<ManagementOutcome | null>(null);
+  const formScope = useRef("");
+  const acceptedCreationScope = useRef("");
+  const draftQueue = useRef<Promise<void>>(Promise.resolve());
+  const [draftDirty, setDraftDirty] = useState(false);
+  const [draftBusy, setDraftBusy] = useState(false);
+  const [draftStatus, setDraftStatus] = useState("");
   const requestKey = JSON.stringify([service, projectId, operationId, resourceId, refresh]);
   const loading = loadedKey !== requestKey;
   const operation = context?.operations.find((operation) => operation.id === operationId);
@@ -59,9 +66,9 @@ export function ServiceManagementWorkspace({ service, initialProjectId = "", ini
         const body = await response.json();
         if (!response.ok) throw new Error(body.error ?? "Management controls could not be loaded.");
         return body as ManagementContext;
-      }).then((next) => {
+      }).then(async (next) => {
         if (controller.signal.aborted) return;
-        setContext(next); setLoadError(""); setLoadedKey(requestKey);
+        setContext(next); setLoadError("");
         if (!projectId && !next.accountWide) setProjectId(next.selectedProjectId);
         const selectedId = next.resources.some((resource) => resource.id === resourceId) ? resourceId : "";
         const selected = next.resources.find((resource) => resource.id === selectedId);
@@ -69,7 +76,33 @@ export function ServiceManagementWorkspace({ service, initialProjectId = "", ini
         const selectedOperationId = operationId || (selected ? compatible.find((operation) => operation.kind === "update")?.id ?? compatible.find((operation) => operation.kind === "inspect")?.id : undefined) || next.operations[0]?.id || "";
         if (!operationId) setOperationId(selectedOperationId);
         setResourceId(selectedId);
-        setValues(initialValues(next.operations.find((operation) => operation.id === selectedOperationId), selectedId, next));
+        const nextOperation = next.operations.find(operation => operation.id === selectedOperationId);
+        const nextScope = JSON.stringify([service, next.accountWide ? "account" : next.selectedProjectId, selectedOperationId, selectedId]);
+        if (formScope.current !== nextScope) {
+          let restored: ManagementValues = {};
+          let status = "";
+          const justCreated = acceptedCreationScope.current === nextScope;
+          if (justCreated) acceptedCreationScope.current = "";
+          if (!justCreated && nextOperation && creationDraftFields(nextOperation).length) {
+            try {
+              const query = new URLSearchParams({ projectId: next.selectedProjectId, operation: selectedOperationId });
+              const response = await fetch(`/api/cloud/management/${encodeURIComponent(service)}/draft?${query}`, { signal: controller.signal });
+              const body = await response.json();
+              if (!response.ok) throw new Error(body.error ?? "The saved draft could not be loaded.");
+              if (body.draft) {
+                const draft = restoreCreationDraft(nextOperation, body.draft.values, next.choices);
+                restored = draft.values;
+                status = draft.unavailable ? "Draft restored. Some saved choices are no longer available; select replacements." : "Draft restored.";
+              }
+            } catch (error) { status = error instanceof Error ? error.message : "The saved draft could not be loaded."; }
+          }
+          if (controller.signal.aborted) return;
+          formScope.current = nextScope;
+          setValues({ ...initialValues(nextOperation, selectedId, next), ...restored });
+          setDraftDirty(false);
+          setDraftStatus(status);
+        }
+        setLoadedKey(requestKey);
       }).catch((error) => {
         if (controller.signal.aborted) return;
         setLoadError(error instanceof Error ? error.message : "Management controls could not be loaded."); setLoadedKey(requestKey);
@@ -78,6 +111,41 @@ export function ServiceManagementWorkspace({ service, initialProjectId = "", ini
     // The serialized request key includes every context selection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestKey]);
+
+  const draftUrl = context && operation ? `/api/cloud/management/${encodeURIComponent(service)}/draft?${new URLSearchParams({ projectId: context.selectedProjectId, operation: operation.id })}` : "";
+  useEffect(() => {
+    if (!operation || !context || !draftDirty || loading || pending || draftBusy || !creationDraftFields(operation).length) return;
+    const scope = formScope.current;
+    const draft = pickCreationDraft(operation, values);
+    const timer = setTimeout(() => {
+      setDraftStatus("Saving draft…");
+      // Serialize saves, so a slower earlier response cannot overwrite a newer draft.
+      draftQueue.current = draftQueue.current.catch(() => undefined).then(async () => {
+        try {
+          const response = await fetch(draftUrl, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(draft) });
+          const body = await response.json();
+          if (!response.ok) throw new Error(body.error ?? "The creation draft could not be saved.");
+          if (formScope.current === scope) setDraftStatus("Draft saved.");
+        } catch (error) { if (formScope.current === scope) setDraftStatus(error instanceof Error ? error.message : "The creation draft could not be saved."); }
+      });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [operation, context, draftDirty, loading, pending, draftBusy, values, draftUrl]);
+
+  async function discardDraft() {
+    if (!operation || !context || draftBusy || pending) return;
+    setDraftBusy(true);
+    try {
+      await draftQueue.current;
+      const response = await fetch(draftUrl, { method: "DELETE" });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error ?? "The saved draft could not be discarded.");
+      setValues(initialValues(operation, resourceId, context));
+      setDraftDirty(false);
+      setDraftStatus("Draft discarded.");
+    } catch (error) { setDraftStatus(error instanceof Error ? error.message : "The saved draft could not be discarded."); }
+    finally { setDraftBusy(false); }
+  }
 
   const reviewItems = useMemo(() => operation?.fields.filter((field) => values[field.key] !== "" && values[field.key] !== undefined).map((field) => ({ label: field.label, value: field.type === "password" ? "Set" : Array.isArray(values[field.key]) ? (values[field.key] as string[]).join(", ") : field.type === "boolean" ? values[field.key] ? "Enabled" : "Disabled" : String(values[field.key]) })) ?? [], [operation, values]);
 
@@ -96,9 +164,14 @@ export function ServiceManagementWorkspace({ service, initialProjectId = "", ini
     if (pending || !context || !operation || (confirmationNeeded && confirmation !== resource?.name) || (operation.impact && !acknowledged)) return;
     setPending(true); setError(""); setOutcome(null);
     try {
+      await draftQueue.current;
       const response = await fetch(`/api/cloud/management/${encodeURIComponent(service)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ requestId, operation: operation.id, projectId: context.selectedProjectId, resourceId: operation.kind === "create" ? undefined : resourceId, confirmName: confirmationNeeded ? confirmation : undefined, acknowledgedImpact: acknowledged, values: Object.fromEntries(operation.fields.filter((field) => (values[field.key] !== "" || field.allowEmpty)).map((field) => [field.key, values[field.key]])) }) });
       const body = await response.json();
       if (!response.ok || !body.ok) throw new Error(body.error ?? "The operation failed.");
+      if (creationDraftFields(operation).length) {
+        acceptedCreationScope.current = formScope.current;
+      }
+      formScope.current = "";
       setOutcome(body); setReview(false); setRefresh((value) => value + 1); router.refresh();
     } catch (error) { setError(error instanceof Error ? error.message : "The operation failed."); }
     finally { setPending(false); }
@@ -121,7 +194,8 @@ export function ServiceManagementWorkspace({ service, initialProjectId = "", ini
         {confirmationNeeded ? <ConsoleField label={`Type ${resource?.name} to confirm`}><ConsoleInput aria-label="Confirmation name" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} /></ConsoleField> : null}
         <div className="mt-5 flex gap-3"><ConsoleButton disabled={pending} variant="neutral" onClick={() => setReview(false)}>Back to form</ConsoleButton><ConsoleButton disabled={pending || (confirmationNeeded && confirmation !== resource?.name) || (!!operation.impact && !acknowledged)} variant={operation.kind === "delete" ? "danger" : "primary"} onClick={submit}>{pending ? <Loader2 className="size-4 animate-spin" /> : null}{operation.label}</ConsoleButton></div>
       </> : <>
-        <div className="grid gap-4 md:grid-cols-2">{operation.fields.map((field) => <FormField key={field.key} field={field} value={values[field.key]} choices={context?.choices ?? {}} onChange={(value) => setValues((previous) => ({ ...previous, [field.key]: value }))} />)}</div>
+        <fieldset disabled={pending || draftBusy} className="grid gap-4 md:grid-cols-2">{operation.fields.map((field) => <FormField key={field.key} field={field} value={values[field.key]} choices={context?.choices ?? {}} onChange={(value) => { setValues((previous) => ({ ...previous, [field.key]: value })); setDraftDirty(true); }} />)}</fieldset>
+        {creationDraftFields(operation).length ? <div className="mt-4 rounded-lg border border-[#e4e9f2] p-3 text-sm"><p>Resource names and configuration choices are saved for 24 hours. Passwords and free-form content are not saved.</p>{draftStatus ? <p role="status" className="mt-1">{draftStatus}</p> : null}<ConsoleButton variant="neutral" className="mt-2" onClick={discardDraft} disabled={pending || draftBusy}>Discard saved draft</ConsoleButton></div> : null}
         {unavailable ? <p role="alert" className="mt-4 text-sm text-red-700">This operation is unavailable for the selected resource&apos;s state.</p> : null}
         <ConsoleButton className="mt-5" onClick={prepare} disabled={pending || !!unavailable || (operation.kind !== "create" && !resource)}>Review operation</ConsoleButton>
       </>}

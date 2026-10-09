@@ -1,6 +1,6 @@
 # Huawei Cloud Better UI
 
-A personal Huawei Cloud console built with Next.js App Router, React, TypeScript, Tailwind CSS, and shadcn/ui. It includes IAM login, inventory across accessible regional projects, resource details, OBS previews/uploads/downloads, ECS actions, and EVS snapshots. Some catalog services remain placeholders.
+A personal Huawei Cloud console built with Next.js App Router, React, TypeScript, Tailwind CSS, and shadcn/ui. It includes IAM login, inventory across accessible regional projects, resource details, and management workflows throughout the catalog. Service coverage remains partial; `/services/coverage` lists implemented workflows and remaining gaps.
 
 ## Run locally
 
@@ -40,7 +40,7 @@ Individual checks are `npm run lint`, `npm run typecheck`, `npm test`, and `npm 
 - **AOM** (`/services/aom`): Prometheus instance inventory across selected projects and all granted enterprise projects, including source type, status, version, and metric retention.
 - **Enterprise Project Management** (`/services/enterprise-projects`): account-wide project inventory, enabled/disabled state, commercial/test classification, descriptions, and timestamps.
 
-These additions are read-only. Messaging detail links retain the owning IAM project; cache keys include engine, instance, and project. Missing permissions remain visible as errors, including when another selected project succeeds. EPS requires the account token retained by current IAM logins and makes one account-wide paginated query, rather than repeating requests per regional project.
+These inventories also have the management workspaces described below. Messaging detail links retain the owning IAM project; cache keys include engine, instance, and project. Missing permissions remain visible as errors, including when another selected project succeeds. EPS requires the account token retained by current IAM logins and makes one account-wide paginated query, rather than repeating requests per regional project.
 
 Endpoint overrides are `HUAWEI_RABBITMQ_ENDPOINT`, `HUAWEI_ROCKETMQ_ENDPOINT`, `HUAWEI_AOM_ENDPOINT`, and `HUAWEI_EPS_ENDPOINT`. EPS defaults to `https://eps.myhuaweicloud.com`; override it for another Huawei site.
 
@@ -126,7 +126,9 @@ CodeArts Repo adds private repositories, branch/tag creation and guarded deletio
 
 `/tasks` retains the latest 100 management request records per account and user, with project, resource, outcome, and supported native job checks. A submitted request is accepted by Huawei and may still be running. Lost-response retries retain their request ID; uncertain outcomes require checking cloud state before starting another request. EVS detail actions and ECS/RDS/GaussDB/TaurusDB/DDS/GeminiDB lifecycle actions also save accepted receipts in this history. Receipts without a tracked native job remain pending manual verification; other legacy routes are still being migrated. Local history/cache failures return an accepted-response warning instead of inviting a duplicate write.
 
-Set `BETTERUI_DATA_DIR` to a persistent writable directory when deploying in a container. The running deployment mounts `/app/data` for management history and replay claims. Tests use local API mocks; real cloud creation, deletion, billing, and permissions have not been exercised.
+Creation forms save resource names and configuration choices for 24 hours, separately for each account, user, service, project, and operation. Passwords, arbitrary text, JSON, descriptions, and free-form lists are excluded. Restored choices are checked against the live catalog; unavailable selections require replacements. Discarding a draft resets the form. Accepted creation clears its draft; rejected creation retains it.
+
+Set `BETTERUI_DATA_DIR` to a persistent writable directory when deploying in a container. The running deployment mounts `/app/data` for management history, replay claims, and creation drafts. Tests use local API mocks; real cloud creation, deletion, billing, and permissions have not been exercised.
 
 CodeArts Build adds creation from live CodeArts branches and official templates, job configuration inspection, guarded name/branch edits, manual execution, stopping, disabling/recovery, inactive deletion, and run history. It uses current v1 task/record APIs and verifies saved run identity when checking progress. Sensitive-parameter configuration edits and advanced source/build settings remain listed in coverage.
 
