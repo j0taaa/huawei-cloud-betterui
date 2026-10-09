@@ -1,5 +1,6 @@
 /** Stable keys shared by readers and mutations; never derive these from function names. */
 export const cloudCacheKeys = {
+  listCloudConnections: "listCloudConnections",
   summary: "cloud-summary",
   listAomPrometheusInstances: "listAomPrometheusInstances",
   listEnterpriseProjects: "listEnterpriseProjects",

@@ -51,6 +51,7 @@ import { mgcManagement } from "./adapters/mgc";
 import { smsManagement } from "./adapters/sms";
 import { serviceStageManagement } from "./adapters/servicestage";
 import { asmManagement } from "./adapters/asm";
+import { cloudConnectManagement } from "./adapters/cc";
 import { mrsManagement } from "./adapters/mrs";
 import { billingManagement } from "./adapters/billing";
 import { vpnManagement } from "./adapters/vpn";
@@ -65,6 +66,7 @@ import { sdrsManagement } from "./adapters/sdrs";
 import type { ManagementAdapter } from "./types";
 
 export const managementAdapters: Record<string, ManagementAdapter> = {
+  cc: cloudConnectManagement,
   mrs: mrsManagement,
   "enterprise-projects": enterpriseProjectsManagement,
   aom: aomManagement,

@@ -549,10 +549,11 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
     {
       name: "Cloud Connect",
       shortName: "CC",
+      href: "/services/cc",
       description:
         "Global private network connectivity across regions and VPCs.",
       logo: serviceLogos.CC,
-      status: "Catalog",
+      status: "Available",
       icon: Boxes,
       aliases: [],
     },

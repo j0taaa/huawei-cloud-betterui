@@ -44,6 +44,7 @@ export * from "@/lib/huawei/services/evs";
 export * from "@/lib/huawei/services/flexus";
 export * from "@/lib/huawei/services/functiongraph";
 export * from "@/lib/huawei/services/gaussdb";
+export * from "@/lib/huawei/services/cc";
 export * from "@/lib/huawei/services/geminidb";
 export * from "@/lib/huawei/services/hss";
 export * from "@/lib/huawei/services/iam";

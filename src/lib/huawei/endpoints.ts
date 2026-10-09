@@ -9,6 +9,7 @@ export type ServiceKey =
   | "as"
   | "bss"
   | "bms"
+  | "cc"
   | "cbr"
   | "cbh"
   | "cdm"
@@ -79,6 +80,7 @@ export const endpointEnv: Record<ServiceKey, string> = {
   as: "HUAWEI_AS_ENDPOINT",
   bss: "HUAWEI_BSS_ENDPOINT",
   bms: "HUAWEI_BMS_ENDPOINT",
+  cc: "HUAWEI_CC_ENDPOINT",
   cbr: "HUAWEI_CBR_ENDPOINT",
   cbh: "HUAWEI_CBH_ENDPOINT",
   cdm: "HUAWEI_CDM_ENDPOINT",
@@ -143,6 +145,7 @@ export const endpointEnv: Record<ServiceKey, string> = {
 
 export function serviceEndpoint(service: ServiceKey, region: string) {
   const globalServiceEndpoint: Partial<Record<ServiceKey, string>> = {
+    cc: "https://cc.myhuaweicloud.com",
     eps: "https://eps.myhuaweicloud.com",
     bss: "https://bss-intl.myhuaweicloud.com",
     cdn: "https://cdn.myhuaweicloud.com",
