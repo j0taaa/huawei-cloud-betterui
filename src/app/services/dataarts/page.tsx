@@ -18,8 +18,8 @@ export const metadata: Metadata = {
 export default async function DataArtsPage() {
   const result = await withCloudResult<DataArtsInstance[]>([], listDataArtsInstances, cloudCacheKeys.listDataArtsInstances);
   const instances = result.data;
-  const healthy = instances.filter((instance) => ["running", "normal", "available", "active"].includes(instance.status.toLowerCase())).length;
-  const workspaces = instances.reduce((total, instance) => total + instance.workspaceCount, 0);
+  const healthy = instances.filter((instance) => ["in effect"].includes(instance.status.toLowerCase())).length;
+  const workspaces = instances.every(instance => instance.workspaceCount !== null) ? instances.reduce((total, instance) => total + (instance.workspaceCount ?? 0), 0) : "Unknown";
   const editions = new Set(instances.map((instance) => instance.edition).filter((edition) => edition !== "-"));
 
   const columns: InventoryColumn<DataArtsInstance>[] = [
@@ -43,21 +43,21 @@ export default async function DataArtsPage() {
         </CellStack>
       ),
     },
-    { header: "Workspaces", render: (instance) => instance.workspaceCount },
+    { header: "Workspaces", render: (instance) => instance.workspaceCount ?? "Unknown" },
     { header: "Charging", render: (instance) => instance.chargingMode },
-    { header: "Description", render: (instance) => instance.description || "-" },
+    { header: "Enterprise project", render: (instance) => instance.epsId },
     { header: "Project / region", render: (instance) => `${instance.projectName} / ${instance.region}` },
   ];
 
   return (
     <ServiceInventoryPage
-      actionLabel="Create instance"
-      actionTitle="DataArts instance creation is disabled in this read-only view."
+      managementService="dataarts"
+      actionLabel="Create workspace"
       active="Databases"
       backHref="/services/databases"
       backLabel="Back to Databases"
       columns={columns}
-      description="Read-only DataArts Studio instances with edition, workspace capacity, lifecycle status, and regional placement."
+      description="DataArts Studio instances with native subscription status and regional placement. Manage workspaces and development jobs inside an existing instance."
       empty="No DataArts Studio instances found"
       icon={FolderTree}
       result={result}

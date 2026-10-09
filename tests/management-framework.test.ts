@@ -242,3 +242,35 @@ test("CFW protection switches keep accepted requests pending without inventing n
     assert.equal(value.entry.state, "submitted");
   } finally { await deleteSession(signed); }
 });
+
+test("DataArts creation and retry retain accepted requests as pending history without fabricated jobs", async t => {
+  const { GET } = await import("@/app/api/cloud/operations/[id]/route");
+  let mutations = 0;
+  t.mock.method(globalThis, "fetch", async (input: string, init: RequestInit) => {
+    const url = new URL(input);
+    if (init.method === "POST") { mutations++; return Response.json(url.pathname.includes("/workspaces/") ? { is_success: true, message: "not-a-typed-workspace-id" } : {}); }
+    if (url.pathname.endsWith("/instances")) return Response.json({ count: 1, commodity_orders: [{ resource_id: "studio-1", resource_name: "Studio", status: 2, project_id: session.projectId, region_id: session.region, domain_id: "domain-1" }] });
+    if (url.pathname.includes("/workspaces/")) return Response.json({ count: 1, data: [{ id: "workspace-1", name: "Workspace", project_id: session.projectId, instance_id: "studio-1", domain_id: "domain-1", eps_id: "0", is_default: 0 }] });
+    if (url.pathname.endsWith("/factory/jobs")) return Response.json({ total: 1, jobs: [{ name: "ETL", status: "STOPPED" }] });
+    if (url.pathname.endsWith("/instances/detail")) return Response.json({ total: 1, instances: [{ instance_id: 123, job_id: 456, job_name: "ETL", plan_time: 1767225600000, submit_time: 1767225600001, status: "fail" }] });
+    throw new Error("Unexpected native fixture path");
+  });
+  const requests = [
+    { operation: "create-workspace", requestId: randomUUID(), projectId: session.projectId, acknowledgedImpact: true, values: { instance: "studio-1", name: "Research", epsId: "0", description: "Private form description" } },
+    { operation: "retry-job", requestId: randomUUID(), projectId: session.projectId, resourceId: "job:studio-1:workspace-1:ETL", confirmName: "ETL", acknowledgedImpact: true, values: { instance: "123", retryLocation: "errorNode", retryTaskVersion: "original_version" } },
+  ];
+  for (const body of requests) {
+    const before = mutations;
+    const result = await runManagementOperation(session, "dataarts", body);
+    assert.equal(result.asynchronous, true);
+    const saved = (await listManagementHistory(session, "dataarts")).find(item => item.id === body.requestId)!;
+    assert.equal(saved.state, "submitted"); assert.equal(saved.jobId, undefined); assert.equal(saved.finishedAt, undefined);
+    assert.ok(!JSON.stringify(saved).includes("Private form description"));
+    assert.equal((await runManagementOperation(session, "dataarts", body)).replayed, true); assert.equal(mutations, before + 1);
+    const signed = await createSession(session);
+    try {
+      const response = await withSessionCookie(signed, () => GET(new Request(`http://localhost/api/cloud/operations/${body.requestId}`), { params: Promise.resolve({ id: body.requestId }) }));
+      const value = await response.json(); assert.equal(value.canRefresh, false); assert.equal(value.entry.state, "submitted");
+    } finally { await deleteSession(signed); }
+  }
+});

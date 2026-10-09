@@ -1,3 +1,4 @@
+import { dataartsManagement } from "./adapters/dataarts";
 import { kooGalleryManagement } from "./adapters/koogallery";
 import "server-only";
 import { cfwManagement } from "./adapters/cfw";
@@ -72,6 +73,7 @@ import { sdrsManagement } from "./adapters/sdrs";
 import type { ManagementAdapter } from "./types";
 
 export const managementAdapters: Record<string, ManagementAdapter> = {
+  dataarts: dataartsManagement,
   koogallery: kooGalleryManagement,
   cfw: cfwManagement,
   cbh: cbhManagement,
