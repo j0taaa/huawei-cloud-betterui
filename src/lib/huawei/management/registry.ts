@@ -27,6 +27,10 @@ import { kafkaManagement } from "./adapters/kafka";
 import { iotdaManagement } from "./adapters/iotda";
 import { rdsManagement } from "./adapters/rds";
 import { imsManagement } from "./adapters/ims";
+import { dliManagement } from "./adapters/dli";
+import { secmasterManagement } from "./adapters/secmaster";
+import { enterpriseRouterManagement } from "./adapters/enterprise-router";
+import { vpcEndpointManagement } from "./adapters/vpc-endpoint";
 import type { ManagementAdapter } from "./types";
 
 export const managementAdapters: Record<string, ManagementAdapter> = {
@@ -42,6 +46,10 @@ export const managementAdapters: Record<string, ManagementAdapter> = {
   iotda: iotdaManagement,
   rds: rdsManagement,
   ims: imsManagement,
+  dli: dliManagement,
+  secmaster: secmasterManagement,
+  "enterprise-router": enterpriseRouterManagement,
+  "vpc-endpoint": vpcEndpointManagement,
   ecs: ecsManagement,
   dew: dewManagement,
   cdn: cdnManagement,

@@ -11,6 +11,7 @@ export type EnterpriseRouter = {
   createdAt: string;
   defaultAssociation: string;
   defaultPropagation: string;
+  description: string;
   id: string;
   name: string;
   projectId: string;
@@ -48,6 +49,7 @@ export async function listEnterpriseRoutersForProject(
       createdAt: firstString([item.created_at, item.createdAt]),
       defaultAssociation: String(item.enable_default_association ?? "-"),
       defaultPropagation: String(item.enable_default_propagation ?? "-"),
+      description: asString(item.description, ""),
       id: asString(item.id),
       name: firstString([item.name, item.id]),
       projectId: session.projectId,

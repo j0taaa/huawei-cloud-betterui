@@ -146,7 +146,7 @@ const mock = createServer(async (req, res) => {
       total_count: 1,
     };
   } else if (url.pathname.startsWith("/vpc/"))
-    body = url.pathname.includes("security-groups")
+    body = url.pathname.endsWith("/ports") ? { ports: [] } : url.pathname.includes("security-groups")
       ? { security_groups: [], page_info: {} }
       : url.pathname.includes("subnets")
         ? { subnets: [] }
@@ -170,6 +170,10 @@ const mock = createServer(async (req, res) => {
   else if (url.pathname.startsWith("/dcs/")) body = url.pathname.endsWith("/flavors") ? { flavors: [{ engine: "Redis", engine_version: "4.0", spec_code: "redis.ha.large.4", capacity: [32], billing_mode: ["hourly"], flavors_available_zones: [{ capacity: "32", az_codes: ["az-1"] }] }] } : url.pathname.endsWith("/available-zones") ? { available_zones: [{ code: "az-1", name: "Zone 1", resource_availability: "true" }] } : { instances: [], instance_num: 0 };
   else if (url.pathname.startsWith("/dms/")) body = url.pathname.endsWith("/products") ? { products: [{ product_id: "kafka.cluster.s1", charging_mode: ["hourly"], properties: { engine_versions: "2.7", min_broker: 3, max_broker: 30 }, ios: [{ io_spec: "dms.storage.high", available_zones: ["az-1"] }] }] } : url.pathname.endsWith("/available-zones") ? { available_zones: [{ id: "az-1", name: "Zone 1", resource_availability: "true" }] } : { instances: [], total_count: 0 };
   else if (url.pathname.startsWith("/iotda/")) body = url.pathname.endsWith("/apps") ? { applications: [{ app_id: "app-1", app_name: "Devices" }] } : url.pathname.endsWith("/products") ? { products: [{ app_id: "app-1", product_id: "product-1", name: "Sensors", protocol_type: "MQTT" }] } : { devices: [] };
+  else if (url.pathname.startsWith("/dli/")) body = { is_success: true, queues: [], count: 0 };
+  else if (url.pathname.startsWith("/secmaster/")) body = { workspaces: [], total_count: 0 };
+  else if (url.pathname.startsWith("/er/")) body = url.pathname.endsWith("/availability-zones") ? { availability_zones: [{ code: "az-1", state: "available" }] } : { instances: [], page_info: {} };
+  else if (url.pathname.startsWith("/vpcep/")) body = { endpoint_services: [], endpoints: [], total_count: 0 };
   else if (url.pathname.startsWith("/cce/")) body = { items: [] };
   else if (url.pathname.startsWith("/rds/")) {
     if (url.pathname.includes("/flavors/")) body = { flavors: [{ instance_mode: "single", version_name: ["8.0"], spec_code: "rds.single", vcpus: "2", ram: 4096, az_status: { "az-1": "normal" }, az_desc: { "az-1": "Zone 1" } }] };
@@ -570,7 +574,7 @@ try {
   );
   const serviceSearch = await request("/services/databases");
   assert.match(await serviceSearch.text(), /dms-rabbitmq/);
-  for (const service of ["ecs", "aom", "enterprise-projects", "dms-rabbitmq", "dms-rocketmq", "network", "dns", "smn", "lts", "dew", "ces", "cts", "cdn", "eip", "elb", "cbr", "sfs", "swr", "obs", "as", "nat", "evs", "iam", "deh", "dcs", "dms-kafka", "iotda", "rds", "ims"]) {
+  for (const service of ["ecs", "aom", "enterprise-projects", "dms-rabbitmq", "dms-rocketmq", "network", "dns", "smn", "lts", "dew", "ces", "cts", "cdn", "eip", "elb", "cbr", "sfs", "swr", "obs", "as", "nat", "evs", "iam", "deh", "dcs", "dms-kafka", "iotda", "rds", "ims", "dli", "secmaster", "enterprise-router", "vpc-endpoint"]) {
     const managementPage = await request(`/services/${service}/manage`);
     assert.equal(managementPage.status, 200, `${service} management route`);
     assert.match(await managementPage.text(), /Loading management controls/);

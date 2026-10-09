@@ -26,6 +26,10 @@ const existingWorkflows: Record<string, string[]> = {
   "dms-kafka": ["Restart instance"],
 };
 const remainingAreas: Record<string, string[]> = {
+  dli: ["Elastic resource pools, Flink, and Spark batch jobs", "Databases, tables, data sources, catalogs, and permissions", "Billing, quotas, logs, and metrics"],
+  secmaster: ["Alerts, incidents, investigations, and security dashboards", "Playbooks, workflows, collection, shipping, and indexes", "Edition purchases, protection settings, billing, and quotas"],
+  "enterprise-router": ["Shared and non-VPC attachments, route policies, and flow logs", "Availability-zone changes, tags, quotas, metrics, and billing", "Cloud completion tracking"],
+  "vpc-endpoint": ["Gateway endpoints, route tables, policies, and endpoint access control", "Multiple port mappings, cross-account service discovery, tags, and upgrades", "Quotas, monitoring, billing, and cloud completion tracking"],
   ims: ["Image imports, exports, full-ECS images, replication, and protection changes", "Image drivers, encryption, tags, subscriptions, pricing, and quotas"],
   rds: ["High availability, replicas, SQL Server, and advanced provisioning", "Restores, parameters, SSL, access grants, tags, maintenance, and prepaid orders", "Monitoring, diagnosis, pricing, and quotas"],
   iotda: ["Resource spaces, groups, tags, rules, and routing lifecycle", "Certificate provisioning, asynchronous commands, and OTA upgrades", "Telemetry queries, connection logs, codecs, bulk import, quotas, and billing"],
