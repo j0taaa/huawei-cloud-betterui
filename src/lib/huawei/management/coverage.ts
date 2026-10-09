@@ -26,6 +26,7 @@ const existingWorkflows: Record<string, string[]> = {
   "dms-kafka": ["Restart instance"],
 };
 const remainingAreas: Record<string, string[]> = {
+  "codearts-build": ["Custom build steps, YAML editing, sensitive parameters, non-branch sources, and private templates", "Artifacts/log browsing, triggers, permissions, executor pools, and pipeline integration", "Quotas, pricing, subscriptions, and detailed resource monitoring"],
   "codearts-repo": ["Repository files/commits, reviews, merge requests, and complete ref configuration", "Members, permissions, protected-ref changes, deploy keys, webhooks, and imports", "General policy editing, repository rename/visibility, quotas, and billing"],
   sdrs: ["Replication attachment/detachment, disk expansion, additional NICs, and flavor changes", "Asynchronous/cross-region recovery, shared/dedicated resources, custom drill networks, and recovery-resource deletion", "RPO monitoring, audit logs, failure-task administration, pricing, and subscription workflows"],
   gaussdb: ["Distributed, basic/ecology editions, multi-AZ provisioning, node expansion, and upgrades", "Database grants/deletion, parameters, SSL/public access, restores, and recycle bin", "Security/maintenance settings, audit/slow logs, metrics, quotas, pricing, and subscription orders"],

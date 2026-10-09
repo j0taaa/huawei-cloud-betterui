@@ -4,7 +4,7 @@ import type { BetterUiSession, HuaweiProjectSession } from "@/lib/auth-session";
 import { huaweiList } from "@/lib/huawei/http";
 import {
   asRecord,
-  firstResponseArray,
+  asArray,
   firstString,
   timestampMillis,
 } from "@/lib/huawei/parsers";
@@ -34,20 +34,8 @@ export async function listCodeArtsBuildJobsForProject(
     "codeartsbuild",
     `/v1/job/${session.projectId}/list?page_index=0&page_size=100`,
     {
-      items: [
-        "job_list",
-        "jobs",
-        "result",
-        "job_list.job_list",
-        "job_list.jobs",
-        "job_list.result",
-        "jobs.job_list",
-        "jobs.jobs",
-        "jobs.result",
-        "result.job_list",
-        "result.jobs",
-        "result.result",
-      ],
+      items: ["jobs"],
+      total: ["total"],
       kind: "page",
       parameter: "page_index",
       size: 100,
@@ -55,7 +43,7 @@ export async function listCodeArtsBuildJobsForProject(
     },
   );
 
-  return firstResponseArray(body, ["job_list", "jobs", "result"]).map(
+  return asArray(body.jobs).map(
     (job): CodeArtsBuildJob => {
       const item = asRecord(job);
 

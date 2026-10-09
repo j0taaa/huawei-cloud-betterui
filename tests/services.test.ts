@@ -138,12 +138,11 @@ test("CodeArts Build retains its zero-based page index", async (t) => {
   t.mock.method(globalThis, "fetch", async (input: string) => {
     pages.push(new URL(input).searchParams.get("page_index")!);
     return Response.json({
-      result: {
-        job_list: Array.from(
+      total: 101,
+      jobs: Array.from(
           { length: pages.length === 1 ? 100 : 1 },
           (_, index) => ({ id: `${pages.length}-${index}` }),
         ),
-      },
     });
   });
   assert.equal((await listCodeArtsBuildJobsForProject(project)).length, 101);

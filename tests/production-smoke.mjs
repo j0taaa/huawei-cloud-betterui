@@ -180,7 +180,7 @@ const mock = createServer(async (req, res) => {
   else if (url.pathname.startsWith("/apig/")) body = url.pathname.endsWith("/available-zones") ? { available_zones: [{ id: "az-1", name: "Zone 1", specs: { BASIC: true, PROFESSIONAL: true } }] } : { instances: [], total: 0 };
   else if (url.pathname.startsWith("/projectman/")) body = { projects: [{ project_id: "a".repeat(32), project_name: "CodeArts workspace" }], total: 1 };
   else if (url.pathname.startsWith("/codeartsrepo/")) body = [];
-  else if (url.pathname.startsWith("/codeartsbuild/")) body = { result: { job_list: [] } };
+  else if (url.pathname.startsWith("/codeartsbuild/")) body = url.pathname.endsWith("/officialtemplates") ? { status: "success", error: null, result: { items: [], total_size: 0 } } : { jobs: [], total: 0 };
   else if (url.pathname.startsWith("/codeartspipeline/")) body = { pipelines: [], total: 0 };
   else if (url.pathname.startsWith("/codeartsdeploy/")) body = { applications: [] };
   else if (url.pathname.startsWith("/gaussdb/")) body = url.pathname.endsWith("/versions") ? { database_versions: [{ software_version: "506.2.0" }], total: 1 } : url.pathname.endsWith("/flavors") ? { flavors: [{ spec_code: "gaussdb.spec", vcpus: "4", ram: "32", group_type: "general", az_status: { "az-1": "normal" } }], total: 1 } : url.pathname.endsWith("/storage-type") ? { storage_type: [{ name: "ULTRAHIGH", support_compute_group_type: ["general"], az_status: { "az-1": "normal" } }] } : { instances: [], total_count: 0 };
@@ -596,7 +596,7 @@ try {
   assert.ok(requests.some(entry => entry.path === `/codeartsrepo/v4/projects/${"a".repeat(32)}/repositories`));
   const serviceSearch = await request("/services/databases");
   assert.match(await serviceSearch.text(), /dms-rabbitmq/);
-  for (const service of ["ecs", "aom", "enterprise-projects", "dms-rabbitmq", "dms-rocketmq", "network", "dns", "smn", "lts", "dew", "ces", "cts", "cdn", "eip", "elb", "cbr", "sfs", "swr", "obs", "as", "nat", "evs", "iam", "deh", "dcs", "dms-kafka", "iotda", "rds", "ims", "dli", "secmaster", "enterprise-router", "vpc-endpoint", "eventgrid", "apig", "oms", "dds", "cce", "css", "cci", "waf", "gaussdb", "taurusdb", "geminidb", "sdrs", "codearts-repo"]) {
+  for (const service of ["ecs", "aom", "enterprise-projects", "dms-rabbitmq", "dms-rocketmq", "network", "dns", "smn", "lts", "dew", "ces", "cts", "cdn", "eip", "elb", "cbr", "sfs", "swr", "obs", "as", "nat", "evs", "iam", "deh", "dcs", "dms-kafka", "iotda", "rds", "ims", "dli", "secmaster", "enterprise-router", "vpc-endpoint", "eventgrid", "apig", "oms", "dds", "cce", "css", "cci", "waf", "gaussdb", "taurusdb", "geminidb", "sdrs", "codearts-repo", "codearts-build"]) {
     const managementPage = await request(`/services/${service}/manage`);
     assert.equal(managementPage.status, 200, `${service} management route`);
     assert.match(await managementPage.text(), /Loading management controls/);

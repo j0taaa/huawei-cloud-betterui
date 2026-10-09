@@ -24,7 +24,7 @@ test("CodeArts inventory resolves developer workspace IDs before reading each se
       return Response.json({ projects: [workspace], total: 1 });
     }
     if (url.pathname.endsWith("/repositories")) return Response.json([{ id: 123, name: "repo" }]);
-    if (url.pathname.endsWith("/list") && url.pathname.includes("/job/")) return Response.json({ result: { job_list: [{ id: "job", name: "Build" }] } });
+    if (url.pathname.endsWith("/list") && url.pathname.includes("/job/")) return Response.json({ jobs: [{ id: "job", job_name: "Build" }], total: 1 });
     if (url.pathname.includes("/pipelines/")) return Response.json({ pipelines: [{ pipeline_id: "pipeline", name: "Pipeline" }], total: 1 });
     if (url.pathname === "/v1/applications/list") return Response.json({ applications: [{ id: "app", name: "App" }] });
     throw new Error(`Unexpected route ${url.pathname}`);
