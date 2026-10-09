@@ -39,6 +39,18 @@ async function offers(s: BetterUiSession) {
 }
 const facts = (item: Record<string, unknown>, keys: string[]) => keys.map(key => ({ label: key.replaceAll("_", " "), value: typeof item[key] === "number" || typeof item[key] === "string" ? String(item[key]) : "-" }));
 
+/** Provisioning diagnostics are not public configuration. Only documented states are exposed. */
+function provisioningProgress(s: BetterUiSession, id: string, value: unknown) {
+  const body = asRecord(value);
+  for (const [key, expected] of [["project_id", s.projectId], ["instance_id", id], ["id", id]]) {
+    if (Object.hasOwn(body, key) && body[key] !== expected) throw new Error("Gateway provisioning scope could not be verified.");
+  }
+  if (!["creating", "success", "failed"].includes(String(body.status)) || typeof body.status !== "string") throw new Error("Gateway provisioning status could not be verified. Inspect its cloud state before retrying.");
+  if (Object.hasOwn(body, "error") || (body.status !== "failed" && ["error_code", "error_msg"].some(key => Object.hasOwn(body, key) && body[key] !== null && body[key] !== ""))) throw new Error("Gateway provisioning response could not be verified. Inspect its cloud state before retrying.");
+  const percent = typeof body.progress === "number" && Number.isInteger(body.progress) && body.progress >= 0 && body.progress <= 100 ? `${body.progress}%` : "Unknown";
+  return { status: body.status as "creating" | "success" | "failed", percent };
+}
+
 export const apigManagement: ManagementAdapter = {
   title: "API Gateway Instances, APIs and Environments",
   operations: [
@@ -87,7 +99,7 @@ export const apigManagement: ManagementAdapter = {
     }
     if (!resource) throw new ManagementInputError("Select a current gateway."); const current = await instance(s, resource); const target = path(s, resource);
     if (operation === "inspect") return { message: "Current gateway configuration.", facts: facts(current, ["instance_name", "description", "status", "project_id", "spec", "charging_mode", "vpc_id", "subnet_id", "security_group_id", "ingress_ip", "nat_eip_address", "bandwidth_size", "maintain_begin", "maintain_end"]) };
-    if (operation === "progress") { const progress = await huaweiFetch<Record<string, unknown>>(s, "apig", `${target}/progress`); return { message: "Huawei gateway provisioning progress.", facts: facts(progress, ["progress", "status", "error_code", "start_time", "end_time"]) }; }
+    if (operation === "progress") { const progress = provisioningProgress(s, resource.id, await huaweiFetch<unknown>(s, "apig", `${target}/progress`)); return { message: "Huawei gateway provisioning progress.", facts: [{ label: "Status", value: ({ creating: "Creating", success: "Succeeded", failed: "Failed" })[progress.status] }, { label: "Progress", value: progress.percent }] }; }
     if (operation === "update") { await write(target, "PUT", { instance_name: v.name, description: v.description ?? "" }); return { message: "Gateway metadata updated." }; }
     if (operation === "delete") {
       if (current.charging_mode !== 0 || asArray(current.cbc_operation_locks).length || current.is_releasable === false) throw new ManagementInputError("Only releasable pay-per-use gateways without billing locks can be deleted here.");
@@ -140,12 +152,12 @@ export const apigManagement: ManagementAdapter = {
     throw new ManagementInputError("Unsupported API Gateway operation.");
   },
   poll: async (s, entry) => {
-    if (entry.operation !== "Create pay-per-use gateway" || !entry.resourceId) throw new ManagementInputError("Only gateway provisioning requests support this progress check.");
+    if (entry.operation !== "Create pay-per-use gateway" || !entry.resourceId || entry.projectId !== s.projectId) throw new ManagementInputError("Only gateway provisioning requests support this progress check.");
     const item = await instance(s, { id: entry.resourceId, name: entry.resourceName ?? entry.resourceId });
-    const progress = await huaweiFetch<Record<string, unknown>>(s, "apig", `${root(s)}/instances/${encodeURIComponent(String(item.id))}/progress`);
+    const progress = provisioningProgress(s, entry.resourceId, await huaweiFetch<unknown>(s, "apig", `${root(s)}/instances/${encodeURIComponent(String(item.id))}/progress`));
     if (progress.status === "success") return { state: "succeeded", message: "Gateway provisioning completed." };
-    if (["failed", "error"].includes(String(progress.status))) return { state: "failed", message: `Gateway provisioning failed (${asString(progress.error_code, "unknown")}). Inspect its cloud state before retrying.` };
-    return { state: "submitted", message: `Gateway provisioning is ${asString(progress.status, "in progress")} (${progress.progress ?? "-"}%).` };
+    if (progress.status === "failed") return { state: "failed", message: "Gateway provisioning failed. Inspect its cloud state before retrying." };
+    return { state: "submitted", message: `Gateway provisioning is in progress (${progress.percent}).` };
   },
   invalidationKeys: () => [cloudCacheKeys.listApigInstances],
 };

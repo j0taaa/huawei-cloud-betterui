@@ -88,7 +88,46 @@ test("APIG API deletion checks active native version records and permits inactiv
   status = 2; await apigManagement.execute(session, "delete-api", { api: api.id }, resource); assert.deepEqual(writes[0], { path: "/v2/project-1/apigw/instances/gateway-1/apis/api-1", method: "DELETE" });
 });
 test("APIG provisioning polling maps native completion, failure, and progress", async t => {
-  let status = "success"; mock(t, url => url.pathname.endsWith("/progress") ? { status, progress: 50, error_code: "APIC.failed" } : undefined);
+  let status = "success"; mock(t, url => url.pathname.endsWith("/progress") ? { status, progress: 50, error_code: status === "failed" ? "APIC.failed" : null } : undefined);
   const entry = { id: "request", service: "apig", operation: "Create pay-per-use gateway", resourceId: gateway.id, projectId: session.projectId, startedAt: new Date().toISOString(), state: "submitted" as const };
   assert.equal((await apigManagement.poll!(session, entry)).state, "succeeded"); status = "failed"; assert.equal((await apigManagement.poll!(session, entry)).state, "failed"); status = "creating"; assert.equal((await apigManagement.poll!(session, entry)).state, "submitted");
+});
+
+test("APIG progress inspection and saved outcomes omit private diagnostics", async t => {
+  let status = "failed"; mock(t, url => url.pathname.endsWith("/progress") ? { status, progress: "private-progress", error_code: status === "failed" ? "private-code" : null, error_msg: status === "failed" ? "private-message" : null, start_time: "private-time" } : undefined);
+  const result = await apigManagement.execute(session, "progress", {}, resource);
+  assert.deepEqual(result.facts, [{ label: "Status", value: "Failed" }, { label: "Progress", value: "Unknown" }]);
+  const entry = { id: "request", service: "apig", operation: "Create pay-per-use gateway", resourceId: gateway.id, projectId: session.projectId, startedAt: new Date().toISOString(), state: "submitted" as const };
+  for (status of ["failed", "creating", "success"]) assert.doesNotMatch(JSON.stringify(await apigManagement.poll!(session, entry)), /private/);
+});
+test("APIG unknown or malformed progress cannot report successful completion", async t => {
+  let body: Record<string, unknown> = {}; mock(t, url => url.pathname.endsWith("/progress") ? body : undefined);
+  const entry = { id: "request", service: "apig", operation: "Create pay-per-use gateway", resourceId: gateway.id, projectId: session.projectId, startedAt: new Date().toISOString(), state: "submitted" as const };
+  for (body of [{}, { status: "private-state", progress: 100 }, { status: null }, { error_code: "private-code", error_msg: "private-message" }]) {
+    await assert.rejects(apigManagement.execute(session, "progress", {}, resource), /status could not be verified/);
+    await assert.rejects(apigManagement.poll!(session, entry), error => error instanceof Error && /status could not be verified/.test(error.message) && !error.message.includes("private"));
+  }
+});
+test("APIG progress rechecks provided identity echoes and the history project", async t => {
+  let body: Record<string, unknown> = {}; let reads = 0; mock(t, url => { reads++; return url.pathname.endsWith("/progress") ? body : undefined; });
+  const entry = { id: "request", service: "apig", operation: "Create pay-per-use gateway", resourceId: gateway.id, projectId: session.projectId, startedAt: new Date().toISOString(), state: "submitted" as const };
+  for (const key of ["project_id", "instance_id", "id"]) for (const value of ["foreign", null]) {
+    body = { status: "success", progress: 100, [key]: value };
+    await assert.rejects(apigManagement.poll!(session, entry), /scope could not be verified/);
+    await assert.rejects(apigManagement.execute(session, "progress", {}, resource), /scope could not be verified/);
+  }
+  const before = reads; await assert.rejects(apigManagement.poll!(session, { ...entry, projectId: "foreign" }), /progress check/); assert.equal(reads, before);
+});
+test("APIG only displays native integer progress percentages within bounds", async t => {
+  let progress: unknown; mock(t, url => url.pathname.endsWith("/progress") ? { status: "creating", progress } : undefined);
+  for (progress of [null, false, "50", -1, 101, 0.5, "private-progress"]) assert.equal((await apigManagement.execute(session, "progress", {}, resource)).facts?.[1].value, "Unknown");
+  for (progress of [0, 50, 100]) assert.equal((await apigManagement.execute(session, "progress", {}, resource)).facts?.[1].value, `${progress}%`);
+});
+
+test("APIG business errors cannot become successful progress outcomes", async t => {
+  let body: Record<string, unknown> = {}; mock(t, url => url.pathname.endsWith("/progress") ? body : undefined);
+  const entry = { id: "request", service: "apig", operation: "Create pay-per-use gateway", resourceId: gateway.id, projectId: session.projectId, startedAt: new Date().toISOString(), state: "submitted" as const };
+  for (body of [{ status: "success", error_code: "private-code" }, { status: "creating", error_msg: "private-message" }, { status: "success", error: "private-error" }, { status: "success", error_code: false }]) {
+    await assert.rejects(apigManagement.poll!(session, entry), error => error instanceof Error && /response could not be verified/.test(error.message) && !error.message.includes("private"));
+  }
 });

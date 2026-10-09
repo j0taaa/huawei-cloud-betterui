@@ -78,7 +78,7 @@ const remainingAreas: Record<string, string[]> = {
   network: ["IPv6, route tables, DHCP and ACLs", "Peering, NICs, endpoints and flow logs", "Topology, import/export and bulk operations"],
   eip: ["Shared and prepaid bandwidth", "IPv6 and network configuration", "Quotas, pricing and cloud completion tracking"],
   elb: ["Certificate creation and complete TLS settings", "Routing policies, ACLs and advanced backend configuration", "Autoscaling, quotas, pricing, metrics and cloud completion tracking"],
-  obs: ["Object versions, multipart uploads, copies and archive restore", "Encryption, WORM, replication, notifications, logging and tags", "Quotas, costs, monitoring and object operation history"],
+  obs: ["Object versions, multipart uploads, copies and archive restore", "Encryption, WORM, replication, notifications, logging and tags", "Quotas, costs, monitoring and object operation history", "HTTPS access for dotted bucket names and exact addressing of object keys containing dot segments"],
   cbr: ["Backup restoration and replication", "Other vault resource types and advanced schedules", "Complete cloud job tracking, pricing and quotas"],
   sfs: ["SFS Turbo and file-system versions", "Encryption, snapshots, quotas and billing", "Monitoring and cloud completion tracking"],
   swr: ["Organization and repository permissions", "Replication, triggers and retention policies", "Enterprise edition and registry monitoring"],
