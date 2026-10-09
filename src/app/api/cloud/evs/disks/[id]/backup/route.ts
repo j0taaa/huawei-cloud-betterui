@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { recordAcceptedOperation } from "@/lib/huawei/management/accepted-operation";
 
 import { getCurrentSession } from "@/lib/auth-session";
 import {
@@ -94,12 +95,13 @@ export async function POST(
       vaultId,
     });
 
-    await Promise.all([
+    const receipt = await recordAcceptedOperation(session, { service: "evs", operation: "Create disk backup", projectId: disk.projectId, resourceId: disk.id, resourceName: disk.name, resultResourceId: result.checkpoint?.id }, () => Promise.all([
       invalidateCloudResult(session, "listCbrVaults"),
       invalidateCloudResult(session, `evs-disk-backups:${disk.id}`),
-    ]);
+    ]));
 
     return NextResponse.json({
+      ...receipt,
       checkpointId: result.checkpoint?.id ?? null,
       ok: true,
       status: result.checkpoint?.status ?? null,

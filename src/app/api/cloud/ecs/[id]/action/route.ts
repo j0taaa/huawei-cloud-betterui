@@ -1,5 +1,6 @@
 import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import { NextResponse } from "next/server";
+import { recordAcceptedOperation } from "@/lib/huawei/management/accepted-operation";
 
 import { getCurrentSession } from "@/lib/auth-session";
 import { getEcsInstance, runEcsAction, invalidateCloudResult } from "@/lib/huawei-cloud";
@@ -73,13 +74,13 @@ export async function POST(
       instance.projectId,
     );
 
-    await Promise.all([
+    const receipt = await recordAcceptedOperation(session, { service: "ecs", operation: action === "start" ? "Start server" : action === "stop" ? "Stop server" : "Soft reboot", projectId: instance.projectId, resourceId: id, resourceName: instance.name, jobId: result.job_id }, () => Promise.all([
       invalidateCloudResult(session, cloudCacheKeys.listEcsInstances),
       invalidateCloudResult(session, cloudCacheKeys.ecs(id)),
       invalidateCloudResult(session, cloudCacheKeys.ecsMonitoring(id)),
       invalidateCloudResult(session, cloudCacheKeys.summary),
-    ]);
-    return NextResponse.json({ jobId: result.job_id ?? null, ok: true });
+    ]));
+    return NextResponse.json({ jobId: result.job_id ?? null, ok: true, ...receipt });
   } catch (error) {
     return NextResponse.json(
       {

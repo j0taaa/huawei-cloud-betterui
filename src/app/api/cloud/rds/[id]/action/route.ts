@@ -1,6 +1,8 @@
 import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import { invalidateCloudResult } from "@/lib/huawei/result";
 import { NextResponse } from "next/server";
+import { recordAcceptedOperation } from "@/lib/huawei/management/accepted-operation";
+import { projectForId } from "@/lib/huawei/projects";
 
 import { getCurrentSession } from "@/lib/auth-session";
 import { runRdsAction } from "@/lib/huawei-cloud";
@@ -32,6 +34,7 @@ export async function POST(
 
   try {
     const { id } = await params;
+    const project = projectForId(session, typeof body?.projectId === "string" ? body.projectId : undefined);
     const result = await runRdsAction(
       session,
       id,
@@ -39,11 +42,11 @@ export async function POST(
       typeof body?.projectId === "string" ? body.projectId : undefined,
     );
 
-    await Promise.all([
+    const receipt = await recordAcceptedOperation(session, { service: "rds", operation: "Reboot instance", projectId: project.projectId, resourceId: id, jobId: result.job_id }, () => Promise.all([
       invalidateCloudResult(session, cloudCacheKeys.listRdsInstances),
       invalidateCloudResult(session, cloudCacheKeys.rds(id)),
-    ]);
-    return NextResponse.json({ jobId: result.job_id ?? null, ok: true });
+    ]));
+    return NextResponse.json({ jobId: result.job_id ?? null, ok: true, ...receipt });
   } catch (error) {
     return NextResponse.json(
       {

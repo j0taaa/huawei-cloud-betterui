@@ -41,10 +41,17 @@ export const evsManagement: ManagementAdapter = {
   },
   invalidationKeys: r => [cloudCacheKeys.listEvsDisks, "evs-page-inventory", "evs-snapshot-inventory", cloudCacheKeys.listEcsInstances, cloudCacheKeys.summary, ...(r ? [cloudCacheKeys.evs(r.id), `evs-disk-snapshots:${r.id}`] : [])],
   poll: async (s, entry) => {
+    if (entry.projectId !== s.projectId || !entry.jobId) throw new ManagementInputError("Select the original project and cloud job for this disk operation.", 409);
     const service = ["Attach disk", "Detach data disk"].includes(entry.operation) ? "ecs" : "evs";
     const job = await huaweiFetch<Record<string, unknown>>(s, service, `/v1/${s.projectId}/jobs/${encodeURIComponent(entry.jobId!)}`);
-    const state = job.status === "SUCCESS" ? "succeeded" : job.status === "FAIL" ? "failed" : "submitted";
     const entities = asRecord(job.entities);
+    for (const container of [job, asRecord(job.data), entities]) {
+      for (const key of ["project_id", "projectId"]) if (Object.hasOwn(container, key) && container[key] !== s.projectId) throw new ManagementInputError("Huawei returned a disk job outside its original project.", 409);
+      for (const key of ["job_id"]) if (Object.hasOwn(container, key) && container[key] !== entry.jobId) throw new ManagementInputError("Huawei returned a different disk job.", 409);
+      if (entry.resourceId && Object.hasOwn(container, "volume_id") && container.volume_id !== entry.resourceId) throw new ManagementInputError("Huawei returned a disk job for a different original disk.", 409);
+      if (job.status !== "FAIL" && ["error", "error_msg", "error_code"].some(key => Object.hasOwn(container, key))) throw new ManagementInputError("Huawei returned an unverifiable disk job. Check the native task details.", 409);
+    }
+    const state = job.status === "SUCCESS" ? "succeeded" : job.status === "FAIL" ? "failed" : "submitted";
     return { state, message: state === "failed" ? "Disk operation failed. Check the disk state and native task details before retrying." : state === "succeeded" ? "Disk operation completed." : "Disk operation is still processing.", resourceId: firstString([entities.volume_id], "") || undefined };
   },
   execute: async (s, operation, v, resource) => {

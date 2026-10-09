@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { recordAcceptedOperation } from "@/lib/huawei/management/accepted-operation";
+import { projectForId } from "@/lib/huawei/projects";
 
 import { getCurrentSession } from "@/lib/auth-session";
 import {
@@ -88,16 +90,19 @@ export async function POST(request: Request) {
   }
 
   try {
+    const project = projectForId(session, input.projectId);
     const result = await createEvsDisk(session, input);
+    const volumeId = result.volume?.id ?? result.volume_ids?.[0];
 
-    await Promise.all([
+    const receipt = await recordAcceptedOperation(session, { service: "evs", operation: "Create disk", projectId: project.projectId, resourceId: volumeId, resourceName: input.name, jobId: result.job_id }, () => Promise.all([
       invalidateCloudResult(session, "listEvsDisks"),
       invalidateCloudResult(session, "evs-page-inventory"),
       invalidateCloudResult(session, "evs-snapshot-inventory"),
       invalidateCloudResult(session, "cloud-summary"),
-    ]);
+    ]));
 
     return NextResponse.json({
+      ...receipt,
       jobId: result.job_id ?? null,
       ok: true,
       volumeId: result.volume?.id ?? result.volume_ids?.[0] ?? null,

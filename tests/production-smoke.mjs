@@ -491,7 +491,16 @@ try {
     body: JSON.stringify({ action: "stop", projectId }),
   });
   assert.equal(action.status, 200);
-  assert.equal((await action.json()).jobId, "mock-job");
+  const actionOutcome = await action.json();
+  assert.equal(actionOutcome.jobId, "mock-job");
+  assert.match(actionOutcome.operationId, /^[a-f0-9-]{36}$/i);
+  const savedAction = await request(`/api/cloud/operations/${actionOutcome.operationId}`, { headers: { cookie } });
+  assert.equal(savedAction.status, 200);
+  const savedActionBody = await savedAction.json();
+  assert.equal(savedActionBody.entry.projectId, projectId);
+  assert.equal(savedActionBody.entry.resourceId, "server-0");
+  assert.equal(savedActionBody.entry.state, "submitted");
+  assert.equal(savedActionBody.entry.jobId, "mock-job");
   assert.match(
     await (await request("/services/ecs")).text(),
     /generation-2-2-0/,

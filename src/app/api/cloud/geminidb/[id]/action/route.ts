@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { recordAcceptedOperation } from "@/lib/huawei/management/accepted-operation";
 
 import { getCurrentSession } from "@/lib/auth-session";
 import {
@@ -72,12 +73,12 @@ export async function POST(
       action as (typeof allowedActions)[number],
       instance.projectId,
     );
-    await Promise.all([
+    const receipt = await recordAcceptedOperation(session, { service: "geminidb", operation: "Restart instance", projectId: instance.projectId, resourceId: id, resourceName: instance.name, jobId: result.job_id }, () => Promise.all([
       invalidateCloudResult(session, "listGeminiDbInstances"),
       invalidateCloudResult(session, `geminidb-instance:${id}`),
-    ]);
+    ]));
 
-    return NextResponse.json({ jobId: result.job_id ?? null, ok: true });
+    return NextResponse.json({ jobId: result.job_id ?? null, ok: true, ...receipt });
   } catch (error) {
     return NextResponse.json(
       {

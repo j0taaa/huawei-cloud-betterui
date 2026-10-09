@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { recordAcceptedOperation } from "@/lib/huawei/management/accepted-operation";
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 
 import { getCurrentSession } from "@/lib/auth-session";
 import {
@@ -66,9 +68,9 @@ export async function POST(
         },
         disk.projectId,
       );
-      await invalidateDisk(session, id);
+      const receipt = await recordAcceptedOperation(session, { service: "evs", operation: "Edit disk", projectId: disk.projectId, resourceId: id, resourceName: disk.name }, () => invalidateDisk(session, id));
 
-      return NextResponse.json({ ok: true });
+      return NextResponse.json({ ok: true, ...receipt });
     }
 
     if (body?.action === "extend") {
@@ -82,9 +84,9 @@ export async function POST(
       }
 
       const result = await extendEvsDisk(session, id, newSizeGb, disk.projectId);
-      await invalidateDisk(session, id);
+      const receipt = await recordAcceptedOperation(session, { service: "evs", operation: "Expand disk", projectId: disk.projectId, resourceId: id, resourceName: disk.name, jobId: result.job_id }, () => invalidateDisk(session, id));
 
-      return NextResponse.json({ jobId: result.job_id ?? null, ok: true });
+      return NextResponse.json({ jobId: result.job_id ?? null, ok: true, ...receipt });
     }
 
     if (body?.action === "attach") {
@@ -107,9 +109,9 @@ export async function POST(
         disk.type,
         disk.projectId,
       );
-      await invalidateDisk(session, id);
+      const receipt = await recordAcceptedOperation(session, { service: "evs", operation: "Attach disk", projectId: disk.projectId, resourceId: id, resourceName: disk.name, jobId: result.job_id }, () => Promise.all([invalidateDisk(session, id), invalidateCloudResult(session, cloudCacheKeys.ecs(serverId)), invalidateCloudResult(session, cloudCacheKeys.listEcsInstances)]));
 
-      return NextResponse.json({ jobId: result.job_id ?? null, ok: true });
+      return NextResponse.json({ jobId: result.job_id ?? null, ok: true, ...receipt });
     }
 
     if (body?.action === "detach") {
@@ -126,9 +128,9 @@ export async function POST(
         body.force === true,
         disk.projectId,
       );
-      await invalidateDisk(session, id);
+      const receipt = await recordAcceptedOperation(session, { service: "evs", operation: "Detach data disk", projectId: disk.projectId, resourceId: id, resourceName: disk.name, jobId: result.job_id }, () => Promise.all([invalidateDisk(session, id), invalidateCloudResult(session, cloudCacheKeys.ecs(serverId)), invalidateCloudResult(session, cloudCacheKeys.listEcsInstances)]));
 
-      return NextResponse.json({ jobId: result.job_id ?? null, ok: true });
+      return NextResponse.json({ jobId: result.job_id ?? null, ok: true, ...receipt });
     }
 
     return NextResponse.json({ error: "Unsupported EVS disk action." }, { status: 400 });

@@ -1,3 +1,4 @@
+import { recordAcceptedOperation } from "@/lib/huawei/management/accepted-operation";
 import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import { NextResponse } from "next/server";
 
@@ -7,6 +8,7 @@ import {
   deleteEvsSnapshot,
   getEvsDisk,
   invalidateCloudResult,
+  listEvsSnapshots,
   rollbackEvsSnapshot,
 } from "@/lib/huawei-cloud";
 
@@ -51,15 +53,16 @@ export async function POST(request: Request) {
         disk.projectId,
       );
 
-      await Promise.all([
+      const receipt = await recordAcceptedOperation(session, { service: "evs", operation: "Rollback snapshot", projectId: disk.projectId, resourceId: diskId, resourceName: disk.name, jobId: result.job_id }, () => Promise.all([
         invalidateCloudResult(session, "listEvsSnapshots"),
         invalidateCloudResult(session, "listEvsDisks"),
         invalidateCloudResult(session, "evs-page-inventory"),
         invalidateCloudResult(session, "evs-snapshot-inventory"),
         invalidateCloudResult(session, `evs-disk:${diskId}`),
-      ]);
+        invalidateCloudResult(session, `evs-disk-snapshots:${diskId}`),
+      ]));
 
-      return NextResponse.json({ jobId: result.job_id ?? null, ok: true });
+      return NextResponse.json({ jobId: result.job_id ?? null, ok: true, ...receipt });
     } catch (error) {
       return NextResponse.json(
         {
@@ -108,13 +111,15 @@ export async function POST(request: Request) {
       disk.projectId,
     );
 
-    if (typeof body.ecsId === "string") {
-      await invalidateCloudResult(session, cloudCacheKeys.ecsSnapshots(body.ecsId));
-    }
-    await invalidateCloudResult(session, "listEvsSnapshots");
-    await invalidateCloudResult(session, "evs-snapshot-inventory");
+    const receipt = await recordAcceptedOperation(session, { service: "evs", operation: "Create snapshot", projectId: disk.projectId, resourceId: diskId, resourceName: disk.name, resultResourceId: result.snapshot?.id ?? result.id }, () => Promise.all([
+      ...(typeof body.ecsId === "string" ? [invalidateCloudResult(session, cloudCacheKeys.ecsSnapshots(body.ecsId))] : []),
+      invalidateCloudResult(session, "listEvsSnapshots"),
+      invalidateCloudResult(session, "evs-snapshot-inventory"),
+      invalidateCloudResult(session, `evs-disk-snapshots:${diskId}`),
+    ]));
 
     return NextResponse.json({
+      ...receipt,
       id: result.snapshot?.id ?? result.id ?? null,
       ok: true,
     });
@@ -149,19 +154,23 @@ export async function DELETE(request: Request) {
   }
 
   try {
+    const snapshot = (await listEvsSnapshots(session)).find(item => item.id === body.snapshotId);
+    if (!snapshot) return NextResponse.json({ error: "EVS snapshot was not found." }, { status: 404 });
+    if (typeof body.projectId === "string" && body.projectId !== snapshot.projectId) return NextResponse.json({ error: "Snapshot project does not match the selected project." }, { status: 400 });
     await deleteEvsSnapshot(
       session,
       body.snapshotId,
-      typeof body.projectId === "string" ? body.projectId : undefined,
+      snapshot.projectId,
     );
 
-    if (typeof body.ecsId === "string") {
-      await invalidateCloudResult(session, cloudCacheKeys.ecsSnapshots(body.ecsId));
-    }
-    await invalidateCloudResult(session, "listEvsSnapshots");
-    await invalidateCloudResult(session, "evs-snapshot-inventory");
+    const receipt = await recordAcceptedOperation(session, { service: "evs", operation: "Delete snapshot", projectId: snapshot.projectId, resourceId: snapshot.diskId, resourceName: snapshot.name, resultResourceId: snapshot.id }, () => Promise.all([
+      ...(typeof body.ecsId === "string" ? [invalidateCloudResult(session, cloudCacheKeys.ecsSnapshots(body.ecsId))] : []),
+      invalidateCloudResult(session, "listEvsSnapshots"),
+      invalidateCloudResult(session, "evs-snapshot-inventory"),
+      invalidateCloudResult(session, `evs-disk-snapshots:${snapshot.diskId}`),
+    ]));
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, ...receipt });
   } catch (error) {
     return NextResponse.json(
       {

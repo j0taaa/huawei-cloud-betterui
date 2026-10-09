@@ -60,3 +60,20 @@ test("EVS job polling uses ECS for attachment jobs and EVS for disk jobs", async
   }
   assert.deepEqual(hosts, ["ecs.sa-brazil-1.myhuaweicloud.com", "evs.sa-brazil-1.myhuaweicloud.com"]);
 });
+
+test("EVS job completion rejects foreign original identities and non-failure business errors", async t => {
+  let reply: Record<string, unknown> = {};
+  let reads = 0;
+  t.mock.method(globalThis, "fetch", async () => { reads++; return Response.json(reply); });
+  const entry = { id: randomUUID(), service: "evs", operation: "Expand disk", jobId: "native-job", projectId: session.projectId, resourceId: "disk-1", state: "submitted" as const, startedAt: new Date().toISOString() };
+  await assert.rejects(evsManagement.poll!(session, { ...entry, projectId: "foreign" }), /original project/);
+  assert.equal(reads, 0);
+  for (const altered of [{ project_id: "foreign" }, { projectId: null }, { job_id: "foreign" }, { job_id: null }, { entities: { volume_id: "foreign" } }, { entities: { volume_id: null } }, { error_msg: "PRIVATE-DIAGNOSTIC" }, { data: { error_code: "PRIVATE-DIAGNOSTIC" } }]) {
+    reply = { status: "SUCCESS", ...altered };
+    await assert.rejects(evsManagement.poll!(session, entry), error => error instanceof Error && /original|different|unverifiable/.test(error.message) && !error.message.includes("PRIVATE-DIAGNOSTIC"));
+  }
+  reply = { status: "PRIVATE-UNKNOWN-STATUS", entities: { volume_id: "disk-1" } };
+  const unknown = await evsManagement.poll!(session, entry);
+  assert.equal(unknown.state, "submitted");
+  assert.ok(!JSON.stringify(unknown).includes("PRIVATE-UNKNOWN-STATUS"));
+});

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { recordAcceptedOperation } from "@/lib/huawei/management/accepted-operation";
 
 import { getCurrentSession } from "@/lib/auth-session";
 import {
@@ -56,14 +57,14 @@ export async function DELETE(
       disk.projectId,
     );
 
-    await Promise.all([
+    const receipt = await recordAcceptedOperation(session, { service: "evs", operation: "Delete disk", projectId: disk.projectId, resourceId: id, resourceName: disk.name, jobId: result.job_id }, () => Promise.all([
       invalidateCloudResult(session, "listEvsDisks"),
       invalidateCloudResult(session, "evs-page-inventory"),
       invalidateCloudResult(session, `evs-disk:${id}`),
       invalidateCloudResult(session, "cloud-summary"),
-    ]);
+    ]));
 
-    return NextResponse.json({ jobId: result.job_id ?? null, ok: true });
+    return NextResponse.json({ jobId: result.job_id ?? null, ok: true, ...receipt });
   } catch (error) {
     return NextResponse.json(
       {

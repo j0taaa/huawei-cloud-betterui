@@ -1,6 +1,7 @@
 import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import { invalidateCloudResult } from "@/lib/huawei/result";
 import { NextResponse } from "next/server";
+import { recordAcceptedOperation } from "@/lib/huawei/management/accepted-operation";
 
 import { getCurrentSession } from "@/lib/auth-session";
 import { huaweiFetch, projectForId } from "@/lib/huawei-cloud/core";
@@ -43,11 +44,11 @@ export async function POST(
       { method: "POST" },
     );
 
-    await Promise.all([
+    const receipt = await recordAcceptedOperation(session, { service: "dds", operation: "Restart instance", projectId: project.projectId, resourceId: id, jobId: result.job_id }, () => Promise.all([
       invalidateCloudResult(session, cloudCacheKeys.listDdsInstances),
       invalidateCloudResult(session, cloudCacheKeys.dds(id)),
-    ]);
-    return NextResponse.json({ jobId: result.job_id ?? null, ok: true });
+    ]));
+    return NextResponse.json({ jobId: result.job_id ?? null, ok: true, ...receipt });
   } catch (error) {
     return NextResponse.json(
       {
