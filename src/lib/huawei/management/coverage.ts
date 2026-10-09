@@ -26,6 +26,7 @@ const existingWorkflows: Record<string, string[]> = {
   "dms-kafka": ["Restart instance"],
 };
 const remainingAreas: Record<string, string[]> = {
+  workspace: ["Workspace activation, directory/AD administration, group authorizations, and full user access policies", "Disk/image lifecycle, desktop assignment, protocols, backups, pool scaling/autoscaling, and advanced configuration", "Subscription ordering/cancellation, licensing, quotas, monitoring, pricing, and complete completion tracking"],
   cc: ["Central networks, global connection bandwidths, enterprise-router and cross-account networking", "Package ordering/renewal, pay-per-use/percentile and Region-mode allocation contracts, cross-border approvals, and tags", "Full routing, monitoring, quotas, pricing, and subscription workflows"],
   mrs: ["Typed per-engine job submission, Kerberos job execution, cluster scaling/autoscaling, task groups, and additional cluster topologies", "Component settings, connectors, scripts, logs, tags, agencies, HDFS/SQL, and public Manager access", "Subscriptions, pricing, quotas, and complete monitoring workflows"],
   vpn: ["ER attachment, IPv6/private gateways, GM certificates, and non-fixed peer modes", "Gateway specifications, policy templates, tags, P2C, NQA, monitors, logs, and peer configuration export", "Complete enterprise-project selection, quotas, pricing, and subscription workflows"],

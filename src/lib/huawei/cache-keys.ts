@@ -91,6 +91,7 @@ export const cloudCacheKeys = {
   listVpnConnections: "listVpnConnections",
   listWafInstances: "listWafInstances",
   listWorkspaceTenants: "listWorkspaceTenants",
+  listWorkspaceResources: "listWorkspaceResources",
   ecs: (id: string) => `ecs-instance-v2:${id}`,
   ecsMonitoring: (id: string) => `ecs-monitoring-v3:${id}`,
   ecsSnapshots: (id: string) => `ecs-snapshots:${id}`,

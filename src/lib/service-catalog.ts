@@ -956,7 +956,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       name: "Workspace",
       shortName: "Workspace",
       description:
-        "Cloud desktop tenant access, VPC placement, and security posture.",
+        "Cloud desktops, users, pools, tenant access, VPC placement, and security posture.",
       href: "/services/workspace",
       logo: serviceLogos.WORKSPACE,
       status: "Available",
