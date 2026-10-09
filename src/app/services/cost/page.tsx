@@ -35,7 +35,7 @@ function CostView({
 }) {
   const report = result.data;
   const columns: InventoryColumn<CostRow>[] = [
-    { header: costGroups[query.group], render: (row) => row.dimension },
+    { header: costGroups[query.group], render: (row) => row.dimension || "Unallocated" },
     {
       header: "Net cost",
       render: (row) => formatMoney(row.amount, report.currency),
@@ -47,6 +47,7 @@ function CostView({
   ];
   return (
     <ServiceInventoryPage
+      managementService="cost"
       active="Billing"
       backHref="/services/billing"
       backLabel="Back to billing services"

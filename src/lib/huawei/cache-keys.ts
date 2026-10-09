@@ -1,5 +1,6 @@
 /** Stable keys shared by readers and mutations; never derive these from function names. */
 export const cloudCacheKeys = {
+  listAadProtection: "listAadProtection-native-v1",
   listCloudConnections: "listCloudConnections",
   summary: "cloud-summary",
   listAomPrometheusInstances: "listAomPrometheusInstances",
@@ -21,9 +22,9 @@ export const cloudCacheKeys = {
   listSwrRepositories: "listSwrRepositories",
   asGroup: (id: string) => `as-group-v1:${id}`,
   swrRepository: (id: string) => `swr-repository-v1:${id}`,
-  billing: (month: string) => `billing-summary-v1:${month}`,
+  billing: (month: string) => `billing-summary-v2:${month}`,
   costs: (month: string, group: string, type: string) =>
-    `cost-analysis-v1:${month}:${group}:${type}`,
+    `cost-analysis-v2:${month}:${group}:${type}`,
   listApigInstances: "listApigInstances",
   listBmsServers: "listBmsServers",
   listCbhInstances: "listCbhInstances",
@@ -58,7 +59,7 @@ export const cloudCacheKeys = {
   listEnterpriseRouters: "listEnterpriseRouters",
   listEventGridSubscriptions: "listEventGridSubscriptions",
   listEvsDisks: "listEvsDisks",
-  listFlexusResources: "listFlexusResources",
+  listFlexusResources: "listFlexusResources-native-v2",
   listFunctionGraphFunctions: "listFunctionGraphFunctions",
   listGaussDbInstances: "listGaussDbInstances",
   listGeminiDbInstances: "listGeminiDbInstances",

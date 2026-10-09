@@ -1,3 +1,6 @@
+import { costManagement } from "./adapters/cost";
+import { flexusManagement } from "./adapters/flexus";
+import { aadManagement } from "./adapters/aad";
 import { dataartsManagement } from "./adapters/dataarts";
 import { kooGalleryManagement } from "./adapters/koogallery";
 import "server-only";
@@ -74,6 +77,9 @@ import type { ManagementAdapter } from "./types";
 
 export const managementAdapters: Record<string, ManagementAdapter> = {
   dataarts: dataartsManagement,
+  aad: aadManagement,
+  flexus: flexusManagement,
+  cost: costManagement,
   koogallery: kooGalleryManagement,
   cfw: cfwManagement,
   cbh: cbhManagement,

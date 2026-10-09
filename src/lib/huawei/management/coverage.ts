@@ -4,6 +4,7 @@ import { managementAdapters } from "./registry";
 
 // Existing service workspaces remain available alongside the new management adapters.
 const existingWorkflows: Record<string, string[]> = {
+  des: ["Native-console order lifecycle guidance", "Destination OBS bucket management", "Order billing guidance"],
   ecs: ["Start, stop, restart", "Snapshots", "Metrics"],
   functiongraph: ["Create function", "Edit code and configuration", "Delete function", "Dependencies", "Triggers", "Invoke", "Logs and metrics"],
   ims: ["Delete private image"],
@@ -26,6 +27,8 @@ const existingWorkflows: Record<string, string[]> = {
   "dms-kafka": ["Restart instance"],
 };
 const remainingAreas: Record<string, string[]> = {
+  aad: ["Paid protection-instance and CNAD package ordering, renewal, cancellation, upgrades, and quotas", "Full cleaning policies, certificates, domain onboarding, IP allocation, attacks, metrics, and logs", "Complete native completion tracking for acknowledged policy, switch, and rule requests"],
+  des: ["Integrated native DES order inventory and details", "Verified native creation, modification, cancellation, deletion, delivery, and progress APIs", "Complete order and shipment administration within BetterUI"],
   dataarts: ["Instance provisioning, subscription ordering/renewal/cancellation, billing, and quotas", "Connection, integration, quality, modeling, security, catalog, and API publication workflows", "Job creation/editing, scheduling, execution controls, logs, workspace access, and complete creation/retry correlation"],
   cfw: ["Prepaid procurement, renewal, upgrades, flavor extensions, and refund/unsubscription workflows", "NAT, domain/region/group rule configuration, IPS, black/white lists, DNS, per-EIP protection, and multi-account administration", "Capture, logs, reports, tags, quotas, pricing, and complete protection-switch completion tracking"],
   cbh: ["Appliance asset, account, policy, session, audit, and managed-service administration", "HA, resize, tags, renewal, refunds, unsubscription/deletion, pricing, and quotas", "Complete configuration tracking and restart completion when the native restart phase is missed"],
@@ -96,8 +99,8 @@ const remainingAreas: Record<string, string[]> = {
   functiongraph: ["Workflow and application lifecycle", "Binary/image runtime provisioning, weighted aliases, and reserved capacity lifecycle", "Complete agency/network/storage policies, pricing, quotas, and cloud job tracking"],
   evs: ["Encryption and provisioning options", "Tag changes", "Complete pricing and quota checks", "Cloud job tracking"],
   "billing/center": ["Invoices, refunds/unsubscription with verified quotes, coupons, discounts, top-ups, and account settlement administration", "Complete order history, subscription changes, detailed renewal settings, budgets, and pricing workflows"],
-  cost: ["Budgets, alerts and cost allocation workflows"],
-  flexus: ["Native Flexus provisioning and management"],
+  cost: ["Verified native budget, alert, forecast, cost-category, and report-configuration administration", "Complete cost allocation, exports, and detailed usage workflows"],
+  flexus: ["Verified live L bundle and X offering catalogs for provisioning and resizing", "Prepaid bundle renewal, unsubscription/deletion, quotas, and complete billing workflows", "Flexus RDS, network/disk/image administration, tags, hostname changes, monitoring, and password completion verification"],
   mgc: ["Native MgC discovery, migration projects, application groups, dependency assessment, and orchestration", "SMS, OMS, and CDM advanced workflows listed on their separate coverage rows"],
   koogallery: ["Marketplace buyer procurement, renewal, cancellation, refund quotes, and non-API product subscriptions", "Generated credentials, API invocation/debugging, vendor support, and delivered product administration", "Shared-gateway subscription reads do not cover all Marketplace products"],
 };
@@ -108,6 +111,6 @@ export function getServiceCoverage() {
     const service = item.href?.replace(/^\/services\//, "") ?? item.shortName.toLowerCase().replace(/\s+/g, "-");
     const adapter = Object.hasOwn(managementAdapters, service) ? managementAdapters[service] : undefined;
     const workflows = [...new Set([...(existingWorkflows[service] ?? []), ...(adapter?.operations.map((operation) => operation.label) ?? [])])];
-    return { catalogId: item.shortName.toLowerCase().replace(/\s+/g, "-"), service, name: item.name, category, inventoryHref: item.href, managementHref: adapter ? `/services/${service}/manage` : undefined, workflows, status: !item.href ? "Catalog only" : workflows.length ? "Partial management" : "Inventory only", remaining: remainingAreas[service] ?? ["Complete resource lifecycle", "Configuration and policy workflows", "Observability and cloud task tracking"] };
+    return { catalogId: item.shortName.toLowerCase().replace(/\s+/g, "-"), service, name: item.name, category, inventoryHref: item.href, managementHref: adapter ? `/services/${service}/manage` : undefined, workflows, status: service === "des" ? "Console guidance" : !item.href ? "Catalog only" : workflows.length ? "Partial management" : "Inventory only", remaining: remainingAreas[service] ?? ["Complete resource lifecycle", "Configuration and policy workflows", "Observability and cloud task tracking"] };
   }));
 }

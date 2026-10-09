@@ -381,7 +381,7 @@ test("cost pagination preserves POST query and sums decimal amounts exactly", as
       });
     },
   );
-  const report = await getCostReport(session, {
+  const report = await getCostReport({ ...session, accountToken: "account-token" }, {
     month,
     group: "ENTERPRISE_PROJECT_ID",
     type: "AMORTIZED_COST",
@@ -400,10 +400,10 @@ test("billing and costs distinguish successful empty data from failures and miss
       total_count: 0,
     }),
   );
-  assert.equal((await getBillingSummary(session, month)).amount, null);
+  assert.equal((await getBillingSummary({ ...session, accountToken: "account-token" }, month)).amount, null);
   assert.equal(
     (
-      await getCostReport(session, {
+      await getCostReport({ ...session, accountToken: "account-token" }, {
         month,
         group: "REGION_CODE",
         type: "ORIGINAL_COST",
@@ -416,11 +416,11 @@ test("billing and costs distinguish successful empty data from failures and miss
     Response.json({ error_msg: "billing permission denied" }, { status: 403 }),
   );
   await assert.rejects(
-    getBillingSummary(session, month),
+    getBillingSummary({ ...session, accountToken: "account-token" }, month),
     /403.*permission denied/,
   );
   await assert.rejects(
-    getCostReport(session, {
+    getCostReport({ ...session, accountToken: "account-token" }, {
       month,
       group: "REGION_CODE",
       type: "ORIGINAL_COST",
@@ -455,11 +455,11 @@ test("billing month validation uses Huawei's timezone and rejects unsupported qu
     throw Error("should not request");
   });
   await assert.rejects(
-    getBillingSummary(session, "2099-01"),
+    getBillingSummary({ ...session, accountToken: "account-token" }, "2099-01"),
     /latest 36 months/,
   );
   await assert.rejects(
-    getCostReport(session, {
+    getCostReport({ ...session, accountToken: "account-token" }, {
       month: "invalid",
       group: "REGION_CODE",
       type: "ORIGINAL_COST",
@@ -553,13 +553,13 @@ test("a failed later cost page preserves the successful cached report and other 
     "AMORTIZED_COST",
   );
   const loadOriginal = () =>
-    getCostReport(session, {
+    getCostReport({ ...session, accountToken: "account-token" }, {
       month,
       group: "CLOUD_SERVICE_TYPE",
       type: "ORIGINAL_COST",
     });
   const loadAmortized = () =>
-    getCostReport(session, {
+    getCostReport({ ...session, accountToken: "account-token" }, {
       month,
       group: "CLOUD_SERVICE_TYPE",
       type: "AMORTIZED_COST",

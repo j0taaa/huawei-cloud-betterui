@@ -92,6 +92,7 @@ const mock = createServer(async (req, res) => {
         id: page === 1 ? `server-${i}` : "server-100",
         name: `generation-${generation}-${page}-${i}`,
         status: "ACTIVE",
+        tenant_id: projectId,
       })),
     };
   } else if (url.pathname.startsWith("/evs/")) body = url.pathname.endsWith("types") ? { volume_types: [{ name: "SSD", is_public: true }] } : url.pathname.endsWith("os-availability-zone") ? { availabilityZoneInfo: [{ zoneName: "az-1", zoneState: { available: true } }] } : { cloudvolumes: [], cloudsnapshots: [] };
@@ -198,6 +199,8 @@ const mock = createServer(async (req, res) => {
   else if (url.pathname.startsWith("/eg/")) body = { items: [], total: 0 };
   else if (url.pathname.startsWith("/oms/")) body = { tasks: [], count: 0 };
   else if (url.pathname.startsWith("/dds/")) body = url.pathname.endsWith("/versions") ? { versions: ["4.0"] } : url.pathname.endsWith("/flavors") ? { flavors: [{ type: "replica", vcpus: "2", ram: "4", spec_code: "dds.replica", az_status: { "az-1": "normal" }, engine_versions: ["4.0"] }] } : url.pathname.endsWith("/storage-type") ? { storage_type: [{ name: "ULTRAHIGH", az_status: { "az-1": "normal" } }] } : { instances: [], total_count: 0 };
+  else if (url.pathname.startsWith("/rms/")) body = { resources: [], page_info: { current_count: 0, next_marker: null } };
+  else if (url.pathname.startsWith("/aad/")) body = { total: 0, count: 0, items: [] };
   else if (url.pathname.startsWith("/dataarts/")) body = { commodity_orders: [], count: 0, billing_check: true };
   else if (url.pathname.startsWith("/apig/v1.0/apigw/purchases/")) body = url.pathname.endsWith("/groups") ? { purchases: [], size: 0, total: 0 } : { apis: [], size: 0, total: 0 };
   else if (url.pathname.startsWith("/apig/")) body = url.pathname.endsWith("/available-zones") ? { available_zones: [{ id: "az-1", name: "Zone 1", specs: { BASIC: true, PROFESSIONAL: true } }] } : { instances: [], total: 0 };
@@ -374,6 +377,9 @@ const env = { ...process.env, NEXT_TELEMETRY_DISABLED: "1", BETTERUI_SMOKE_OBS_U
 const endpoints = await readFile("src/lib/huawei/endpoints.ts", "utf8");
 for (const match of endpoints.matchAll(/(\w+): "(HUAWEI_[A-Z_]+_ENDPOINT)"/g))
   env[match[2]] = `${mockUrl}/${match[1]}`;
+env.HUAWEI_AAD_ENDPOINT = `${mockUrl}/aad`;
+env.HUAWEI_RMS_ENDPOINT = `${mockUrl}/rms`;
+env.HUAWEI_HCSS_ENDPOINT = `${mockUrl}/hcss`;
 const portServer = createServer();
 await new Promise((resolve) => portServer.listen(0, "127.0.0.1", resolve));
 const appPort = portServer.address().port;
@@ -420,9 +426,9 @@ const keys = [
   "as-group-v1:live-group",
   "listSwrRepositories",
   `swr-repository-v1:${swrId}`,
-  `billing-summary-v1:${billingMonth}`,
-  `cost-analysis-v1:${billingMonth}:CLOUD_SERVICE_TYPE:ORIGINAL_COST`,
-  `cost-analysis-v1:${billingMonth}:CLOUD_SERVICE_TYPE:AMORTIZED_COST`,
+  `billing-summary-v2:${billingMonth}`,
+  `cost-analysis-v2:${billingMonth}:CLOUD_SERVICE_TYPE:ORIGINAL_COST`,
+  `cost-analysis-v2:${billingMonth}:CLOUD_SERVICE_TYPE:AMORTIZED_COST`,
 ];
 try {
   for (let attempt = 0; attempt < 80; attempt++) {
@@ -644,6 +650,13 @@ try {
   assert.equal(requests.filter((entry) => entry.method === "POST" && entry.path.startsWith("/aom/")).length, 1);
   assert.match(await (await request("/tasks")).text(), /Create Prometheus instance/);
   assert.equal((await request("/services/coverage")).status, 200);
+  const desGuidance = await request("/services/des");
+  assert.equal(desGuidance.status, 200);
+  const desHtml = await desGuidance.text();
+  assert.match(desHtml, /Managed in Huawei console/);
+  assert.match(desHtml, /BetterUI does not currently list or change DES orders/);
+  assert.match(desHtml, /en-us_topic_0047663841/);
+
   if (process.env.BETTERUI_BROWSER_HOOK) {
     const browser = await fetch(process.env.BETTERUI_BROWSER_HOOK, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ appUrl, cookie, projectId }), signal: AbortSignal.timeout(120000) });
     assert.equal(browser.status, 200, await browser.text());

@@ -1,10 +1,14 @@
 import "server-only";
 
-import { finishCloudLoad, settledValue } from "@/lib/huawei/errors";
-
-import type { BetterUiSession } from "@/lib/auth-session";
-import { listEcsInstances } from "@/lib/huawei/services/ecs";
-import { listRdsInstances } from "@/lib/huawei/services/rds";
+import { finishCloudLoad } from "@/lib/huawei/errors";
+import type { BetterUiSession, HuaweiProjectSession } from "@/lib/auth-session";
+import { projectForId, sessionProjects } from "@/lib/huawei/projects";
+import {
+  listNativeFlexusLInstances,
+  listNativeFlexusXInstances,
+  type FlexusLNativeInstance,
+  type FlexusXNativeInstance,
+} from "@/lib/huawei/services/flexus-native";
 
 export type FlexusResource = {
   createdAt: string;
@@ -20,54 +24,69 @@ export type FlexusResource = {
   status: string;
 };
 
-export async function listFlexusResources(session: BetterUiSession) {
-  const results = await Promise.allSettled([
-    listEcsInstances(session),
-    listRdsInstances(session),
-  ]);
-  const ecsInstances = settledValue(results[0], []);
-  const rdsInstances = settledValue(results[1], []);
-  const isFlexusSignal = (value: string) =>
-    /flexus|hcss|hecs|l-instance|x-instance|taurus/i.test(value);
+/*
+ * Native Flexus inventory across every session project: Flexus L bundles come from the account RMS
+ * catalog with their exact l:bundle:server identity, and Flexus X servers come from the project ECS
+ * catalog with the documented x1/x1e flavor grammar. No name, image, or datastore heuristic is
+ * used; Flexus RDS has no verified native contract yet and stays an explicit gap, so every resource
+ * is ECS-backed. Created times and IP addresses stay unknown ("-") until a verified fresh source
+ * provides them, and per-plane load failures stay visible while the remaining partial inventory is
+ * still shown.
+ */
 
-  return finishCloudLoad(results, [
-    ...ecsInstances
-      .filter((instance) =>
-        [instance.flavor, instance.imageName, instance.name].some(
-          isFlexusSignal,
-        ),
-      )
-      .map((instance): FlexusResource => ({
-        createdAt: instance.createdAt,
-        id: instance.id,
-        name: instance.name,
-        privateIp: instance.privateIp,
-        projectId: instance.projectId,
-        projectName: instance.projectName,
-        publicIp: instance.publicIp,
-        region: instance.region,
-        signal: instance.flavor,
-        sourceService: "ECS",
-        status: instance.status,
-      })),
-    ...rdsInstances
-      .filter((instance) =>
-        [instance.name, instance.datastore, instance.type].some(isFlexusSignal),
-      )
-      .map((instance): FlexusResource => ({
-        createdAt: "-",
-        id: instance.id,
-        name: instance.name,
-        privateIp: instance.privateIp,
-        projectId: instance.projectId,
-        projectName: instance.projectName,
-        publicIp: "-",
-        region: instance.region,
-        signal:
-          [instance.datastore, instance.type].filter(Boolean).join(" / ") ||
-          "-",
-        sourceService: "RDS",
-        status: instance.status,
-      })),
-  ]);
+function flexusProjectSession(session: BetterUiSession, projectId: string): BetterUiSession {
+  const project = projectForId(session, projectId);
+  return { ...session, ...project, projects: [project] };
+}
+
+function flexusLResource(projectName: string, instance: FlexusLNativeInstance): FlexusResource {
+  return {
+    createdAt: "-",
+    id: `l:${instance.bundleId}:${instance.serverId}`,
+    name: instance.name,
+    privateIp: "-",
+    projectId: instance.projectId,
+    projectName,
+    publicIp: "-",
+    region: instance.region,
+    signal: "L",
+    sourceService: "ECS",
+    status: "-",
+  };
+}
+
+function flexusXResource(projectName: string, instance: FlexusXNativeInstance): FlexusResource {
+  return {
+    createdAt: "-",
+    id: `x:${instance.serverId}`,
+    name: instance.name,
+    privateIp: "-",
+    projectId: instance.projectId,
+    projectName,
+    publicIp: "-",
+    region: instance.region,
+    signal: "X",
+    sourceService: "ECS",
+    status: instance.status,
+  };
+}
+
+export async function listFlexusResources(session: BetterUiSession) {
+  const projects = sessionProjects(session);
+  const loads = projects.flatMap((project: HuaweiProjectSession) => {
+    const projectSession = flexusProjectSession(session, project.projectId);
+    return [
+      {
+        context: `Flexus L in ${project.projectName} (${project.region})`,
+        run: async () => (await listNativeFlexusLInstances(projectSession)).map((instance) => flexusLResource(projectSession.projectName, instance)),
+      },
+      {
+        context: `Flexus X in ${project.projectName} (${project.region})`,
+        run: async () => (await listNativeFlexusXInstances(projectSession)).map((instance) => flexusXResource(projectSession.projectName, instance)),
+      },
+    ];
+  });
+  const results = await Promise.allSettled(loads.map((load) => load.run()));
+  const resources = results.flatMap((result) => (result.status === "fulfilled" ? result.value : []));
+  return finishCloudLoad(results, resources, loads.map((load) => load.context));
 }

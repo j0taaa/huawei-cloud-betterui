@@ -274,3 +274,54 @@ test("DataArts creation and retry retain accepted requests as pending history wi
     } finally { await deleteSession(signed); }
   }
 });
+
+test("AAD acknowledged protection settings remain submitted without invented native jobs and replay one write", async t => {
+  const requestId = randomUUID(); let writes = 0;
+  const policy = { id: "policy-owned", name: "Web", package_id: "package-owned" };
+  t.mock.method(globalThis, "fetch", async (input: string, init: RequestInit) => {
+    const url = new URL(input);
+    if (url.pathname === "/v3/auth/tokens") return Response.json({ token: { domain: { id: "domain-owned" }, user: { id: account.userId, domain: { id: "domain-owned" } } } });
+    if (init.method === "PUT") { writes++; return Response.json({}); }
+    if (url.pathname === "/v1/cnad/packages") return Response.json({ total: 1, items: [{ package_id: "package-owned", package_name: "Package" }] });
+    if (url.pathname === "/v1/cnad/policies") return Response.json({ total: 1, items: [policy] });
+    if (url.pathname === "/v1/cnad/policies/policy-owned") return Response.json({ ...policy, clean_threshold: 100 });
+    if (url.pathname === "/v1/cnad/protected-ips") return Response.json({ total: 0, items: [] });
+    if (url.pathname.startsWith("/v1/aad/")) return Response.json({ count: 0, items: [] });
+    throw new Error("Unexpected native AAD request");
+  });
+  const body = { requestId, operation: "policy-settings", projectId: account.projectId, resourceId: "policy:policy-owned", confirmName: "Web", acknowledgedImpact: true, values: { name: "Web", description: "private-protection-description", threshold: 100, udp: "unblock", tcp: "unblock", icmp: "unblock", other: "unblock" } };
+  const result = await runManagementOperation(account, "aad", body); assert.equal(result.asynchronous, true); assert.equal(result.jobId, undefined);
+  const saved = (await listManagementHistory(account, "aad")).find(entry => entry.id === requestId)!;
+  assert.equal(saved.state, "submitted"); assert.equal(saved.finishedAt, undefined); assert.equal(saved.resourceId, "policy:policy-owned"); assert.doesNotMatch(JSON.stringify(saved), /private-protection-description/);
+  assert.equal((await runManagementOperation(account, "aad", body)).replayed, true); assert.equal(writes, 1);
+});
+test("Flexus native password acknowledgements keep original resource history pending and do not store secrets", async t => {
+  const requestId = randomUUID(); let writes = 0;
+  t.mock.method(globalThis, "fetch", async (input: string, init: RequestInit) => {
+    const url = new URL(input);
+    if (url.pathname === "/v3/auth/tokens") return Response.json({ token: { domain: { id: "domain-owned" }, user: { id: account.userId, domain: { id: "domain-owned" } } } });
+    if (url.pathname.includes("/all-resources")) return Response.json({ resources: [{ provider: "hcss", type: "l-instance", id: "bundle-owned", name: "Bundle", project_id: account.projectId, region_id: account.region, properties: { resources: [{ logical_resource_type: "huaweicloudinternal_ecs_instance", physical_resource_id: "server-owned" }], metadata: { charging_mode: "prePaid" } } }], page_info: { current_count: 1, next_marker: null } });
+    if (url.pathname.endsWith("/cloudservers/detail")) return Response.json({ servers: [] });
+    if (url.pathname.endsWith("/os-reset-password") && init.method === "PUT") { writes++; return new Response(null, { status: 204 }); }
+    if (url.pathname.endsWith("/cloudservers/server-owned")) return Response.json({ server: { id: "server-owned", name: "Server", tenant_id: account.projectId, status: "SHUTOFF", locked: false, "OS-EXT-STS:task_state": null, metadata: { lockSource: "hcss", lockSourceId: "bundle-owned", charging_mode: "1" } } });
+    throw new Error("Unexpected native Flexus request");
+  });
+  const password = "ValidXX47!";
+  const body = { requestId, operation: "reset-password", projectId: account.projectId, resourceId: "l:bundle-owned:server-owned", confirmName: "Bundle", acknowledgedImpact: true, values: { password } };
+  const result = await runManagementOperation(account, "flexus", body); assert.equal(result.asynchronous, true); assert.equal(result.jobId, undefined);
+  const saved = (await listManagementHistory(account, "flexus")).find(entry => entry.id === requestId)!;
+  assert.equal(saved.state, "submitted"); assert.equal(saved.finishedAt, undefined); assert.equal(saved.resourceId, body.resourceId); assert.doesNotMatch(JSON.stringify(saved), new RegExp(password.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.equal((await runManagementOperation(account, "flexus", body)).replayed, true); assert.equal(writes, 1);
+});
+test("Cost analysis runs only native read queries and saves no mutation history", async t => {
+  const { currentBillingMonth } = await import("@/lib/billing-query");
+  const before = await listManagementHistory(account, "cost"); let queries = 0;
+  t.mock.method(globalThis, "fetch", async (input: string, init: RequestInit) => {
+    const url = new URL(input);
+    if (url.pathname === "/v3/auth/tokens") return Response.json({ token: { domain: { id: "domain-owned" }, user: { id: account.userId, domain: { id: "domain-owned" } } } });
+    assert.equal(url.pathname, "/v4/costs/cost-analysed-bills/query"); assert.equal(init.method, "POST"); queries++;
+    return Response.json({ currency: "USD", total_count: 1, cost_data: [{ dimensions: [{ key: "REGION_CODE", value: "region-one" }], amount_by_costs: "0.30" }] });
+  });
+  const result = await runManagementOperation(account, "cost", { operation: "analyze-costs", resourceId: "account:domain-owned", values: { month: currentBillingMonth(), group: "REGION_CODE", type: "ORIGINAL_COST" } });
+  assert.equal(result.ok, true); assert.equal(queries, 1); assert.deepEqual(await listManagementHistory(account, "cost"), before);
+});

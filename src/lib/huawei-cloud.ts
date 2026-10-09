@@ -81,3 +81,5 @@ export {
   type CloudResult,
 } from "@/lib/huawei/result";
 export { loadCloudSummary, type CloudSummary } from "@/lib/huawei/summary";
+
+export * from "@/lib/huawei/services/aad";
