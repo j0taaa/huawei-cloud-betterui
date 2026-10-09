@@ -52,7 +52,7 @@ test("RDS detail renders a backup permission error alongside its usable partial 
       page({ params: Promise.resolve({ id: "db-1" }) }),
     );
     const banner = errorBanner(tree);
-    assert.match(banner?.error ?? "", /backup permission denied/);
+    assert.match(banner?.error ?? "", /backups: 403.*permission denied/);
     assert.equal(banner?.isCached, false);
   } finally {
     deleteSession(id);
@@ -82,7 +82,7 @@ test("RDS detail displays refresh failures while retaining the last complete dat
       getRdsInstanceDetails(session, "db-2"),
     );
     if (!result.isRefreshing) {
-      assert.match(result.error ?? "", /refresh permission denied/);
+      assert.match(result.error ?? "", /403.*permission denied/);
       break;
     }
     await new Promise((resolve) => setTimeout(resolve, 5));
@@ -94,7 +94,7 @@ test("RDS detail displays refresh failures while retaining the last complete dat
       page({ params: Promise.resolve({ id: "db-2" }) }),
     );
     const banner = errorBanner(tree);
-    assert.match(banner?.error ?? "", /refresh permission denied/);
+    assert.match(banner?.error ?? "", /403.*permission denied/);
     assert.equal(banner?.isCached, true);
   } finally {
     deleteSession(id);

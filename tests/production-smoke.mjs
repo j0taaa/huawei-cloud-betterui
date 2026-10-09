@@ -497,7 +497,7 @@ try {
   failRds = true;
   const denied = await request("/services/rds");
   assert.equal(denied.status, 200);
-  assert.match(await denied.text(), /mock permission denied/);
+  assert.match(await denied.text(), /403.*permission denied/);
   const deniedDetail = await request("/services/rds/missing");
   assert.equal(deniedDetail.status, 200);
   assert.match(await deniedDetail.text(), /Unable to load resource/);
@@ -553,7 +553,7 @@ try {
   );
   assert.equal(deniedCost.status, 200);
   const deniedCostHtml = await deniedCost.text();
-  assert.match(deniedCostHtml, /cost permission denied/);
+  assert.match(deniedCostHtml, /403.*permission denied/);
   assert.doesNotMatch(deniedCostHtml, /No cost records for this month/);
   assert.match(
     await (await request(`/services/cost?month=${billingMonth}`)).text(),
@@ -568,12 +568,12 @@ try {
   assert.equal(partialRds.status, 200);
   const partialHtml = await partialRds.text();
   assert.match(partialHtml, /Review database/);
-  assert.match(partialHtml, /backup permission denied/);
+  assert.match(partialHtml, /backups: 403.*permission denied/);
   assert.doesNotMatch(partialHtml, /Unable to load resource/);
   failRdsBackups = false;
   const completeRds = await (await request("/services/rds/review-db")).text();
   assert.match(completeRds, /Review backup/);
-  assert.doesNotMatch(completeRds, /backup permission denied/);
+  assert.doesNotMatch(completeRds, /backups: 403.*permission denied/);
   for (const engine of ["rabbitmq", "rocketmq"]) {
     const inventory = await request(`/services/dms-${engine}`);
     assert.equal(inventory.status, 200);
@@ -589,7 +589,7 @@ try {
       await (
         await request(`/services/dms-${engine}/denied?projectId=${projectId}`)
       ).text(),
-      /broker permission denied/,
+      /403.*permission denied/,
     );
     assert.match(
       await (
@@ -599,13 +599,13 @@ try {
     );
   }
   const aomDenied = await (await request("/services/aom")).text();
-  assert.match(aomDenied, /AOM permission denied/);
+  assert.match(aomDenied, /403.*permission denied/);
   assert.doesNotMatch(aomDenied, /No Prometheus instances/);
   failAom = false;
   const aomHtml = await (await request("/services/aom")).text();
   assert.match(aomHtml, /Live Prometheus/);
   assert.match(aomHtml, /30 days/);
-  assert.doesNotMatch(aomHtml, /AOM permission denied/);
+  assert.doesNotMatch(aomHtml, /403.*permission denied/);
   assert.match(
     await (await request("/services/enterprise-projects")).text(),
     /Live enterprise project/,

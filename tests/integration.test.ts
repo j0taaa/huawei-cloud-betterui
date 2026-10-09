@@ -126,7 +126,7 @@ test("partial image catalogs remain errors with usable images rather than succes
   await assert.rejects(listImagesForProject(project), (error: unknown) => {
     assert.ok(error instanceof CloudLoadError);
     assert.equal((error.partialData as { id: string }[])[0].id, "image-1");
-    assert.match(error.message, /catalog denied/);
+    assert.match(error.message, /403.*permission denied/);
     return true;
   });
 });

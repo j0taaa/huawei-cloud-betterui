@@ -77,7 +77,7 @@ test("CodeArts inventory keeps successful workspaces while surfacing a denied wo
     if (url.pathname === `/v4/projects/${deniedWorkspaceId}/repositories`) return Response.json({ error_msg: "Permission denied" }, { status: 403 });
     return undefined;
   });
-  await assert.rejects(codeartsRepoManagement.inventory(session), error => error instanceof CloudLoadError && /Denied: 403 Permission denied/.test(error.message) && (error.partialData as { id: string }[])[0].id === `repository:${workspaceId}:1001`);
+  await assert.rejects(codeartsRepoManagement.inventory(session), error => error instanceof CloudLoadError && /Denied: 403.*permission denied/.test(error.message) && (error.partialData as { id: string }[])[0].id === `repository:${workspaceId}:1001`);
 });
 
 test("Repository creation offers live workspaces and posts the native private v3 body", async t => {

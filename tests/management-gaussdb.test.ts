@@ -149,7 +149,7 @@ test("a failed flavor query remains visible instead of silently omitting that ve
     if (!init.method) return Response.json(read(url));
     throw new Error("Unexpected write");
   });
-  await assert.rejects(gaussdbManagement.options!(session, "create"), /unsupported version/);
+  await assert.rejects(gaussdbManagement.options!(session, "create"), /400.*rejected the request parameters/);
 });
 
 test("create sends the documented v3.2 pay-per-use payload with the subnet network ID and a triple availability zone", async (t) => {

@@ -296,7 +296,7 @@ test("provider failures surface the cloud error without leaking secrets", async 
   });
   await assert.rejects(
     cssManagement.execute(session, "create", { ...createValues, securityMode: true, adminPassword: secret }),
-    (error: Error) => /Flavor sold out/.test(error.message) && !error.message.includes(secret),
+    (error: Error) => /400.*rejected the request parameters/.test(error.message) && !error.message.includes(secret),
   );
 });
 

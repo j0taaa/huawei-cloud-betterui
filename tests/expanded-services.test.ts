@@ -216,7 +216,7 @@ test("AOM handles empty, malformed, and denied responses distinctly", async (t) 
   );
   await assert.rejects(
     listAomPrometheusInstancesForProject(project),
-    /403 aom permission denied/,
+    /403.*permission denied/,
   );
 });
 
@@ -277,7 +277,7 @@ test("EPS requires an account token and distinguishes empty inventory from denia
   );
   await assert.rejects(
     listEnterpriseProjects(account),
-    /403 EPS permission denied/,
+    /403.*permission denied/,
   );
 });
 

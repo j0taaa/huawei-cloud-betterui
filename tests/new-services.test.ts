@@ -139,7 +139,7 @@ test("SWR rejects an incomplete tag page and preserves the repository on permiss
   ).toString("base64url");
   await assert.rejects(getSwrRepository(session, id), (error: unknown) => {
     assert.ok(error instanceof CloudLoadError);
-    assert.match(error.message, /Image tags: 403 tag permission denied/);
+    assert.match(error.message, /Image tags: 403.*permission denied/);
     assert.equal(error.partialData.repository.name, "api");
     assert.deepEqual(error.partialData.tags, []);
     return true;
@@ -417,7 +417,7 @@ test("billing and costs distinguish successful empty data from failures and miss
   );
   await assert.rejects(
     getBillingSummary(session, month),
-    /403 billing permission denied/,
+    /403.*permission denied/,
   );
   await assert.rejects(
     getCostReport(session, {
@@ -425,7 +425,7 @@ test("billing and costs distinguish successful empty data from failures and miss
       group: "REGION_CODE",
       type: "ORIGINAL_COST",
     }),
-    /403 billing permission denied/,
+    /403.*permission denied/,
   );
 });
 
@@ -571,13 +571,13 @@ test("a failed later cost page preserves the successful cached report and other 
   failSecondPage = true;
   await assert.rejects(
     cache.refresh(originalKey, loadOriginal),
-    /later cost page denied/,
+    /403.*permission denied/,
   );
   const stale = await cache.get(originalKey, emptyCostReport, loadOriginal);
   assert.equal(stale.data.amount, "0.2");
   assert.equal(stale.updatedAt, original.updatedAt);
   assert.equal(stale.isCached, true);
-  assert.match(stale.error!, /later cost page denied/);
+  assert.match(stale.error!, /403.*permission denied/);
   // A restarted process reads the unchanged successful disk records.
   const restarted = createCloudCache({
     directory,

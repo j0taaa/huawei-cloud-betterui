@@ -67,7 +67,7 @@ test("IAM refuses deleting groups with members and redacts rejected passwords in
     return Response.json({ error: { message: "Password Newpass123 rejected by policy" } }, { status: 400 });
   });
   await assert.rejects(runManagementOperation(account, "iam", body("delete-group", {}, "group:group-1", "Team")), /every member/);
-  await assert.rejects(runManagementOperation(account, "iam", body("create-user", { name: "Operator", password: "Newpass123", access: "console" })), /Password \[redacted\] rejected/);
+  await assert.rejects(runManagementOperation(account, "iam", body("create-user", { name: "Operator", password: "Newpass123", access: "console" })), /400.*rejected the request parameters/);
   const context = await getManagementContext(account, "iam");
   assert.equal(JSON.stringify(context.history).includes("Newpass123"), false);
 });

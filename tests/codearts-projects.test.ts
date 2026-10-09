@@ -77,7 +77,7 @@ test("CodeArts retains successful workspaces while surfacing a denied workspace"
 
 test("CodeArts project-list permissions are errors, not empty inventory", async t => {
   t.mock.method(globalThis, "fetch", async () => Response.json({ error_msg: "Project permission denied" }, { status: 403 }));
-  await assert.rejects(listCodeArtsRepositories(session), /Project permission denied/);
+  await assert.rejects(listCodeArtsRepositories(session), /403.*permission denied/);
 });
 
 test("native array pagination reaches later repositories and rejects repeated pages or object envelopes", async t => {

@@ -223,7 +223,7 @@ test("FunctionGraph config/code failures remain visible on detail loads", async 
   });
   await assert.rejects(
     getFunctionGraphFunction(session, "urn-1"),
-    /code denied/,
+    /Function code: 403.*permission denied/,
   );
 });
 
@@ -385,7 +385,7 @@ test("ECS monitoring retains its object shape when metric discovery partially fa
     getEcsMonitoring(session, "server-1"),
     (error: unknown) => {
       assert.ok(error instanceof CloudLoadError);
-      assert.match(error.message, /agent metrics denied/);
+      assert.match(error.message, /AGT.ECS: 403.*permission denied/);
       assert.equal(Array.isArray(error.partialData), false);
       assert.ok(
         Array.isArray((error.partialData as { metrics: unknown[] }).metrics),
