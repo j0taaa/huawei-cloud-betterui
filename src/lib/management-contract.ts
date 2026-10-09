@@ -105,7 +105,7 @@ export function validateManagementValues(operation: ManagementOperation, input: 
     }
     if (typeof value !== "string") throw new ManagementInputError(`${field.label} must be text.`);
     const text = field.type === "password" ? value : value.trim();
-    if ((field.required && !text) || text.length > (field.max ?? 2048) || (field.maxBytes !== undefined && new TextEncoder().encode(text).length > field.maxBytes) || (field.min !== undefined && text.length < field.min) || (field.pattern && !new RegExp(field.pattern, "u").test(text))) throw new ManagementInputError(`${field.label} has an invalid format.`);
+    if ((field.required && !field.allowEmpty && !text) || text.length > (field.max ?? 2048) || (field.maxBytes !== undefined && new TextEncoder().encode(text).length > field.maxBytes) || (field.min !== undefined && text.length < field.min) || (field.pattern && !new RegExp(field.pattern, "u").test(text))) throw new ManagementInputError(`${field.label} has an invalid format.`);
     const choices = field.source ? sources[field.source] : field.choices;
     if ((field.type === "select" || field.source) && !choices?.some((choice) => choice.value === text)) throw new ManagementInputError(`${field.label} is not available for this project.`);
     values[field.key] = text;
