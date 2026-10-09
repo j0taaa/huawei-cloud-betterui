@@ -26,6 +26,15 @@ const existingWorkflows: Record<string, string[]> = {
   "dms-kafka": ["Restart instance"],
 };
 const remainingAreas: Record<string, string[]> = {
+  ims: ["Image imports, exports, full-ECS images, replication, and protection changes", "Image drivers, encryption, tags, subscriptions, pricing, and quotas"],
+  rds: ["High availability, replicas, SQL Server, and advanced provisioning", "Restores, parameters, SSL, access grants, tags, maintenance, and prepaid orders", "Monitoring, diagnosis, pricing, and quotas"],
+  iotda: ["Resource spaces, groups, tags, rules, and routing lifecycle", "Certificate provisioning, asynchronous commands, and OTA upgrades", "Telemetry queries, connection logs, codecs, bulk import, quotas, and billing"],
+  dcs: ["Accounts, ACLs, parameter configuration, and password changes", "Replication, public access, maintenance, prepaid orders, and scaling topology", "Monitoring, diagnosis, migration, and cloud task completion tracking"],
+  "dms-kafka": ["Topic editing, permissions, consumer groups, and message inspection", "Broker scaling, replication, public access, prepaid orders, and maintenance", "Monitoring, diagnosis, recovery, and cloud task completion tracking"],
+  deh: ["Host tags and ECS placement or migration", "Subscription payment, renewal, cancellation, and pricing", "Quotas, monitoring, and cloud completion tracking"],
+  iam: ["Role and policy lifecycle, project grants, and agencies", "Credentials, MFA, federation, and account security settings", "Complete permission analysis and audit workflows"],
+  nat: ["Private NAT, transit IPs, and Direct Connect scenarios", "Port ranges, EIP changes, gateway scaling, and session configuration", "Quotas, pricing, monitoring, and cloud completion tracking"],
+  as: ["Custom launch templates, multiple networks, and load-balancer configuration", "Alarm policies, lifecycle hooks, notifications, and warm pools", "Advanced scaling, quotas, pricing, and cloud completion tracking"],
   ecs: ["Rebuild, reinstall and password recovery", "NICs, attached disks and security groups", "Quotas, pricing, billing, backups and observability"],
   network: ["IPv6, route tables, DHCP and ACLs", "Peering, NICs, endpoints and flow logs", "Topology, import/export and bulk operations"],
   eip: ["Shared and prepaid bandwidth", "IPv6 and network configuration", "Quotas, pricing and cloud completion tracking"],

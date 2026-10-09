@@ -17,11 +17,31 @@ import { obsManagement } from "./adapters/obs";
 import { cbrManagement } from "./adapters/cbr";
 import { sfsManagement } from "./adapters/sfs";
 import { swrManagement } from "./adapters/swr";
+import { asManagement } from "./adapters/as";
+import { natManagement } from "./adapters/nat";
+import { evsManagement } from "./adapters/evs";
+import { iamManagement } from "./adapters/iam";
+import { dehManagement } from "./adapters/deh";
+import { dcsManagement } from "./adapters/dcs";
+import { kafkaManagement } from "./adapters/kafka";
+import { iotdaManagement } from "./adapters/iotda";
+import { rdsManagement } from "./adapters/rds";
+import { imsManagement } from "./adapters/ims";
 import type { ManagementAdapter } from "./types";
 
 export const managementAdapters: Record<string, ManagementAdapter> = {
   "enterprise-projects": enterpriseProjectsManagement,
   aom: aomManagement,
+  as: asManagement,
+  nat: natManagement,
+  evs: evsManagement,
+  iam: iamManagement,
+  deh: dehManagement,
+  dcs: dcsManagement,
+  "dms-kafka": kafkaManagement,
+  iotda: iotdaManagement,
+  rds: rdsManagement,
+  ims: imsManagement,
   ecs: ecsManagement,
   dew: dewManagement,
   cdn: cdnManagement,

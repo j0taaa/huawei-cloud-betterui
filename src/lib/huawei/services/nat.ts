@@ -188,10 +188,9 @@ export async function listNatGateways(session: BetterUiSession) {
 export async function listNatSnatRulesForProject(
   session: HuaweiProjectSession,
 ) {
-  const body = await huaweiFetch<{ snat_rules?: unknown[] }>(
-    session,
-    "nat",
-    `/v2/${session.projectId}/snat_rules?limit=2000`,
+  const body = await huaweiList<{ snat_rules?: unknown[] }>(
+    session, "nat", `/v2/${session.projectId}/snat_rules?limit=1000`,
+    { items: ["snat_rules"], kind: "marker", parameter: "marker", size: 1000, fallbackKey: "id" },
   );
 
   return asArray(body.snat_rules).map((rule) => parseSnatRule(rule, session));

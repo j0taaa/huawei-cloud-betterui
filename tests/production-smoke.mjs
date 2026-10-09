@@ -36,6 +36,11 @@ const mock = createServer(async (req, res) => {
   let status = 200;
   if (url.pathname === "/v3/auth/projects")
     body = { projects: [{ id: projectId, name: projectName }] };
+  else if (url.pathname === "/v3/auth/tokens" && req.method === "GET") {
+    assert.equal(req.headers["x-auth-token"], "mock-account-token");
+    body = { token: { domain: { id: "mock-domain" }, user: { id: "mock-user", domain: { id: "mock-domain" } } } };
+  } else if (url.pathname === "/v3/users") body = { users: [{ id: "mock-user", name: "mock-user", domain_id: "mock-domain", enabled: true }], links: { next: null } };
+  else if (url.pathname === "/v3/groups") body = { groups: [], links: { next: null } };
   else if (url.pathname === "/v3/auth/tokens") {
     let raw = "";
     for await (const chunk of req) raw += chunk;
@@ -59,6 +64,11 @@ const mock = createServer(async (req, res) => {
     url.pathname.endsWith("/action")
   )
     body = { job_id: "mock-job" };
+  else if (url.pathname.startsWith("/ecs/") && (url.pathname.endsWith("/flavors") || url.pathname.endsWith("/flavors/detail"))) body = { flavors: [{ id: "flavor-1", name: "General purpose", vcpus: 2, ram: 4096 }] };
+  else if (url.pathname.startsWith("/ecs/") && url.pathname.endsWith("os-availability-zone")) body = { availabilityZoneInfo: [{ zoneName: "az-1", zoneState: { available: true } }] };
+  else if (url.pathname.startsWith("/ecs/") && url.pathname.endsWith("os-keypairs")) body = { keypairs: [{ keypair: { name: "key-1" } }] };
+  else if (url.pathname.startsWith("/deh/")) body = url.pathname.endsWith("dedicated-host-types") ? { dedicated_host_types: [{ host_type: "c6", host_type_name: "General purpose" }] } : { dedicated_hosts: [] };
+  else if (url.pathname.startsWith("/nat/")) body = url.pathname.endsWith("nat_gateway_specs") ? { specs: ["1"] } : { nat_gateways: [], snat_rules: [], dnat_rules: [] };
   else if (url.pathname.startsWith("/ecs/")) {
     const page = Number(url.searchParams.get("offset"));
     body = {
@@ -68,7 +78,7 @@ const mock = createServer(async (req, res) => {
         status: "ACTIVE",
       })),
     };
-  } else if (url.pathname.startsWith("/evs/")) body = { cloudvolumes: [] };
+  } else if (url.pathname.startsWith("/evs/")) body = url.pathname.endsWith("types") ? { volume_types: [{ name: "SSD", is_public: true }] } : url.pathname.endsWith("os-availability-zone") ? { availabilityZoneInfo: [{ zoneName: "az-1", zoneState: { available: true } }] } : { cloudvolumes: [], cloudsnapshots: [] };
   else if (
     url.pathname.startsWith("/rabbitmq/") ||
     url.pathname.startsWith("/rocketmq/")
@@ -90,7 +100,11 @@ const mock = createServer(async (req, res) => {
       vpc_id: "vpc-1",
       ssl_enable: true,
     };
-    if (url.pathname.endsWith("/denied")) {
+    if (url.pathname.endsWith("/products")) {
+      body = { products: [], versions: ["5.0"] };
+    } else if (url.pathname.endsWith("/available-zones")) {
+      body = { available_zones: [] };
+    } else if (url.pathname.endsWith("/denied")) {
       status = 403;
       body = { error_msg: "broker permission denied" };
     } else if (url.pathname.endsWith("/instances")) {
@@ -138,7 +152,7 @@ const mock = createServer(async (req, res) => {
         ? { subnets: [] }
         : { vpcs: [], page_info: {} };
   else if (url.pathname.startsWith("/elb/"))
-    body = { loadbalancers: [], page_info: {} };
+    body = url.pathname.endsWith("/flavors") ? { flavors: [], page_info: {} } : url.pathname.endsWith("/availability-zones") ? { availability_zones: [] } : { loadbalancers: [], page_info: {} };
   else if (url.pathname.startsWith("/obs/")) body = `<ListAllMyBucketsResult><Buckets><Bucket><Name>live-bucket</Name><Location>sa-brazil-1</Location></Bucket></Buckets></ListAllMyBucketsResult>`;
   else if (url.pathname.startsWith("/eip/")) body = { publicips: [] };
   else if (url.pathname.startsWith("/cbr/")) body = { vaults: [], backups: [], policies: [], count: 0 };
@@ -152,9 +166,15 @@ const mock = createServer(async (req, res) => {
   else if (url.pathname.startsWith("/ces/")) body = url.pathname.endsWith("metrics") ? { metrics: [] } : { alarms: [], count: 0 };
   else if (url.pathname.startsWith("/cts/")) body = { trackers: [] };
   else if (url.pathname.startsWith("/cdn/")) body = { domains: [], total: 0 };
+  else if (url.pathname.startsWith("/ims/")) body = { images: url.searchParams.get("__imagetype") === "shared" ? [] : [{ id: "image-1", name: "System image", status: "active", __imagetype: "private", owner: projectId, __description: "Image description", protected: false }] };
+  else if (url.pathname.startsWith("/dcs/")) body = url.pathname.endsWith("/flavors") ? { flavors: [{ engine: "Redis", engine_version: "4.0", spec_code: "redis.ha.large.4", capacity: [32], billing_mode: ["hourly"], flavors_available_zones: [{ capacity: "32", az_codes: ["az-1"] }] }] } : url.pathname.endsWith("/available-zones") ? { available_zones: [{ code: "az-1", name: "Zone 1", resource_availability: "true" }] } : { instances: [], instance_num: 0 };
+  else if (url.pathname.startsWith("/dms/")) body = url.pathname.endsWith("/products") ? { products: [{ product_id: "kafka.cluster.s1", charging_mode: ["hourly"], properties: { engine_versions: "2.7", min_broker: 3, max_broker: 30 }, ios: [{ io_spec: "dms.storage.high", available_zones: ["az-1"] }] }] } : url.pathname.endsWith("/available-zones") ? { available_zones: [{ id: "az-1", name: "Zone 1", resource_availability: "true" }] } : { instances: [], total_count: 0 };
+  else if (url.pathname.startsWith("/iotda/")) body = url.pathname.endsWith("/apps") ? { applications: [{ app_id: "app-1", app_name: "Devices" }] } : url.pathname.endsWith("/products") ? { products: [{ app_id: "app-1", product_id: "product-1", name: "Sensors", protocol_type: "MQTT" }] } : { devices: [] };
   else if (url.pathname.startsWith("/cce/")) body = { items: [] };
   else if (url.pathname.startsWith("/rds/")) {
-    if (showRdsDetails) {
+    if (url.pathname.includes("/flavors/")) body = { flavors: [{ instance_mode: "single", version_name: ["8.0"], spec_code: "rds.single", vcpus: "2", ram: 4096, az_status: { "az-1": "normal" }, az_desc: { "az-1": "Zone 1" } }] };
+    else if (url.pathname.includes("/storage-type/")) body = { storage_type: [{ name: "ULTRAHIGH", az_status: { "az-1": "normal" } }] };
+    else if (showRdsDetails) {
       const backups = url.pathname.includes("/backups");
       status = backups && failRdsBackups ? 403 : 200;
       body = backups
@@ -222,6 +242,7 @@ const mock = createServer(async (req, res) => {
     url.pathname.includes("scaling_configuration")
   ) {
     body = {
+      scaling_configurations: [{ scaling_configuration_id: "live-config", scaling_configuration_name: "Live configuration" }], total_number: 1,
       scaling_configuration: {
         scaling_configuration_id: "live-config",
         scaling_configuration_name: "Live configuration",
@@ -549,10 +570,16 @@ try {
   );
   const serviceSearch = await request("/services/databases");
   assert.match(await serviceSearch.text(), /dms-rabbitmq/);
-  for (const service of ["ecs", "aom", "enterprise-projects", "dms-rabbitmq", "dms-rocketmq", "network", "dns", "smn", "lts", "dew", "ces", "cts", "cdn", "eip", "elb", "cbr", "sfs", "swr", "obs"]) {
+  for (const service of ["ecs", "aom", "enterprise-projects", "dms-rabbitmq", "dms-rocketmq", "network", "dns", "smn", "lts", "dew", "ces", "cts", "cdn", "eip", "elb", "cbr", "sfs", "swr", "obs", "as", "nat", "evs", "iam", "deh", "dcs", "dms-kafka", "iotda", "rds", "ims"]) {
     const managementPage = await request(`/services/${service}/manage`);
     assert.equal(managementPage.status, 200, `${service} management route`);
     assert.match(await managementPage.text(), /Loading management controls/);
+    const serviceContext = await request(`/api/cloud/management/${service}?projectId=${projectId}`);
+    assert.equal(serviceContext.status, 200, `${service}: ${await serviceContext.clone().text()}`);
+    const definition = await serviceContext.json();
+    assert.ok(definition.operations.length, service);
+    const formContext = await request(`/api/cloud/management/${service}?projectId=${projectId}&operation=${definition.operations[0].id}`);
+    assert.equal(formContext.status, 200, `${service} management form: ${await formContext.text()}`);
   }
   const context = await request(`/api/cloud/management/aom?projectId=${projectId}&operation=update&resourceId=prom-1`);
   assert.equal(context.status, 200, await context.clone().text());

@@ -70,6 +70,7 @@ export const cloudCacheKeys = {
   listMgcMigrationItems: "listMgcMigrationItems",
   listModelArtsNotebooks: "listModelArtsNotebooks",
   listMrsClusters: "listMrsClusters",
+  listNatSnatRules: "listNatSnatRules",
   listNatGateways: "listNatGateways",
   listObsBuckets: "listObsBuckets",
   listOmsMigrationTasks: "listOmsMigrationTasks",

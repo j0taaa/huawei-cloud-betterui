@@ -62,11 +62,14 @@ export function ServiceManagementWorkspace({ service, initialProjectId = "", ini
       }).then((next) => {
         if (controller.signal.aborted) return;
         setContext(next); setLoadError(""); setLoadedKey(requestKey);
-        if (!operationId) setOperationId(next.operations[0]?.id ?? "");
         if (!projectId && !next.accountWide) setProjectId(next.selectedProjectId);
         const selectedId = next.resources.some((resource) => resource.id === resourceId) ? resourceId : "";
+        const selected = next.resources.find((resource) => resource.id === selectedId);
+        const compatible = next.operations.filter((operation) => operation.kind !== "create" && operation.kind !== "delete" && !operation.confirmation && (!operation.resourcePrefixes || operation.resourcePrefixes.some((prefix) => selectedId.startsWith(prefix))) && !operation.excludedResourceIds?.includes(selectedId) && (!operation.allowedStatuses || operation.allowedStatuses.includes(selected?.status ?? "UNKNOWN")));
+        const selectedOperationId = operationId || (selected ? compatible.find((operation) => operation.kind === "update")?.id ?? compatible.find((operation) => operation.kind === "inspect")?.id : undefined) || next.operations[0]?.id || "";
+        if (!operationId) setOperationId(selectedOperationId);
         setResourceId(selectedId);
-        setValues(initialValues(next.operations.find((operation) => operation.id === operationId), selectedId, next));
+        setValues(initialValues(next.operations.find((operation) => operation.id === selectedOperationId), selectedId, next));
       }).catch((error) => {
         if (controller.signal.aborted) return;
         setLoadError(error instanceof Error ? error.message : "Management controls could not be loaded."); setLoadedKey(requestKey);

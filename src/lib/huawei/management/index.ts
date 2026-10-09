@@ -38,7 +38,7 @@ export async function getManagementContext(session: BetterUiSession, service: st
   return { service, title: adapter.title, accountWide: !!adapter.accountWide, projects: getSessionProjects(session).map((project) => ({ value: project.projectId, label: `${project.projectName} / ${project.region}` })), selectedProjectId: selected.projectId, operations: adapter.operations, resources, choices, history };
 }
 
-export async function runManagementOperation(session: BetterUiSession, service: string, body: unknown) {
+export async function runManagementOperation(session: BetterUiSession, service: string, body: unknown): Promise<ManagementOutcome & { ok: boolean; replayed?: boolean }> {
   if (!body || typeof body !== "object" || Array.isArray(body)) throw new ManagementInputError("Enter valid operation details.");
   const input = body as Record<string, unknown>;
   const allowedKeys = new Set(["requestId", "operation", "projectId", "resourceId", "confirmName", "acknowledgedImpact", "values"]);

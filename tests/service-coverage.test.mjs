@@ -202,7 +202,7 @@ test("NAT exposes gateway and SNAT lifecycle actions", () => {
   assert.match(natModule, /export async function listNatSnatRules\(/);
   assert.match(
     natModule,
-    /"nat"[\s\S]{0,180}`\/v2\/\$\{session\.projectId\}\/snat_rules\?limit=2000`/,
+    /"nat"[\s\S]{0,180}`\/v2\/\$\{session\.projectId\}\/snat_rules\?limit=1000`/,
   );
   assert.match(natModule, /export async function createNatGateway\(/);
   assert.match(

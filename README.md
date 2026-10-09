@@ -20,7 +20,7 @@ Open http://localhost:3000 and sign in with your Huawei IAM account. Service end
 - **Billing Center** (`/services/billing/center`): choose a month to view the account's expenditure summary, refunds/adjustments, cash coupons, and settlement/outstanding amounts. Totals come from Huawei's summary response. The query uses `method=oneself`, so enterprise member accounts are excluded.
 - **Cost Center** (`/services/cost`): choose a month, original/amortized costs, and grouping by service, region, or enterprise project. It displays **net costs**, preserves decimal amounts, and sums grouped totals without floating-point arithmetic. Cost grouping values are the identifiers supplied by Huawei; Cost Center must be enabled for the account.
 
-These views are read-only and use the existing disk cache. Billing is global and defaults to `https://bss-intl.myhuaweicloud.com`; override it with `HUAWEI_BSS_ENDPOINT` for a different Huawei site. SWR and AS overrides are `HUAWEI_SWR_ENDPOINT` and `HUAWEI_AS_ENDPOINT`. New IAM logins retain a domain-scoped account token on the server for Billing/Cost while regional services keep their project tokens. Sign out and sign in again if an existing session predates this addition.
+Billing and Cost are read-only and use the existing disk cache. SWR and Auto Scaling also provide the management workflows described below. Billing is global and defaults to `https://bss-intl.myhuaweicloud.com`; override it with `HUAWEI_BSS_ENDPOINT` for a different Huawei site. SWR and AS overrides are `HUAWEI_SWR_ENDPOINT` and `HUAWEI_AS_ENDPOINT`. New IAM logins retain a domain-scoped account token on the server for Billing/Cost while regional services keep their project tokens. Sign out and sign in again if an existing session predates this addition.
 
 Billing months follow Huawei's GMT+08:00 calendar. The UI validates Billing's latest 36 months and Cost's latest 18 months before sending requests. Original costs can lag by about an hour; amortized data refreshes daily and can take longer. Current-month amounts are provisional. Billing and Cost are different accounting views and their amounts need not match. Missing permissions, a disabled Cost Center, and failed requests show an error rather than a zero-spend result. Cache keys include month, cost grouping, and cost type, so filter changes cannot reuse another query's results.
 
@@ -101,3 +101,15 @@ Pagination tests should exercise the actual adapter with mocked fetch responses,
 ## Dependencies
 
 Next.js and its ESLint configuration are updated together. shadcn is a development tool; generated UI components remain in the application source. Use `npm audit --omit=dev` to check runtime dependencies separately from developer tooling, and avoid forced downgrades that would break the supported framework/tool versions.
+
+## Service management coverage
+
+Use the **Create and manage resources** link on supported service pages. The workspaces use current project inventory and service-specific forms for creation, configuration changes, inspection, and supported lifecycle actions. The operation review shows resource, values, impact, and exact-name confirmation for destructive actions. Passwords are masked and omitted from history.
+
+`/services/coverage` lists every catalog entry and its implemented workflows and remaining gaps. All services are in scope, but full console coverage is still in progress. An inventory page or a management workspace does not imply complete native-console parity.
+
+Recent additions include Auto Scaling configurations/groups/policies/member actions; public NAT gateways and SNAT/DNAT rules; EVS disks, attachments, snapshots, rollback, and native jobs; IAM users/groups/membership; and Dedicated Host ordering/settings/release. Dedicated Host subscription orders disable automatic payment and renewal. RDS adds private MySQL/PostgreSQL provisioning, storage expansion, backup policies, databases, users, and job tracking; DCS adds Redis provisioning, expansion, and backup/restore; Kafka adds provisioning, storage, topics, and users; IMS adds image creation, editing, sharing, and jobs; IoTDA adds products/models, device registration, secret rotation, shadows, and commands. Prepaid instance changes remain separate subscription workflows.
+
+`/tasks` retains the latest 100 management request records per account and user, with project, resource, outcome, and supported native job checks. A submitted request is accepted by Huawei and may still be running. Lost-response retries retain their request ID; uncertain outcomes require checking cloud state before starting another request. Legacy action routes are not yet included in this history.
+
+Set `BETTERUI_DATA_DIR` to a persistent writable directory when deploying in a container. The running deployment mounts `/app/data` for management history and replay claims. Tests use local API mocks; real cloud creation, deletion, billing, and permissions have not been exercised.
