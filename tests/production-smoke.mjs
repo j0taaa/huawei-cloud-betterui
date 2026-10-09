@@ -178,6 +178,8 @@ const mock = createServer(async (req, res) => {
   else if (url.pathname.startsWith("/oms/")) body = { tasks: [], count: 0 };
   else if (url.pathname.startsWith("/dds/")) body = url.pathname.endsWith("/versions") ? { versions: ["4.0"] } : url.pathname.endsWith("/flavors") ? { flavors: [{ type: "replica", vcpus: "2", ram: "4", spec_code: "dds.replica", az_status: { "az-1": "normal" }, engine_versions: ["4.0"] }] } : url.pathname.endsWith("/storage-type") ? { storage_type: [{ name: "ULTRAHIGH", az_status: { "az-1": "normal" } }] } : { instances: [], total_count: 0 };
   else if (url.pathname.startsWith("/apig/")) body = url.pathname.endsWith("/available-zones") ? { available_zones: [{ id: "az-1", name: "Zone 1", specs: { BASIC: true, PROFESSIONAL: true } }] } : { instances: [], total: 0 };
+  else if (url.pathname.startsWith("/cci/")) body = { items: [], metadata: {} };
+  else if (url.pathname.startsWith("/css/")) body = url.pathname.endsWith("/es-flavors") ? { versions: [{ version: "7.10.2", type: "ess", flavors: [{ name: "ess.spec", flavor_id: "css-flavor", cpu: 2, ram: 8, diskrange: "40,800", availableAZ: "az-1" }] }] } : { clusters: [], total_count: 0 };
   else if (url.pathname.startsWith("/cce/")) body = { items: [] };
   else if (url.pathname.startsWith("/rds/")) {
     if (url.pathname.includes("/flavors/")) body = { flavors: [{ instance_mode: "single", version_name: ["8.0"], spec_code: "rds.single", vcpus: "2", ram: 4096, az_status: { "az-1": "normal" }, az_desc: { "az-1": "Zone 1" } }] };
@@ -578,7 +580,7 @@ try {
   );
   const serviceSearch = await request("/services/databases");
   assert.match(await serviceSearch.text(), /dms-rabbitmq/);
-  for (const service of ["ecs", "aom", "enterprise-projects", "dms-rabbitmq", "dms-rocketmq", "network", "dns", "smn", "lts", "dew", "ces", "cts", "cdn", "eip", "elb", "cbr", "sfs", "swr", "obs", "as", "nat", "evs", "iam", "deh", "dcs", "dms-kafka", "iotda", "rds", "ims", "dli", "secmaster", "enterprise-router", "vpc-endpoint", "eventgrid", "apig", "oms", "dds", "cce"]) {
+  for (const service of ["ecs", "aom", "enterprise-projects", "dms-rabbitmq", "dms-rocketmq", "network", "dns", "smn", "lts", "dew", "ces", "cts", "cdn", "eip", "elb", "cbr", "sfs", "swr", "obs", "as", "nat", "evs", "iam", "deh", "dcs", "dms-kafka", "iotda", "rds", "ims", "dli", "secmaster", "enterprise-router", "vpc-endpoint", "eventgrid", "apig", "oms", "dds", "cce", "css", "cci"]) {
     const managementPage = await request(`/services/${service}/manage`);
     assert.equal(managementPage.status, 200, `${service} management route`);
     assert.match(await managementPage.text(), /Loading management controls/);

@@ -1,5 +1,5 @@
 import { mapCloudLoad } from "@/lib/huawei/errors";
-import { huaweiList } from "@/lib/huawei/http";
+import { huaweiList, HuaweiApiError } from "@/lib/huawei/http";
 import "server-only";
 
 import type { BetterUiSession, HuaweiProjectSession } from "@/lib/auth-session";
@@ -83,7 +83,11 @@ function listForNamespace(
       size: 100,
       next: ["metadata.continue"],
     },
-  ).then((body) => asArray(body.items));
+  ).then((body) => asArray(body.items)).catch((error: unknown) => {
+    // CCI 2.0 has no StatefulSet/Job/CronJob endpoints. Preserve older regions that still expose them.
+    if (["statefulsets", "jobs", "cronjobs"].includes(resource) && error instanceof HuaweiApiError && [404, 405].includes(error.status)) return [];
+    throw error;
+  });
 }
 
 function summarizePod(pod: unknown): CciNamespace["pods"][number] {

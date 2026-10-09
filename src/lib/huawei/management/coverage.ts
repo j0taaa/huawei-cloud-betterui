@@ -26,6 +26,8 @@ const existingWorkflows: Record<string, string[]> = {
   "dms-kafka": ["Restart instance"],
 };
 const remainingAreas: Record<string, string[]> = {
+  cci: ["Services, ingress, autoscaling, pod logs/exec, and persistent storage lifecycle", "Registry credentials, Secret updates, volumes, environment injection, and advanced pod settings", "Additional networks, quotas, metrics, pricing, and cloud completion tracking"],
+  css: ["Node-count changes, dedicated master/client nodes, snapshot storage setup, and restore", "Index and document workflows, engine upgrades, plugins, security configuration, and public access", "Subscription orders, tags, quotas, pricing, metrics, logs, and cloud completion tracking"],
   cce: ["Workloads, Kubernetes RBAC, networking, storage classes, and application releases", "Cluster upgrades, node lifecycle, autoscaling, Turbo, and advanced addon configuration", "Public access, kubeconfigs, prepaid orders, quotas, pricing, logs, and metrics"],
   oms: ["Task groups, synchronization, additional cloud sources, URL lists, and connectors", "Archive restore, encryption, notifications, and failed-object browsing", "Quotas, detailed metrics, pricing, and billing"],
   dds: ["Sharded clusters, node expansion, AZ migration, and version upgrades", "Restore, parameter templates, SSL and public access configuration, roles, and recycle bin", "Audit and slow logs, metrics, tags, quotas, and subscription orders"],
