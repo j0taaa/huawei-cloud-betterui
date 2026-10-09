@@ -41,6 +41,7 @@ const mock = createServer(async (req, res) => {
     body = { token: { domain: { id: "mock-domain" }, user: { id: "mock-user", domain: { id: "mock-domain" } } } };
   } else if (url.pathname === "/sms/v3/tasks") body = { tasks: [], count: 0 };
   else if (url.pathname === "/sms/v3/sources") body = { source_servers: [], count: 0 };
+  else if (url.pathname.startsWith("/dws/")) body = url.pathname.endsWith("/node-types") ? { node_types: [] } : url.pathname.endsWith("/availability-zones") ? { availability_zones: [] } : { clusters: [] };
   else if (url.pathname === "/v3/users") body = { users: [{ id: "mock-user", name: "mock-user", domain_id: "mock-domain", enabled: true }], links: { next: null } };
   else if (url.pathname === "/v3/groups") body = { groups: [], links: { next: null } };
   else if (url.pathname === "/v3/auth/tokens") {
@@ -599,7 +600,7 @@ try {
   assert.ok(requests.some(entry => entry.path === `/codeartsrepo/v4/projects/${"a".repeat(32)}/repositories`));
   const serviceSearch = await request("/services/databases");
   assert.match(await serviceSearch.text(), /dms-rabbitmq/);
-  for (const service of ["ecs", "aom", "enterprise-projects", "dms-rabbitmq", "dms-rocketmq", "network", "dns", "smn", "lts", "dew", "ces", "cts", "cdn", "eip", "elb", "cbr", "sfs", "swr", "obs", "as", "nat", "evs", "iam", "deh", "dcs", "dms-kafka", "iotda", "rds", "ims", "dli", "secmaster", "enterprise-router", "vpc-endpoint", "eventgrid", "apig", "oms", "dds", "cce", "css", "cci", "waf", "gaussdb", "taurusdb", "geminidb", "sdrs", "codearts-repo", "codearts-build", "cdm", "codearts-pipeline", "sms"]) {
+  for (const service of ["ecs", "aom", "enterprise-projects", "dms-rabbitmq", "dms-rocketmq", "network", "dns", "smn", "lts", "dew", "ces", "cts", "cdn", "eip", "elb", "cbr", "sfs", "swr", "obs", "as", "nat", "evs", "iam", "deh", "dcs", "dms-kafka", "iotda", "rds", "ims", "dli", "secmaster", "enterprise-router", "vpc-endpoint", "eventgrid", "apig", "oms", "dds", "cce", "css", "cci", "waf", "gaussdb", "taurusdb", "geminidb", "sdrs", "codearts-repo", "codearts-build", "cdm", "codearts-pipeline", "sms", "dws"]) {
     const managementPage = await request(`/services/${service}/manage`);
     assert.equal(managementPage.status, 200, `${service} management route`);
     assert.match(await managementPage.text(), /Loading management controls/);

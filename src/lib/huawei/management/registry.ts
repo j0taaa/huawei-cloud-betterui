@@ -47,6 +47,7 @@ import { codeartsBuildManagement } from "./adapters/codearts-build";
 import { codeartsRepoManagement } from "./adapters/codearts-repo";
 import { cdmManagement } from "./adapters/cdm";
 import { smsManagement } from "./adapters/sms";
+import { dwsManagement } from "./adapters/dws";
 import { sdrsManagement } from "./adapters/sdrs";
 import type { ManagementAdapter } from "./types";
 
@@ -84,6 +85,7 @@ export const managementAdapters: Record<string, ManagementAdapter> = {
   sdrs: sdrsManagement,
   cdm: cdmManagement,
   sms: smsManagement,
+  dws: dwsManagement,
   ecs: ecsManagement,
   dew: dewManagement,
   cdn: cdnManagement,
