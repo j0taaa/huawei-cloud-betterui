@@ -39,6 +39,7 @@ export default async function ServiceStagePage() {
 
   return (
     <ServiceInventoryPage
+      managementService="servicestage"
       actionLabel="Create app"
       actionTitle="ServiceStage application creation is disabled in this read-only view."
       active="Compute"

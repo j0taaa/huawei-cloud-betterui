@@ -330,7 +330,7 @@ export const cphManagement: ManagementAdapter = {
     if (operation === "rename-server") {
       const { id, server } = await liveServer(s, resource);
       requireStatus(statusOf(serverStatuses, server.status), ["NORMAL", "STOPPED"], "server");
-      const response = await write(`${root}/cloud-phone/servers/${encodeURIComponent(id)}`, "PUT", { server_name: v.name });
+      await write(`${root}/cloud-phone/servers/${encodeURIComponent(id)}`, "PUT", { server_name: v.name });
       return { message: "Server renamed.", resourceId: resource!.id };
     }
     if (operation === "restart-server") {
@@ -349,7 +349,7 @@ export const cphManagement: ManagementAdapter = {
       return { message: "ADB key pair change submitted. Existing ADB sessions can be disconnected.", resourceId: resource!.id, jobId: nativeJob(response, "server_id", id), asynchronous: true };
     }
     if (operation === "resize-bandwidth") {
-      const { id, server } = await liveServer(s, resource);
+      const { server } = await liveServer(s, resource);
       requireStatus(statusOf(serverStatuses, server.status), ["NORMAL", "STOPPED"], "server");
       if (asString(server.network_version, "") !== "v1") throw new ManagementInputError("Only servers on the system-defined network support CPH bandwidth resizing here.", 409);
       const detail = server;
@@ -358,7 +358,7 @@ export const cphManagement: ManagementAdapter = {
       const size = Number(v.size);
       if (!Number.isInteger(size) || size < 1 || size > 2000) throw new ManagementInputError("The new bandwidth must be between 1 and 2000 Mbit/s.");
       if (size === Number(bandwidth.band_width_size)) throw new ManagementInputError("The new bandwidth must differ from the current size.");
-      const response = await write(`${root}/cloud-phone/bandwidths/${encodeURIComponent(asString(bandwidth.band_width_id, ""))}`, "PUT", { band_width_size: size });
+      await write(`${root}/cloud-phone/bandwidths/${encodeURIComponent(asString(bandwidth.band_width_id, ""))}`, "PUT", { band_width_size: size });
       return { message: `Dedicated bandwidth resized to ${size} Mbit/s. Billing reflects the new size.`, resourceId: resource!.id };
     }
     if (operation === "delete-server") {

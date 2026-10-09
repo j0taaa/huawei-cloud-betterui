@@ -49,6 +49,7 @@ import { codeartsRepoManagement } from "./adapters/codearts-repo";
 import { cdmManagement } from "./adapters/cdm";
 import { mgcManagement } from "./adapters/mgc";
 import { smsManagement } from "./adapters/sms";
+import { serviceStageManagement } from "./adapters/servicestage";
 import { cphManagement } from "./adapters/cph";
 import { bmsManagement } from "./adapters/bms";
 import { dwsManagement } from "./adapters/dws";
@@ -94,6 +95,7 @@ export const managementAdapters: Record<string, ManagementAdapter> = {
   dws: dwsManagement,
   bms: bmsManagement,
   cph: cphManagement,
+  servicestage: serviceStageManagement,
   ecs: ecsManagement,
   dew: dewManagement,
   cdn: cdnManagement,

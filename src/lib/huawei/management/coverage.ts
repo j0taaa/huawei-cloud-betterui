@@ -26,6 +26,7 @@ const existingWorkflows: Record<string, string[]> = {
   "dms-kafka": ["Restart instance"],
 };
 const remainingAreas: Record<string, string[]> = {
+  servicestage: ["Complete component configuration, variables/secrets, storage, probes, lifecycle hooks, and source builds", "VM deployment, HTTPS/certificates, templates, release pipelines, autoscaling, and quotas", "Environment updates with private variable/resource settings, runtime administration, logs, metrics, billing, and pricing"],
   cph: ["Subscription payment, renewal, cancellation, and bare server provisioning", "Private images, image lifecycle, shared/IPv6 networking, application ports, property editing, and ADB/application management", "Monitoring, quotas, pricing, recovery, and additional storage/network workflows"],
   bms: ["Disk attachment/detachment, OS change/reinstallation, remote console, and password recovery", "Subscription payment/cancellation, extra disk/public-IP provisioning, advanced networking, and additional placement modes", "Monitoring, pricing catalogs, quotas administration, backup/restore, and other metadata settings"],
   "codearts-deploy": ["Template discovery, draft publishing, step/parameter editing, and metadata updates that preserve complete step definitions", "Host/resource pools, environment lifecycle, permissions, schedules, triggers, and pipeline integration", "Logs/artifacts, deployment strategies, older records, quotas, pricing, and subscriptions"],
