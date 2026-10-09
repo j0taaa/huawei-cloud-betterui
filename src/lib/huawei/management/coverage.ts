@@ -26,6 +26,7 @@ const existingWorkflows: Record<string, string[]> = {
   "dms-kafka": ["Restart instance"],
 };
 const remainingAreas: Record<string, string[]> = {
+  sms: ["Agent registration/installation, Windows, multiple disks, LVM/Btrfs, and automatic target provisioning", "Cutover, restart/rollback, clone and migration rehearsals, snapshots, and detailed consistency results", "Scheduled speed editing, special settings, quotas, pricing, and execution completion tracking"],
   "codearts-pipeline": ["Step/definition editing, source changes, secret variables, private templates, YAML/PAC, and microservice setup", "Runtime inputs, manual approvals, retry/subset execution, trigger creation, and complete permission management", "Artifacts/logs, quotas, detailed metrics, pricing, and subscriptions"],
   cdm: ["Connection/job creation and editing with verified connector schemas, connection listing, and migration variables", "Flavor changes, additional cluster topologies, endpoint/security settings, and backup/restore", "Cluster task completion, older run pages, quotas, pricing, subscriptions, logs, and metrics"],
   "codearts-build": ["Custom build steps, YAML editing, sensitive parameters, non-branch sources, and private templates", "Artifacts/log browsing, triggers, permissions, executor pools, and pipeline integration", "Quotas, pricing, subscriptions, and detailed resource monitoring"],

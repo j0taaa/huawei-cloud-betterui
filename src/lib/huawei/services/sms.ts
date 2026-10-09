@@ -2,7 +2,7 @@ import "server-only";
 
 import type { BetterUiSession, HuaweiProjectSession } from "@/lib/auth-session";
 import { huaweiList } from "@/lib/huawei/http";
-import { asArray, asRecord, firstString } from "@/lib/huawei/parsers";
+import { asArray, asRecord, firstString, timestampMillis, numberWithUnit } from "@/lib/huawei/parsers";
 import { loadAcrossProjects } from "@/lib/huawei/projects";
 
 export type SmsMigrationTask = {
@@ -31,7 +31,7 @@ export async function listSmsTasksForProject(session: HuaweiProjectSession) {
       kind: "offset",
       parameter: "offset",
       size: 100,
-      total: ["total_count", "total", "data.total", "result.total"],
+      total: ["count"],
     },
   );
 
@@ -41,23 +41,19 @@ export async function listSmsTasksForProject(session: HuaweiProjectSession) {
     const target = asRecord(item.target_server);
 
     return {
-      createdAt: firstString([
-        item.create_time,
-        item.created_at,
-        item.createdAt,
-      ]),
+      createdAt: timestampMillis(item.create_date),
       id: firstString([item.id, item.task_id]),
       name: firstString([item.name, item.task_name, item.id]),
-      progress: String(item.migration_progress ?? item.progress ?? "-"),
+      progress: `${asArray(item.sub_tasks).filter(task => Number(asRecord(task).progress) === 100).length}/${asArray(item.sub_tasks).length} steps complete`,
       projectId: session.projectId,
       projectName: session.projectName,
       region: session.region,
       sourceServer: firstString([source.name, item.source_server_name], "-"),
       sourceServerId: firstString([item.source_server_id, source.id], "-"),
       state: firstString([item.state, item.status], "UNKNOWN"),
-      syncSpeed: firstString([item.migration_speed, item.sync_speed], "-"),
+      syncSpeed: numberWithUnit(item.migrate_speed, "Mbit/s"),
       targetServer: firstString([target.name, item.target_server_name], "-"),
-      targetServerId: firstString([item.target_server_id, target.id], "-"),
+      targetServerId: firstString([target.vm_id], "-"),
     };
   });
 }
