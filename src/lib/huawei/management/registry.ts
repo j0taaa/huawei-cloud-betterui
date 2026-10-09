@@ -1,3 +1,4 @@
+import { kooGalleryManagement } from "./adapters/koogallery";
 import "server-only";
 import { cfwManagement } from "./adapters/cfw";
 import { cbhManagement } from "./adapters/cbh";
@@ -71,6 +72,7 @@ import { sdrsManagement } from "./adapters/sdrs";
 import type { ManagementAdapter } from "./types";
 
 export const managementAdapters: Record<string, ManagementAdapter> = {
+  koogallery: kooGalleryManagement,
   cfw: cfwManagement,
   cbh: cbhManagement,
   modelarts: modelartsManagement,

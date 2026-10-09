@@ -98,7 +98,7 @@ const remainingAreas: Record<string, string[]> = {
   cost: ["Budgets, alerts and cost allocation workflows"],
   flexus: ["Native Flexus provisioning and management"],
   mgc: ["Native MgC discovery, migration projects, application groups, dependency assessment, and orchestration", "SMS, OMS, and CDM advanced workflows listed on their separate coverage rows"],
-  koogallery: ["Marketplace purchases and subscription management"],
+  koogallery: ["Marketplace buyer procurement, renewal, cancellation, refund quotes, and non-API product subscriptions", "Generated credentials, API invocation/debugging, vendor support, and delivered product administration", "Shared-gateway subscription reads do not cover all Marketplace products"],
 };
 
 /** Include every catalog item, even entries without a route. No adapter implies console parity. */
