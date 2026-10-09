@@ -83,7 +83,7 @@ const remainingAreas: Record<string, string[]> = {
   "billing/center": ["Invoices, orders, renewal and payment workflows"],
   cost: ["Budgets, alerts and cost allocation workflows"],
   flexus: ["Native Flexus provisioning and management"],
-  mgc: ["Migration orchestration and task management"],
+  mgc: ["Native MgC discovery, migration projects, application groups, dependency assessment, and orchestration", "SMS, OMS, and CDM advanced workflows listed on their separate coverage rows"],
   koogallery: ["Marketplace purchases and subscription management"],
 };
 

@@ -49,7 +49,7 @@ export default async function MgcPage() {
       backHref="/services/storage"
       backLabel="Back to Storage"
       columns={columns}
-      description="Read-only migration center rollup over documented SMS, OMS, and CDM inventories for server, object, and data migration activity."
+      description="Migration rollup over documented SMS, OMS, and CDM inventories. The management workspace exposes their implemented workflows; native MgC discovery and orchestration remain separate."
       empty="No migration-center activity found"
       icon={Route}
       result={result}

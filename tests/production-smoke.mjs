@@ -601,7 +601,7 @@ try {
   assert.ok(requests.some(entry => entry.path === `/codeartsrepo/v4/projects/${"a".repeat(32)}/repositories`));
   const serviceSearch = await request("/services/databases");
   assert.match(await serviceSearch.text(), /dms-rabbitmq/);
-  for (const service of ["ecs", "aom", "enterprise-projects", "dms-rabbitmq", "dms-rocketmq", "network", "dns", "smn", "lts", "dew", "ces", "cts", "cdn", "eip", "elb", "cbr", "sfs", "swr", "obs", "as", "nat", "evs", "iam", "deh", "dcs", "dms-kafka", "iotda", "rds", "ims", "dli", "secmaster", "enterprise-router", "vpc-endpoint", "eventgrid", "apig", "oms", "dds", "cce", "css", "cci", "waf", "gaussdb", "taurusdb", "geminidb", "sdrs", "codearts-repo", "codearts-build", "cdm", "codearts-pipeline", "sms", "dws", "codearts-deploy", "bms"]) {
+  for (const service of ["ecs", "aom", "enterprise-projects", "dms-rabbitmq", "dms-rocketmq", "network", "dns", "smn", "lts", "dew", "ces", "cts", "cdn", "eip", "elb", "cbr", "sfs", "swr", "obs", "as", "nat", "evs", "iam", "deh", "dcs", "dms-kafka", "iotda", "rds", "ims", "dli", "secmaster", "enterprise-router", "vpc-endpoint", "eventgrid", "apig", "oms", "dds", "cce", "css", "cci", "waf", "gaussdb", "taurusdb", "geminidb", "sdrs", "codearts-repo", "codearts-build", "cdm", "codearts-pipeline", "sms", "dws", "codearts-deploy", "bms", "mgc"]) {
     const managementPage = await request(`/services/${service}/manage`);
     assert.equal(managementPage.status, 200, `${service} management route`);
     assert.match(await managementPage.text(), /Loading management controls/);

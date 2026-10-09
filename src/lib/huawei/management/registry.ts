@@ -47,6 +47,7 @@ import { codeartsPipelineManagement } from "./adapters/codearts-pipeline";
 import { codeartsBuildManagement } from "./adapters/codearts-build";
 import { codeartsRepoManagement } from "./adapters/codearts-repo";
 import { cdmManagement } from "./adapters/cdm";
+import { mgcManagement } from "./adapters/mgc";
 import { smsManagement } from "./adapters/sms";
 import { bmsManagement } from "./adapters/bms";
 import { dwsManagement } from "./adapters/dws";
@@ -88,6 +89,7 @@ export const managementAdapters: Record<string, ManagementAdapter> = {
   sdrs: sdrsManagement,
   cdm: cdmManagement,
   sms: smsManagement,
+  mgc: mgcManagement,
   dws: dwsManagement,
   bms: bmsManagement,
   ecs: ecsManagement,
