@@ -71,6 +71,8 @@ const mock = createServer(async (req, res) => {
   else if (url.pathname.startsWith("/ecs/") && url.pathname.endsWith("os-availability-zone")) body = { availabilityZoneInfo: [{ zoneName: "az-1", zoneState: { available: true } }] };
   else if (url.pathname.startsWith("/ecs/") && url.pathname.endsWith("os-keypairs")) body = { keypairs: [{ keypair: { name: "key-1" } }] };
   else if (url.pathname.startsWith("/servicestage/")) body = { applications: [], environments: [], components: [], runtime_stacks: [], resources: [], records: [], count: 0, total: 0 };
+  else if (url.pathname === "/bss/v2/orders/customer-orders") body = { order_infos: [], total_count: 0 };
+  else if (url.pathname === "/bss/v2/orders/subscriptions/resources/query") body = { data: [], total_count: 0 };
   else if (url.pathname.startsWith("/vpn/")) body = url.pathname.endsWith("/availability-zones") ? { availability_zones: { professional1: { vpc: ["mock-az-1", "mock-az-2"] } } } : { vpn_gateways: [], customer_gateways: [], vpn_connections: [], page_info: {} };
   else if (url.pathname.startsWith("/hss/")) body = { data_list: [], total_num: 0 };
   else if (url.pathname.startsWith("/drs/")) body = { jobs: [], total_count: 0 };
@@ -609,15 +611,15 @@ try {
   assert.ok(requests.some(entry => entry.path === `/codeartsrepo/v4/projects/${"a".repeat(32)}/repositories`));
   const serviceSearch = await request("/services/databases");
   assert.match(await serviceSearch.text(), /dms-rabbitmq/);
-  for (const service of ["ecs", "aom", "enterprise-projects", "dms-rabbitmq", "dms-rocketmq", "network", "dns", "smn", "lts", "dew", "ces", "cts", "cdn", "eip", "elb", "cbr", "sfs", "swr", "obs", "as", "nat", "evs", "iam", "deh", "dcs", "dms-kafka", "iotda", "rds", "ims", "dli", "secmaster", "enterprise-router", "vpc-endpoint", "eventgrid", "apig", "oms", "dds", "cce", "css", "cci", "waf", "gaussdb", "taurusdb", "geminidb", "sdrs", "codearts-repo", "codearts-build", "cdm", "codearts-pipeline", "sms", "dws", "codearts-deploy", "bms", "mgc", "cph", "servicestage", "asm", "functiongraph", "direct-connect", "drs", "hss", "vpn"]) {
+  for (const service of ["ecs", "aom", "enterprise-projects", "dms-rabbitmq", "dms-rocketmq", "network", "dns", "smn", "lts", "dew", "ces", "cts", "cdn", "eip", "elb", "cbr", "sfs", "swr", "obs", "as", "nat", "evs", "iam", "deh", "dcs", "dms-kafka", "iotda", "rds", "ims", "dli", "secmaster", "enterprise-router", "vpc-endpoint", "eventgrid", "apig", "oms", "dds", "cce", "css", "cci", "waf", "gaussdb", "taurusdb", "geminidb", "sdrs", "codearts-repo", "codearts-build", "cdm", "codearts-pipeline", "sms", "dws", "codearts-deploy", "bms", "mgc", "cph", "servicestage", "asm", "functiongraph", "direct-connect", "drs", "hss", "vpn", "billing/center"]) {
     const managementPage = await request(`/services/${service}/manage`);
     assert.equal(managementPage.status, 200, `${service} management route`);
     assert.match(await managementPage.text(), /Loading management controls/);
-    const serviceContext = await request(`/api/cloud/management/${service}?projectId=${projectId}`);
+    const serviceContext = await request(`/api/cloud/management/${encodeURIComponent(service)}?projectId=${projectId}`);
     assert.equal(serviceContext.status, 200, `${service}: ${await serviceContext.clone().text()}`);
     const definition = await serviceContext.json();
     assert.ok(definition.operations.length, service);
-    const formContext = await request(`/api/cloud/management/${service}?projectId=${projectId}&operation=${definition.operations[0].id}`);
+    const formContext = await request(`/api/cloud/management/${encodeURIComponent(service)}?projectId=${projectId}&operation=${definition.operations[0].id}`);
     assert.equal(formContext.status, 200, `${service} management form: ${await formContext.text()}`);
   }
   const context = await request(`/api/cloud/management/aom?projectId=${projectId}&operation=update&resourceId=prom-1`);

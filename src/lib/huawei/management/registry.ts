@@ -51,6 +51,7 @@ import { mgcManagement } from "./adapters/mgc";
 import { smsManagement } from "./adapters/sms";
 import { serviceStageManagement } from "./adapters/servicestage";
 import { asmManagement } from "./adapters/asm";
+import { billingManagement } from "./adapters/billing";
 import { vpnManagement } from "./adapters/vpn";
 import { hssManagement } from "./adapters/hss";
 import { drsManagement } from "./adapters/drs";
@@ -108,6 +109,7 @@ export const managementAdapters: Record<string, ManagementAdapter> = {
   drs: drsManagement,
   hss: hssManagement,
   vpn: vpnManagement,
+  "billing/center": billingManagement,
   ecs: ecsManagement,
   dew: dewManagement,
   cdn: cdnManagement,

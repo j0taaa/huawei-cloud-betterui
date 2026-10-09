@@ -87,7 +87,7 @@ const remainingAreas: Record<string, string[]> = {
   "dms-rocketmq": ["Broker scaling", "Public access and encryption configuration", "Topic and consumer updates", "Messages, tracing, monitoring and recovery"],
   functiongraph: ["Workflow and application lifecycle", "Binary/image runtime provisioning, weighted aliases, and reserved capacity lifecycle", "Complete agency/network/storage policies, pricing, quotas, and cloud job tracking"],
   evs: ["Encryption and provisioning options", "Tag changes", "Complete pricing and quota checks", "Cloud job tracking"],
-  "billing/center": ["Invoices, orders, renewal and payment workflows"],
+  "billing/center": ["Invoices, refunds/unsubscription with verified quotes, coupons, discounts, top-ups, and account settlement administration", "Complete order history, subscription changes, detailed renewal settings, budgets, and pricing workflows"],
   cost: ["Budgets, alerts and cost allocation workflows"],
   flexus: ["Native Flexus provisioning and management"],
   mgc: ["Native MgC discovery, migration projects, application groups, dependency assessment, and orchestration", "SMS, OMS, and CDM advanced workflows listed on their separate coverage rows"],
