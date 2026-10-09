@@ -286,7 +286,7 @@ test("EIP exposes guarded assignment and release actions", () => {
 
 test("analytics and search service loaders use read-only list endpoints", () => {
   const analyticsEndpoints = [
-    ["modelarts", "GET", "/v1/${session.projectId}/notebooks/all?limit=50"],
+    ["modelarts", "GET", "/notebooks/all?limit=50"],
     [
       "dli",
       "GET",

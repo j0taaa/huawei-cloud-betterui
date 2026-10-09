@@ -1,8 +1,8 @@
 import "server-only";
 
 import type { BetterUiSession, HuaweiProjectSession } from "@/lib/auth-session";
-import { huaweiList } from "@/lib/huawei/http";
-import { asArray, asRecord, firstString } from "@/lib/huawei/parsers";
+import { notebooks as nativeNotebooks } from "@/lib/huawei/services/modelarts-native";
+import { asRecord, firstString } from "@/lib/huawei/parsers";
 import { loadAcrossProjects } from "@/lib/huawei/projects";
 
 export type ModelArtsNotebook = {
@@ -23,20 +23,8 @@ export type ModelArtsNotebook = {
 export async function listModelArtsNotebooksForProject(
   session: HuaweiProjectSession,
 ) {
-  const body = await huaweiList<{ data?: unknown[]; notebooks?: unknown[] }>(
-    session,
-    "modelarts",
-    `/v1/${session.projectId}/notebooks/all?limit=50`,
-    {
-      items: ["data", "notebooks"],
-      kind: "offset",
-      parameter: "offset",
-      size: 50,
-      total: ["total_count", "total", "data.total", "result.total"],
-    },
-  );
-
-  return asArray(body.data ?? body.notebooks).map(
+  const rows = await nativeNotebooks(session);
+  return rows.map(
     (notebook): ModelArtsNotebook => {
       const item = asRecord(notebook);
       const flavor = asRecord(item.flavor);
@@ -65,7 +53,7 @@ export async function listModelArtsNotebooksForProject(
         projectName: session.projectName,
         region: session.region,
         status: firstString([item.status, item.state], "UNKNOWN"),
-        storage: firstString([volume.size, item.volume_size], "-"),
+        storage: typeof volume.capacity === "number" && Number.isSafeInteger(volume.capacity) && volume.capacity >= 0 ? `${volume.capacity} GB` : "-",
         workspaceId: String(item.workspace_id ?? "-"),
       };
     },

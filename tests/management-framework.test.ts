@@ -166,3 +166,22 @@ test("management context never turns an unrelated inventory failure into an empt
   t.mock.method(managementAdapters.aom, "inventory", async () => { throw new Error("Invalid native response"); });
   await assert.rejects(getManagementContext(session, "aom"), /Invalid native response/);
 });
+
+test("configuration observers survive saved history without retaining desired form values", async t => {
+  let current = { id: "modelarts-1", name: "Research", status: "RUNNING", feature: "NOTEBOOK", description: "Before", workspace_id: "0", user_id: session.userId };
+  t.mock.method(globalThis, "fetch", async (input: string, init: RequestInit) => {
+    const url = new URL(input);
+    if (url.pathname.endsWith("/notebooks/all")) return Response.json({ data: [current], total: 1 });
+    assert.equal(url.pathname, `/v1/${session.projectId}/notebooks/modelarts-1`);
+    return Response.json(init.method === "PUT" ? { ...current, ...JSON.parse(String(init.body)) } : current);
+  });
+  const desired = "PRIVATE_EXPECTED_NOTEBOOK_DESCRIPTION";
+  const requestId = randomUUID();
+  const outcome = await runManagementOperation(session, "modelarts", { operation: "update", requestId, resourceId: current.id, projectId: session.projectId, values: { description: desired } });
+  const saved = (await listManagementHistory(session, "modelarts")).find(item => item.id === requestId)!;
+  assert.equal(saved.state, "submitted"); assert.equal(saved.jobId, current.id);
+  assert.deepEqual(saved.verification, outcome.verification); assert.ok(!JSON.stringify(saved).includes(desired));
+  assert.equal((await managementAdapters.modelarts.poll!(session, saved)).state, "submitted");
+  current = { ...current, description: desired };
+  assert.equal((await managementAdapters.modelarts.poll!(session, saved)).state, "succeeded");
+});

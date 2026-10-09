@@ -309,6 +309,7 @@ test("CBH and ModelArts include later pages with their configured limits", async
       assert.equal(url.searchParams.get("limit"), String(size));
       offsets.push(url.searchParams.get("offset"));
       return Response.json({
+        ...(field === "data" ? { total: size + 1 } : {}),
         [field]: Array.from(
           { length: offsets.length === 1 ? size : 1 },
           (_, i) => ({ id: `${offsets.length}-${i}` }),
@@ -393,3 +394,13 @@ test("ECS monitoring retains its object shape when metric discovery partially fa
     },
   );
 });
+
+ test("ModelArts inventory uses native capacity and rejects malformed project-scoped pages", async t => {
+  const { listModelArtsNotebooksForProject } = await import("@/lib/huawei/services/modelarts");
+  let response: Record<string, unknown> = { data: [{ id: "notebook-1", volume: { category: "EVS", capacity: 50 } }], total: 1 };
+  t.mock.method(globalThis, "fetch", async () => Response.json(response));
+  assert.equal((await listModelArtsNotebooksForProject(project))[0].storage, "50 GB");
+  response = { data: [], total: null }; await assert.rejects(listModelArtsNotebooksForProject(project), /native total/);
+  response = { total: 0 }; await assert.rejects(listModelArtsNotebooksForProject(project), /incomplete/);
+  response = { data: [{ id: "notebook-1", project_id: "foreign" }], total: 1 }; await assert.rejects(listModelArtsNotebooksForProject(project), /project scope/);
+ });

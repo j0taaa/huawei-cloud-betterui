@@ -1,4 +1,5 @@
 import "server-only";
+import { modelartsManagement } from "./adapters/modelarts";
 import { workspaceManagement } from "./adapters/workspace";
 import { packagesManagement } from "./adapters/packages";
 import { enterpriseProjectsManagement } from "./adapters/enterprise-projects";
@@ -68,6 +69,7 @@ import { sdrsManagement } from "./adapters/sdrs";
 import type { ManagementAdapter } from "./types";
 
 export const managementAdapters: Record<string, ManagementAdapter> = {
+  modelarts: modelartsManagement,
   workspace: workspaceManagement,
   packages: packagesManagement,
   cc: cloudConnectManagement,

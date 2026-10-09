@@ -54,7 +54,7 @@ export default async function ModelArtsPage() {
   return (
     <ServiceInventoryPage
       actionLabel="Create notebook"
-      actionTitle="ModelArts notebook creation is disabled in this read-only view."
+      managementService="modelarts"
       active="Databases"
       backHref="/services/databases"
       backLabel="Back to Databases"

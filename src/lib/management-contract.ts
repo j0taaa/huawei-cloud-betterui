@@ -33,7 +33,9 @@ export type ManagementResource = {
   values?: Record<string, string | number | boolean>;
 };
 export type ManagementValues = Record<string, string | number | boolean | string[]>;
+export type ManagementVerification = { fields: string[]; digest: string };
 export type ManagementOutcome = {
+  verification?: ManagementVerification;
   message: string;
   resourceId?: string;
   jobId?: string;
@@ -41,6 +43,7 @@ export type ManagementOutcome = {
   facts?: Array<{ label: string; value: string }>;
 };
 export type ManagementHistoryEntry = {
+  verification?: ManagementVerification;
   resultResourceId?: string;
   id: string;
   service: string;

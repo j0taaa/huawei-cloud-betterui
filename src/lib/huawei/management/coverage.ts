@@ -26,6 +26,7 @@ const existingWorkflows: Record<string, string[]> = {
   "dms-kafka": ["Restart instance"],
 };
 const remainingAreas: Record<string, string[]> = {
+  modelarts: ["CodeLab, dedicated pools, dev servers, custom saved images, and broader development configuration", "Training, datasets, workflows, model deployment, serving, and resource-pool administration", "Agencies, authorizations, tags, storage mounts, SSH, quotas, pricing, and complete subscription/completion workflows"],
   packages: ["Service-specific purchasing, renewal, refund quotes, and unsubscription", "Package reassignment, exports, and archival records beyond the native retention window", "Complete billing/order integration, product catalogs, and pricing"],
   workspace: ["Workspace activation, directory/AD administration, group authorizations, and full user access policies", "Disk/image lifecycle, desktop assignment, protocols, backups, pool scaling/autoscaling, and advanced configuration", "Subscription ordering/cancellation, licensing, quotas, monitoring, pricing, and complete completion tracking"],
   cc: ["Central networks, global connection bandwidths, enterprise-router and cross-account networking", "Package ordering/renewal, pay-per-use/percentile and Region-mode allocation contracts, cross-border approvals, and tags", "Full routing, monitoring, quotas, pricing, and subscription workflows"],
