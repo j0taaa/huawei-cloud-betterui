@@ -49,7 +49,7 @@ export default async function MrsPage() {
   return (
     <ServiceInventoryPage
       actionLabel="Create cluster"
-      actionTitle="MRS cluster creation is disabled in this read-only view."
+      managementService="mrs"
       active="Databases"
       backHref="/services/databases"
       backLabel="Back to Databases"
