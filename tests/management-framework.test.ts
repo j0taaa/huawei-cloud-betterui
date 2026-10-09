@@ -10,6 +10,7 @@ import { projectForId } from "@/lib/huawei/projects";
 import { getManagementContext, runManagementOperation } from "@/lib/huawei/management";
 import { listManagementHistory } from "@/lib/huawei/management/history";
 import { managementAdapters } from "@/lib/huawei/management/registry";
+import { CloudLoadError } from "@/lib/huawei/errors";
 import { createSession, deleteSession } from "@/lib/auth-session";
 import { withSessionCookie } from "./fixtures/request-context.mjs";
 import { project, session } from "./fixtures/session";
@@ -147,4 +148,21 @@ test("management origin checks use the public Host and forwarded protocol behind
     const foreign = await withSessionCookie(cookie, () => POST(new Request("http://localhost/api/cloud/management/aom", { method: "POST", headers: { host: "ui.hwctools.site", "x-forwarded-proto": "https", origin: "https://foreign.invalid" }, body: "{" }), params));
     assert.equal(foreign.status, 403);
   } finally { deleteSession(cookie); }
+});
+
+test("partial management inventory remains visible with warnings while writes still require fresh complete inventory", async t => {
+  const partial = [{ id: "available", name: "Accessible resource", status: "ACTIVE" }];
+  t.mock.method(managementAdapters.aom, "inventory", async () => { throw new CloudLoadError("Workspace Two: 403 permission denied", partial); });
+  const execution = t.mock.method(managementAdapters.aom, "execute", async () => { throw new Error("Must not mutate from incomplete inventory."); });
+  const context = await getManagementContext(session, "aom");
+  assert.deepEqual(context.resources, partial);
+  assert.match(context.warnings![0], /Inventory is incomplete.*Workspace Two: 403 permission denied/);
+  assert.ok(context.operations.length > 0);
+  await assert.rejects(runManagementOperation(session, "aom", { operation: "delete", requestId: randomUUID(), projectId: session.projectId, resourceId: "available", confirmName: "Accessible resource", acknowledgedImpact: true, values: {} }), /permission denied/);
+  assert.equal(execution.mock.callCount(), 0);
+});
+
+test("management context never turns an unrelated inventory failure into an empty resource list", async t => {
+  t.mock.method(managementAdapters.aom, "inventory", async () => { throw new Error("Invalid native response"); });
+  await assert.rejects(getManagementContext(session, "aom"), /Invalid native response/);
 });

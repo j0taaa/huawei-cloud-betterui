@@ -241,7 +241,7 @@ export const codeartsBuildManagement: ManagementAdapter = {
         fact("last build status", firstString([job.last_build_status, job.last_job_running_status])),
         fact("trigger type", job.trigger_type),
         fact("creator", firstString([job.job_creator, job.user_name])),
-        fact("repository", firstString([job.scm_web_url, scm.url, job.repo_id])),
+        fact("repository ID", firstString([scm.repo_id, job.repo_id])),
         fact("source type", scm.scm_type),
         fact("source branch", scm.branch),
         fact("arch", config.arch),

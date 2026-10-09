@@ -64,6 +64,7 @@ export type ManagementContext = {
   resources: ManagementResource[];
   choices: Record<string, ManagementChoice[]>;
   history: ManagementHistoryEntry[];
+  warnings?: string[];
 };
 
 const managementErrorBrand = Symbol.for("betterui.management-input-error");

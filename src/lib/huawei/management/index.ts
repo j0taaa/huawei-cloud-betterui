@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { getSessionProjects, type BetterUiSession } from "@/lib/auth-session";
 import { ManagementInputError, validateManagementValues, type ManagementContext, type ManagementHistoryEntry, type ManagementOutcome } from "@/lib/management-contract";
 import { HuaweiApiError } from "@/lib/huawei/http";
+import { CloudLoadError } from "@/lib/huawei/errors";
 import { invalidateCloudResult } from "@/lib/huawei/result";
 import { managementAdapters } from "./registry";
 import { claimManagementOperation, listManagementHistory, readManagementHistory, saveManagementHistory } from "./history";
@@ -29,13 +30,20 @@ export async function getManagementContext(session: BetterUiSession, service: st
   const adapter = adapterFor(service);
   const selected = selectedSession(session, service, projectId);
   if (operationId && !adapter.operations.some((operation) => operation.id === operationId)) throw new ManagementInputError("Unsupported operation.");
-  const resources = await adapter.inventory(selected);
+  const warnings: string[] = [];
+  let resources: ManagementContext["resources"];
+  try { resources = await adapter.inventory(selected); }
+  catch (error) {
+    if (!(error instanceof CloudLoadError) || !Array.isArray(error.partialData)) throw error;
+    resources = error.partialData as ManagementContext["resources"];
+    warnings.push(`Inventory is incomplete: ${error.message}. Available resources are shown; operations recheck current inventory before proceeding.`);
+  }
   const resource = resources.find((item) => item.id === resourceId);
   const [choices, history] = await Promise.all([
     operationId && adapter.options ? adapter.options(selected, operationId, resource) : Promise.resolve({}),
     listManagementHistory(session, service),
   ]);
-  return { service, title: adapter.title, accountWide: !!adapter.accountWide, projects: getSessionProjects(session).map((project) => ({ value: project.projectId, label: `${project.projectName} / ${project.region}` })), selectedProjectId: selected.projectId, operations: adapter.operations, resources, choices, history };
+  return { service, title: adapter.title, accountWide: !!adapter.accountWide, projects: getSessionProjects(session).map((project) => ({ value: project.projectId, label: `${project.projectName} / ${project.region}` })), selectedProjectId: selected.projectId, operations: adapter.operations, resources, choices, history, ...(warnings.length ? { warnings } : {}) };
 }
 
 export async function runManagementOperation(session: BetterUiSession, service: string, body: unknown): Promise<ManagementOutcome & { ok: boolean; replayed?: boolean }> {
