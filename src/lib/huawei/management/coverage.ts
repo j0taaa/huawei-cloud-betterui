@@ -26,6 +26,7 @@ const existingWorkflows: Record<string, string[]> = {
   "dms-kafka": ["Restart instance"],
 };
 const remainingAreas: Record<string, string[]> = {
+  eventgrid: ["Cloud-service and message-broker sources; additional targets and connections", "Filters and target editing, transforms, dead-letter queues, and event schemas", "Cross-account channels, traces, metrics, pricing, and quotas"],
   dli: ["Elastic resource pools, Flink, and Spark batch jobs", "Databases, tables, data sources, catalogs, and permissions", "Billing, quotas, logs, and metrics"],
   secmaster: ["Alerts, incidents, investigations, and security dashboards", "Playbooks, workflows, collection, shipping, and indexes", "Edition purchases, protection settings, billing, and quotas"],
   "enterprise-router": ["Shared and non-VPC attachments, route policies, and flow logs", "Availability-zone changes, tags, quotas, metrics, and billing", "Cloud completion tracking"],

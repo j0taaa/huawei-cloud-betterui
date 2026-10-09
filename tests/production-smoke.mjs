@@ -174,6 +174,7 @@ const mock = createServer(async (req, res) => {
   else if (url.pathname.startsWith("/secmaster/")) body = { workspaces: [], total_count: 0 };
   else if (url.pathname.startsWith("/er/")) body = url.pathname.endsWith("/availability-zones") ? { availability_zones: [{ code: "az-1", state: "available" }] } : { instances: [], page_info: {} };
   else if (url.pathname.startsWith("/vpcep/")) body = { endpoint_services: [], endpoints: [], total_count: 0 };
+  else if (url.pathname.startsWith("/eg/")) body = { items: [], total: 0 };
   else if (url.pathname.startsWith("/cce/")) body = { items: [] };
   else if (url.pathname.startsWith("/rds/")) {
     if (url.pathname.includes("/flavors/")) body = { flavors: [{ instance_mode: "single", version_name: ["8.0"], spec_code: "rds.single", vcpus: "2", ram: 4096, az_status: { "az-1": "normal" }, az_desc: { "az-1": "Zone 1" } }] };
@@ -574,7 +575,7 @@ try {
   );
   const serviceSearch = await request("/services/databases");
   assert.match(await serviceSearch.text(), /dms-rabbitmq/);
-  for (const service of ["ecs", "aom", "enterprise-projects", "dms-rabbitmq", "dms-rocketmq", "network", "dns", "smn", "lts", "dew", "ces", "cts", "cdn", "eip", "elb", "cbr", "sfs", "swr", "obs", "as", "nat", "evs", "iam", "deh", "dcs", "dms-kafka", "iotda", "rds", "ims", "dli", "secmaster", "enterprise-router", "vpc-endpoint"]) {
+  for (const service of ["ecs", "aom", "enterprise-projects", "dms-rabbitmq", "dms-rocketmq", "network", "dns", "smn", "lts", "dew", "ces", "cts", "cdn", "eip", "elb", "cbr", "sfs", "swr", "obs", "as", "nat", "evs", "iam", "deh", "dcs", "dms-kafka", "iotda", "rds", "ims", "dli", "secmaster", "enterprise-router", "vpc-endpoint", "eventgrid"]) {
     const managementPage = await request(`/services/${service}/manage`);
     assert.equal(managementPage.status, 200, `${service} management route`);
     assert.match(await managementPage.text(), /Loading management controls/);

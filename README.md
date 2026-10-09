@@ -112,6 +112,8 @@ Recent additions include Auto Scaling configurations/groups/policies/member acti
 
 DLI adds standalone queue lifecycle, SQL submission/cancellation/previews, concurrency settings, and native SQL job checks. SecMaster adds workspace/view lifecycle, data spaces, and user data pipes. Enterprise Router adds route tables, VPC attachments, static routes, associations, and propagation. VPC Endpoint adds interface endpoint/service lifecycle, approved connections, and domain permissions. Each workspace lists its supported operations; the coverage page records the remaining service features.
 
+EventGrid adds custom channels, application sources, HTTPS webhook subscriptions, subscription enable/disable, configuration inspection, and CloudEvents publishing. Subscription creation preserves the original payload, and metadata edits preserve routing and connection settings. Official resources and dependent channels/sources are protected.
+
 `/tasks` retains the latest 100 management request records per account and user, with project, resource, outcome, and supported native job checks. A submitted request is accepted by Huawei and may still be running. Lost-response retries retain their request ID; uncertain outcomes require checking cloud state before starting another request. Legacy action routes are not yet included in this history.
 
 Set `BETTERUI_DATA_DIR` to a persistent writable directory when deploying in a container. The running deployment mounts `/app/data` for management history and replay claims. Tests use local API mocks; real cloud creation, deletion, billing, and permissions have not been exercised.
