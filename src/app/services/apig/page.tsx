@@ -14,6 +14,7 @@ export default async function ApigPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="apig"
       actionLabel="Create gateway"
       actionTitle="APIG instance creation is intentionally disabled in this read-only view."
       active="Networking"

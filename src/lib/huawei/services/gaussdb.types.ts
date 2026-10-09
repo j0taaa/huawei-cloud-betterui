@@ -1,0 +1,44 @@
+export type GaussDbInstance = {
+  availabilityZone: string;
+  backupKeepDays: string;
+  backupWindow: string;
+  chargeMode: string;
+  createdAt: string;
+  datastore: string;
+  enterpriseProjectId: string;
+  flavor: string;
+  id: string;
+  maintenanceWindow: string;
+  mode: string;
+  name: string;
+  nodes: Array<{
+    availabilityZone: string;
+    components: Array<{
+      id: string;
+      role: string;
+      status: string;
+      type: string;
+    }>;
+    id: string;
+    name: string;
+    privateIp: string;
+    role: string;
+    status: string;
+  }>;
+  port: string;
+  privateIp: string;
+  projectId: string;
+  projectName: string;
+  publicIp: string;
+  region: string;
+  securityGroupId: string;
+  status: string;
+  storage: string;
+  storageType: string;
+  subnetId: string;
+  switchStrategy: string;
+  timeZone: string;
+  type: string;
+  updatedAt: string;
+  vpcId: string;
+};

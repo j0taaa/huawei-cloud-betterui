@@ -57,6 +57,7 @@ export default async function BillingCenterPage({
   ];
   return (
     <ServiceInventoryPage
+      managementService="billing/center"
       active="Billing"
       backHref="/services/billing"
       backLabel="Back to billing services"

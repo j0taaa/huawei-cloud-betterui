@@ -1,28 +1,228 @@
+import { mapCloudLoad, combineCloudLoads } from "@/lib/huawei/errors";
+import { finishCloudLoad } from "@/lib/huawei/errors";
+import { huaweiList } from "@/lib/huawei/http";
 import "server-only";
 
 import type { BetterUiSession, HuaweiProjectSession } from "@/lib/auth-session";
-import { parseRelationalDbInstance } from "@/lib/huawei/database-parsers";
-import { huaweiList } from "@/lib/huawei/http";
-import { asArray } from "@/lib/huawei/parsers";
-import { loadAcrossProjects } from "@/lib/huawei/projects";
+import {
+  asArray,
+  asRecord,
+  asString,
+  firstString,
+  huaweiFetch,
+  loadAcrossProjects,
+  numberWithUnit,
+  sessionProjects,
+  projectForId,
+} from "@/lib/huawei/core";
+import type { GaussDbInstance } from "@/lib/huawei/services/gaussdb.types";
 
-export type GaussDbInstance = {
-  availabilityZone: string;
-  backupWindow: string;
+export type GaussDbNode = GaussDbInstance["nodes"][number];
+const postMethod = "POST";
+
+export type GaussDbBackup = {
+  beginTime: string;
   datastore: string;
+  endTime: string;
   id: string;
-  mode: string;
+  instanceId: string;
   name: string;
-  nodes: number;
-  port: string;
-  privateIp: string;
   projectId: string;
   projectName: string;
   region: string;
+  size: string;
   status: string;
-  storage: string;
   type: string;
 };
+
+export type GaussDbDetails = {
+  backups: GaussDbBackup[];
+  instance: GaussDbInstance;
+};
+
+function firstIpFromValues(values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) {
+      return value;
+    }
+
+    const array = asArray(value);
+    const match = array.find((item) => typeof item === "string" && item.trim());
+
+    if (typeof match === "string") {
+      return match;
+    }
+  }
+
+  return "-";
+}
+
+function datastoreName(datastore: Record<string, unknown>, fallback: unknown) {
+  return (
+    [datastore.type ?? fallback, datastore.version]
+      .filter((value) => typeof value === "string" && value.trim())
+      .join(" ") || "-"
+  );
+}
+
+function backupWindow(strategy: Record<string, unknown>) {
+  const start = asString(strategy.start_time, "");
+  const end = asString(strategy.end_time, "");
+
+  if (start && end) {
+    return `${start}-${end}`;
+  }
+
+  return firstString([strategy.start_time, strategy.period], "-");
+}
+
+function parseComponent(component: unknown) {
+  const item = asRecord(component);
+
+  return {
+    id: firstString([item.id, item.component_id], "-"),
+    role: firstString([item.role, item.component_role], "-"),
+    status: firstString([item.status, item.component_status], "-"),
+    type: firstString([item.type, item.component_type, item.name], "-"),
+  };
+}
+
+function parseNode(node: unknown): GaussDbNode {
+  const item = asRecord(node);
+
+  return {
+    availabilityZone: firstString([item.availability_zone, item.az_code], "-"),
+    components: asArray(item.components).map(parseComponent),
+    id: firstString([item.id, item.node_id], "-"),
+    name: firstString([item.name, item.node_name, item.id], "-"),
+    privateIp: firstIpFromValues([
+      item.private_ips,
+      item.private_ip,
+      item.private_ip_address,
+      item.ip,
+    ]),
+    role: firstString([item.role, item.type], "-"),
+    status: firstString([item.status, item.node_status], "-"),
+  };
+}
+
+function nodeCountValue(value: unknown) {
+  return asArray(value).length || Number(value ?? 0) || 0;
+}
+
+function parseNodes(item: Record<string, unknown>) {
+  const nodes = asArray(item.nodes).map(parseNode);
+
+  if (nodes.length) {
+    return nodes;
+  }
+
+  const count = nodeCountValue(item.node_count);
+
+  return Array.from({ length: count }, (_, index) => ({
+    availabilityZone: firstString(
+      [item.az_code, item.availability_zone, item.availability_zone_mode],
+      "-",
+    ),
+    components: [],
+    id: `node-${index + 1}`,
+    name: `Node ${index + 1}`,
+    privateIp: "-",
+    role: "-",
+    status: "-",
+  }));
+}
+
+function parseGaussDbInstance(
+  instance: unknown,
+  session: HuaweiProjectSession,
+): GaussDbInstance {
+  const item = asRecord(instance);
+  const datastore = asRecord(item.datastore);
+  const volume = asRecord(item.volume);
+  const backupStrategy = asRecord(item.backup_strategy ?? item.backupStrategy);
+  const chargeInfo = asRecord(item.charge_info);
+  const nodes = parseNodes(item);
+  const availabilityZone = firstString(
+    [
+      item.az_code,
+      item.availability_zone,
+      item.availability_zone_mode,
+      nodes.map((node) => node.availabilityZone).find((zone) => zone !== "-"),
+    ],
+    "-",
+  );
+
+  return {
+    availabilityZone,
+    backupKeepDays: firstString([backupStrategy.keep_days], "-"),
+    backupWindow: backupWindow(backupStrategy),
+    chargeMode: firstString([chargeInfo.charge_mode, item.charge_mode], "-"),
+    createdAt: firstString(
+      [item.created, item.created_at, item.create_time],
+      "-",
+    ),
+    datastore: datastoreName(datastore, item.datastore_type),
+    enterpriseProjectId: firstString([item.enterprise_project_id], "-"),
+    flavor: firstString([item.flavor_ref, item.flavor, item.spec_code], "-"),
+    id: firstString([item.id, item.instance_id]),
+    maintenanceWindow: firstString(
+      [item.maintenance_window, item.maintain_begin, item.maintain_time],
+      "-",
+    ),
+    mode: firstString([item.mode, item.ha_mode, item.instance_mode], "-"),
+    name: firstString([item.name, item.instance_name, item.id]),
+    nodes,
+    port: String(item.port ?? item.db_port ?? "-"),
+    privateIp: firstIpFromValues([
+      item.private_ips,
+      item.private_ip,
+      item.private_ip_address,
+    ]),
+    projectId: session.projectId,
+    projectName: session.projectName,
+    publicIp: firstIpFromValues([item.public_ips, item.public_ip]),
+    region: session.region,
+    securityGroupId: firstString(
+      [item.security_group_id, item.security_groupId],
+      "-",
+    ),
+    status: firstString([item.status, item.instance_status], "UNKNOWN"),
+    storage: numberWithUnit(
+      volume.size ?? item.volume_size ?? item.storage_size,
+      "GB",
+    ),
+    storageType: firstString(
+      [volume.type, item.volume_type, item.storage_type],
+      "-",
+    ),
+    subnetId: firstString([item.subnet_id, item.subnetId], "-"),
+    switchStrategy: firstString([item.switch_strategy], "-"),
+    timeZone: firstString([item.time_zone], "-"),
+    type: firstString([item.type, item.instance_type], "-"),
+    updatedAt: firstString(
+      [item.updated, item.updated_at, item.update_time],
+      "-",
+    ),
+    vpcId: firstString([item.vpc_id, item.vpcId], "-"),
+  };
+}
+
+function mergeComponentTopology(
+  instance: GaussDbInstance,
+  components: unknown[],
+): GaussDbInstance {
+  if (!components.length) {
+    return instance;
+  }
+
+  const componentNodes = components.map(parseNode);
+
+  return {
+    ...instance,
+    nodes: componentNodes.length ? componentNodes : instance.nodes,
+  };
+}
 
 export async function listGaussDbInstancesForProject(
   session: HuaweiProjectSession,
@@ -41,10 +241,154 @@ export async function listGaussDbInstancesForProject(
   );
 
   return asArray(body.instances).map((instance) =>
-    parseRelationalDbInstance(instance, session),
+    parseGaussDbInstance(instance, session),
+  );
+}
+
+async function getGaussDbInstanceForProject(
+  session: HuaweiProjectSession,
+  id: string,
+) {
+  const query = new URLSearchParams({ id, limit: "1" });
+  const body = await huaweiFetch<{ instances?: unknown[] }>(
+    session,
+    "gaussdb",
+    `/v3/${session.projectId}/instances?${query.toString()}`,
+  );
+  const instance = asArray(body.instances)[0];
+
+  return instance ? parseGaussDbInstance(instance, session) : null;
+}
+
+export async function listGaussDbComponentsForProject(
+  session: HuaweiProjectSession,
+  instanceId: string,
+) {
+  const body = await huaweiFetch<{ components?: unknown[]; nodes?: unknown[] }>(
+    session,
+    "gaussdb",
+    `/v3/${session.projectId}/instances/${instanceId}/components`,
+  );
+
+  return asArray(body.nodes).length
+    ? asArray(body.nodes)
+    : asArray(body.components);
+}
+
+export async function listGaussDbBackupsForProject(
+  session: HuaweiProjectSession,
+  instanceId: string,
+) {
+  const query = new URLSearchParams({
+    instance_id: instanceId,
+    limit: "10",
+    offset: "0",
+  });
+  const body = await huaweiFetch<{ backups?: unknown[] }>(
+    session,
+    "gaussdb",
+    `/v3.2/${session.projectId}/backups?${query.toString()}`,
+  );
+
+  return asArray(body.backups).map((backup): GaussDbBackup => {
+    const item = asRecord(backup);
+    const datastore = asRecord(item.datastore);
+
+    return {
+      beginTime: firstString([item.begin_time, item.start_time], "-"),
+      datastore: datastoreName(datastore, item.datastore_type),
+      endTime: firstString([item.end_time, item.finished_at], "-"),
+      id: firstString([item.id, item.backup_id], "-"),
+      instanceId: firstString([item.instance_id], instanceId),
+      name: firstString([item.name, item.backup_name, item.id], "-"),
+      projectId: session.projectId,
+      projectName: session.projectName,
+      region: session.region,
+      size: numberWithUnit(item.size, "MB"),
+      status: firstString([item.status], "UNKNOWN"),
+      type: firstString([item.type, item.backup_type], "-"),
+    };
+  });
+}
+
+export async function getGaussDbInstance(session: BetterUiSession, id: string) {
+  const results = await Promise.allSettled(
+    sessionProjects(session).map((project) =>
+      getGaussDbInstanceForProject(project, id),
+    ),
+  );
+
+  return finishCloudLoad(
+    results,
+    results
+      .flatMap((result) =>
+        result.status === "fulfilled" && result.value ? [result.value] : [],
+      )
+      .at(0) ?? null,
+  );
+}
+
+export async function getGaussDbDetails(
+  session: BetterUiSession,
+  id: string,
+): Promise<GaussDbDetails | null> {
+  return mapCloudLoad(
+    () => getGaussDbInstance(session, id),
+    async (instance) => {
+      if (!instance) {
+        return null;
+      }
+
+      const project =
+        sessionProjects(session).find(
+          (item) =>
+            item.projectId === instance.projectId &&
+            item.region === instance.region,
+        ) ?? sessionProjects(session)[0];
+
+      return mapCloudLoad(
+        () =>
+          combineCloudLoads(
+            {
+              backups: listGaussDbBackupsForProject(project, id),
+              components: listGaussDbComponentsForProject(project, id),
+            },
+            { backups: [], components: [] },
+          ),
+        ({ backups, components }) => ({
+          backups,
+          instance: mergeComponentTopology(instance, components),
+        }),
+      );
+    },
+  );
+}
+
+export async function runGaussDbAction(
+  session: BetterUiSession,
+  id: string,
+  action: "reboot",
+  projectId?: string,
+) {
+  const project = projectForId(session, projectId);
+
+  if (action !== "reboot") {
+    throw new Error("Unsupported GaussDB action.");
+  }
+
+  return huaweiFetch<{ job_id?: string }>(
+    project,
+    "gaussdb",
+    `/v3/${project.projectId}/instances/${id}/restart`,
+    {
+      body: JSON.stringify({}),
+      method: postMethod,
+    },
   );
 }
 
 export async function listGaussDbInstances(session: BetterUiSession) {
   return loadAcrossProjects(session, listGaussDbInstancesForProject);
 }
+
+export type * from "@/lib/huawei/services/gaussdb.types";

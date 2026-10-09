@@ -7,6 +7,7 @@ import {
   ServiceInventoryPage,
   type InventoryColumn,
 } from "@/app/services/_components/service-inventory";
+import { ResourceIdentity } from "@/components/console-ui";
 import {
   listFlexusResources,
   type FlexusResource,
@@ -21,15 +22,12 @@ const columns: InventoryColumn<FlexusResource>[] = [
   {
     header: "Resource",
     render: (resource) => (
-      <div>
-        <p className="font-black">{resource.name}</p>
-        <p className="mt-1 break-all text-xs text-[#98a2b3]">{resource.id}</p>
-      </div>
+      <ResourceIdentity id={resource.id} name={resource.name} />
     ),
   },
   { header: "Source", render: (resource) => <InventoryStatus>{resource.sourceService}</InventoryStatus> },
   { header: "Status", render: (resource) => <InventoryStatus>{resource.status}</InventoryStatus> },
-  { header: "Flexus signal", render: (resource) => resource.signal },
+  { header: "Product", render: (resource) => resource.signal },
   { header: "Private IP", render: (resource) => resource.privateIp },
   { header: "Public IP", render: (resource) => resource.publicIp },
   { header: "Project", render: (resource) => `${resource.projectName} / ${resource.region}` },
@@ -38,29 +36,29 @@ const columns: InventoryColumn<FlexusResource>[] = [
 export default async function FlexusPage() {
   const result = await withCloudResult<FlexusResource[]>([], listFlexusResources, cloudCacheKeys.listFlexusResources);
   const resources = result.data;
-  const compute = resources.filter((resource) => resource.sourceService === "ECS").length;
-  const database = resources.filter((resource) => resource.sourceService === "RDS").length;
+  const lInstances = resources.filter((resource) => resource.signal === "L").length;
+  const xInstances = resources.filter((resource) => resource.signal === "X").length;
 
   return (
     <ServiceInventoryPage
-      actionLabel="Purchase Flexus"
-      actionTitle="Flexus purchase is disabled in this read-only view."
+      managementService="flexus"
       active="Compute"
       backHref="/services"
       backLabel="Back to services"
       columns={columns}
-      description="Read-only Flexus rollup from documented ECS and RDS inventory APIs, filtered by Flexus/HCSS/HECS resource signals."
-      empty="No Flexus-like ECS or RDS resources were returned by the documented inventory APIs."
+      description="Native Flexus L bundles, Flexus X servers, and Flexus RDS instances. Manage server power and metadata, database backups and storage autoscaling, and password resets within their original project."
+      empty="No native Flexus L, X, or RDS resources were returned."
       icon={ServerCog}
       result={result}
       rows={resources}
       stats={[
         { label: "Flexus resources", value: resources.length },
-        { label: "Compute signals", value: compute },
-        { label: "Database signals", value: database },
+        { label: "Flexus L bundles", value: lInstances },
+        { label: "Flexus X servers", value: xInstances },
+        { label: "Flexus RDS instances", value: resources.filter(resource => resource.signal === "RDS").length },
         { label: "Projects", value: new Set(resources.map((resource) => resource.projectId)).size },
       ]}
-      tableTitle="Flexus resource rollup"
+      tableTitle="Flexus resources"
       title="Flexus"
     />
   );

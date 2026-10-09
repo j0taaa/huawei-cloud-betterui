@@ -3,10 +3,10 @@ import type { Metadata } from "next";
 import { Store } from "lucide-react";
 
 import {
-  InventoryStatus,
   ServiceInventoryPage,
   type InventoryColumn,
 } from "@/app/services/_components/service-inventory";
+import { ResourceIdentity } from "@/components/console-ui";
 import {
   listKooGalleryPurchasedApis,
   type KooGalleryPurchasedApi,
@@ -21,16 +21,11 @@ const columns: InventoryColumn<KooGalleryPurchasedApi>[] = [
   {
     header: "Purchased API",
     render: (api) => (
-      <div>
-        <p className="font-black">{api.apiName}</p>
-        <p className="mt-1 break-all text-xs text-[#98a2b3]">{api.id}</p>
-        {api.remark ? <p className="mt-2 text-xs text-[#667085]">{api.remark}</p> : null}
-      </div>
+      <ResourceIdentity description={api.remark} id={api.apiId} name={api.apiName} />
     ),
   },
-  { header: "Status", render: (api) => <InventoryStatus>{api.status}</InventoryStatus> },
+  { header: "Subscription", render: (api) => api.subscriptionId },
   { header: "API group", render: (api) => api.groupName },
-  { header: "Environment", render: (api) => api.runEnvName },
   { header: "Project", render: (api) => api.projectName },
   { header: "Region", render: (api) => api.region },
 ];
@@ -41,8 +36,7 @@ export default async function KooGalleryPage() {
 
   return (
     <ServiceInventoryPage
-      actionLabel="Open marketplace"
-      actionTitle="Marketplace purchase actions are disabled in this read-only view."
+      managementService="koogallery"
       active="Billing"
       backHref="/services"
       backLabel="Back to services"
@@ -54,8 +48,8 @@ export default async function KooGalleryPage() {
       rows={apis}
       stats={[
         { label: "Purchased APIs", value: apis.length },
-        { label: "API groups", value: new Set(apis.map((api) => api.groupName).filter((group) => group !== "-")).size },
-        { label: "Environments", value: new Set(apis.map((api) => api.runEnvName).filter((env) => env !== "-")).size },
+        { label: "API groups", value: new Set(apis.map((api) => api.groupName).filter((group) => group !== "Unknown")).size },
+        { label: "Subscriptions", value: new Set(apis.map((api) => api.subscriptionId)).size },
         { label: "Projects", value: new Set(apis.map((api) => api.projectId)).size },
       ]}
       tableTitle="KooGallery purchased API rollup"

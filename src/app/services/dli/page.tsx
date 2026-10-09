@@ -4,22 +4,16 @@ import { DatabaseZap } from "lucide-react";
 
 import {
   InventoryStatus,
+  inventoryStatusTone,
   type InventoryColumn,
   ServiceInventoryPage,
 } from "@/app/services/_components/service-inventory";
+import { CellStack } from "@/components/console-ui";
 import { listDliQueues, type DliQueue, withCloudResult } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
   title: "DLI | Huawei Cloud Better UI",
 };
-
-function statusTone(status: string) {
-  const normalized = status.toLowerCase();
-  if (["available", "running", "normal"].includes(normalized)) return "good";
-  if (["failed", "error", "abnormal"].includes(normalized)) return "bad";
-  if (["creating", "scaling", "restarting"].includes(normalized)) return "warn";
-  return "neutral";
-}
 
 export default async function DliPage() {
   const result = await withCloudResult<DliQueue[]>([], listDliQueues, cloudCacheKeys.listDliQueues);
@@ -32,14 +26,11 @@ export default async function DliPage() {
 
   const columns: InventoryColumn<DliQueue>[] = [
     { header: "Queue", render: (queue) => <span className="font-black text-[#101828]">{queue.name}</span> },
-    { header: "State", render: (queue) => <InventoryStatus tone={statusTone(queue.status)}>{queue.status}</InventoryStatus> },
+    { header: "State", render: (queue) => <InventoryStatus tone={inventoryStatusTone(queue.status)}>{queue.status}</InventoryStatus> },
     {
       header: "Workload",
       render: (queue) => (
-        <div>
-          <p className="font-black">{queue.type}</p>
-          <p className="mt-1 text-xs text-[#667085]">{queue.engine}</p>
-        </div>
+        <CellStack subValue={queue.engine}>{queue.type}</CellStack>
       ),
     },
     { header: "CUs", render: (queue) => queue.cuCount || "-" },
@@ -50,6 +41,7 @@ export default async function DliPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="dli"
       actionLabel="Create queue"
       actionTitle="DLI queue creation is disabled in this read-only view."
       active="Databases"

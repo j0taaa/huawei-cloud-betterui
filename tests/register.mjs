@@ -8,6 +8,11 @@ registerHooks({
         url: new URL("./fixtures/server-only.mjs", import.meta.url).href,
         shortCircuit: true,
       };
+    if (specifier === "next/headers")
+      return {
+        url: new URL("./fixtures/request-context.mjs", import.meta.url).href,
+        shortCircuit: true,
+      };
     return nextResolve(specifier, context);
   },
 });

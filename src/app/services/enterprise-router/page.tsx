@@ -2,7 +2,11 @@ import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Route } from "lucide-react";
 
-import { InventoryStatus, ServiceInventoryPage } from "@/app/services/_components/service-inventory";
+import {
+  InventoryStatus,
+  inventoryStatusTone,
+  ServiceInventoryPage,
+} from "@/app/services/_components/service-inventory";
 import {
   listEnterpriseRouters,
   type EnterpriseRouter,
@@ -11,30 +15,17 @@ import {
 
 export const metadata: Metadata = { title: "Enterprise Router | Huawei Cloud Better UI" };
 
-function statusTone(status: string) {
-  const normalized = status.toLowerCase();
-
-  if (["available", "active"].includes(normalized)) {
-    return "good";
-  }
-
-  if (["pending", "modifying"].some((value) => normalized.includes(value))) {
-    return "warn";
-  }
-
-  return ["failed", "deleted", "freezed"].includes(normalized) ? "bad" : "neutral";
-}
-
 export default async function EnterpriseRouterPage() {
   const result = await withCloudResult<EnterpriseRouter[]>([], listEnterpriseRouters, cloudCacheKeys.listEnterpriseRouters);
   const routers = result.data;
-  const available = routers.filter((router) => statusTone(router.status) === "good").length;
+  const available = routers.filter((router) => inventoryStatusTone(router.status) === "good").length;
   const sharedAutoAccept = routers.filter(
     (router) => router.autoAcceptSharedAttachments === "true",
   ).length;
 
   return (
     <ServiceInventoryPage
+      managementService="enterprise-router"
       actionLabel="Create router"
       actionTitle="Enterprise Router creation is intentionally disabled in this read-only view."
       active="Networking"
@@ -44,7 +35,7 @@ export default async function EnterpriseRouterPage() {
         { header: "Router", render: (router) => <span className="font-black">{router.name}</span> },
         {
           header: "State",
-          render: (router) => <InventoryStatus tone={statusTone(router.status)}>{router.status}</InventoryStatus>,
+          render: (router) => <InventoryStatus tone={inventoryStatusTone(router.status)}>{router.status}</InventoryStatus>,
         },
         { header: "ASN", render: (router) => router.asn },
         { header: "Default association", render: (router) => router.defaultAssociation },

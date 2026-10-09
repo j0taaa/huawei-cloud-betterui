@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+!tests/fixtures/waf-public-cert.pem
 .codex/
 
 # debug

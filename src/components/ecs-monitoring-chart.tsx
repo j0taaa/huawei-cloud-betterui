@@ -7,6 +7,8 @@ type Datapoint = {
   value: number;
 };
 
+type Aggregation = "average" | "max" | "min" | "sum";
+
 function formatMetricValue(value: number, unit: string) {
   if (unit === "%") {
     return `${value.toFixed(1)}%`;
@@ -32,6 +34,39 @@ function formatTimestamp(value: string) {
   }).format(new Date(value));
 }
 
+function compactDatapoints(
+  datapoints: Datapoint[],
+  aggregation: Aggregation,
+  target = 36,
+) {
+  if (datapoints.length <= target) {
+    return datapoints;
+  }
+
+  const bucketSize = Math.ceil(datapoints.length / target);
+  const buckets: Datapoint[] = [];
+
+  for (let index = 0; index < datapoints.length; index += bucketSize) {
+    const bucket = datapoints.slice(index, index + bucketSize);
+    const values = bucket.map((point) => point.value);
+    const value =
+      aggregation === "sum"
+        ? values.reduce((sum, item) => sum + item, 0)
+        : aggregation === "max"
+          ? Math.max(...values)
+          : aggregation === "min"
+            ? Math.min(...values)
+            : values.reduce((sum, item) => sum + item, 0) / Math.max(values.length, 1);
+
+    buckets.push({
+      timestamp: bucket.at(-1)?.timestamp ?? bucket[0]?.timestamp ?? "",
+      value,
+    });
+  }
+
+  return buckets;
+}
+
 const subscribe = () => () => undefined;
 
 function useIsClient() {
@@ -43,19 +78,25 @@ function useIsClient() {
 }
 
 export function EcsMonitoringChart({
+  aggregation = "average",
   datapoints,
   unit,
 }: {
+  aggregation?: Aggregation;
   datapoints: Datapoint[];
   unit: string;
 }) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const isClient = useIsClient();
-  const maxValue = useMemo(
-    () => Math.max(...datapoints.map((point) => point.value), 1),
-    [datapoints],
+  const chartDatapoints = useMemo(
+    () => compactDatapoints(datapoints, aggregation),
+    [aggregation, datapoints],
   );
-  const activePoint = activeIndex === null ? null : datapoints[activeIndex];
+  const maxValue = useMemo(
+    () => Math.max(...chartDatapoints.map((point) => point.value), 1),
+    [chartDatapoints],
+  );
+  const activePoint = activeIndex === null ? null : chartDatapoints[activeIndex];
   const timestampLabel = (value: string) =>
     isClient ? formatTimestamp(value) : value;
 
@@ -69,7 +110,7 @@ export function EcsMonitoringChart({
       ) : null}
 
       <div className="flex h-48 items-end gap-1">
-        {datapoints.map((point, index) => {
+        {chartDatapoints.map((point, index) => {
           const scale = unit === "%" ? 100 : maxValue;
           const height = `${Math.max(8, Math.min(100, (point.value / scale) * 100))}%`;
           const isActive = activeIndex === index;

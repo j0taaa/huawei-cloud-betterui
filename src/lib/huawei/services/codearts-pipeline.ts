@@ -4,11 +4,11 @@ import type { BetterUiSession, HuaweiProjectSession } from "@/lib/auth-session";
 import { huaweiList } from "@/lib/huawei/http";
 import {
   asRecord,
-  firstResponseArray,
+  asArray,
   firstString,
   timestampMillis,
 } from "@/lib/huawei/parsers";
-import { loadAcrossProjects } from "@/lib/huawei/projects";
+import { loadAcrossCodeArtsProjects } from "@/lib/huawei/codearts-projects";
 
 export type CodeArtsPipelineItem = {
   creator: string;
@@ -32,32 +32,11 @@ export async function listCodeArtsPipelinesForProject(
     "codeartspipeline",
     `/v5/${session.projectId}/api/pipelines/list`,
     {
-      items: [
-        "pipelines",
-        "pipeline_list",
-        "items",
-        "result",
-        "pipelines.pipelines",
-        "pipelines.pipeline_list",
-        "pipelines.items",
-        "pipelines.result",
-        "pipeline_list.pipelines",
-        "pipeline_list.pipeline_list",
-        "pipeline_list.items",
-        "pipeline_list.result",
-        "items.pipelines",
-        "items.pipeline_list",
-        "items.items",
-        "items.result",
-        "result.pipelines",
-        "result.pipeline_list",
-        "result.items",
-        "result.result",
-      ],
+      items: ["pipelines"],
       kind: "offset",
       parameter: "offset",
       size: 100,
-      total: ["total_count", "total", "data.total", "result.total"],
+      total: ["total"],
       inBody: true,
     },
     {
@@ -70,12 +49,7 @@ export async function listCodeArtsPipelinesForProject(
     },
   );
 
-  return firstResponseArray(body, [
-    "pipelines",
-    "pipeline_list",
-    "items",
-    "result",
-  ]).map((pipeline): CodeArtsPipelineItem => {
+  return asArray(body.pipelines).map((pipeline): CodeArtsPipelineItem => {
     const item = asRecord(pipeline);
 
     return {
@@ -90,7 +64,7 @@ export async function listCodeArtsPipelinesForProject(
       groupName: firstString([item.group_name, item.pipeline_group_name], "-"),
       id: firstString([item.pipeline_id, item.id]),
       latestRunAt: timestampMillis(
-        item.latest_run_time ?? item.update_time ?? item.updated_at,
+        asRecord(item.latest_run).start_time ?? item.update_time,
       ),
       name: firstString([item.name, item.pipeline_name, item.id]),
       projectId: session.projectId,
@@ -101,13 +75,13 @@ export async function listCodeArtsPipelinesForProject(
         "-",
       ),
       status: firstString(
-        [item.status, item.latest_run_status, item.run_status],
-        "UNKNOWN",
+        [asRecord(item.latest_run).status],
+        "NOT_RUN",
       ),
     };
   });
 }
 
 export async function listCodeArtsPipelines(session: BetterUiSession) {
-  return loadAcrossProjects(session, listCodeArtsPipelinesForProject);
+  return loadAcrossCodeArtsProjects(session, listCodeArtsPipelinesForProject);
 }

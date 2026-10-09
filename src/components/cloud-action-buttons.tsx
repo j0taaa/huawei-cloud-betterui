@@ -4,20 +4,22 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 
+import { ConsoleButton } from "@/components/console-ui";
+
 export function RefreshButton() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   return (
-    <button
-      className="flex h-11 items-center gap-2 rounded-lg border border-[#d9e0eb] bg-white px-4 text-sm font-bold shadow-sm hover:bg-[#f8fafc] disabled:opacity-70"
+    <ConsoleButton
       disabled={loading}
       onClick={() => {
         setLoading(true);
         router.refresh();
         setTimeout(() => setLoading(false), 500);
       }}
-      type="button"
+      size="lg"
+      variant="neutral"
     >
       {loading ? (
         <Loader2 className="size-4 animate-spin" />
@@ -25,7 +27,7 @@ export function RefreshButton() {
         <RefreshCw className="size-4" />
       )}
       Refresh
-    </button>
+    </ConsoleButton>
   );
 }
 
@@ -37,13 +39,14 @@ export function DisabledCloudButton({
   title?: string;
 }) {
   return (
-    <button
-      className="flex h-11 cursor-not-allowed items-center gap-2 rounded-lg border border-[#d9e0eb] bg-white px-4 text-sm font-bold text-[#98a2b3] shadow-sm"
+    <ConsoleButton
+      className="text-[#98a2b3]"
       disabled
+      size="lg"
       title={title}
-      type="button"
+      variant="neutral"
     >
       {children}
-    </button>
+    </ConsoleButton>
   );
 }

@@ -28,6 +28,8 @@ export async function listDwsClustersForProject(session: HuaweiProjectSession) {
     `/v1.0/${session.projectId}/clusters`,
   );
 
+  if (!Array.isArray(body.clusters)) throw new Error("DWS returned no verified cluster inventory.");
+
   return asArray(body.clusters).map((cluster): DwsCluster => {
     const item = asRecord(cluster);
     const endpoints = asArray(item.endpoints ?? item.private_endpoints);

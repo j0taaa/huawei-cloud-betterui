@@ -9,7 +9,7 @@ import {
   firstString,
   timestampMillis,
 } from "@/lib/huawei/parsers";
-import { loadAcrossProjects } from "@/lib/huawei/projects";
+import { loadAcrossCodeArtsProjects } from "@/lib/huawei/codearts-projects";
 
 export type CodeArtsDeployApplication = {
   createdAt: string;
@@ -107,5 +107,5 @@ export async function listCodeArtsDeployApplicationsForProject(
 }
 
 export async function listCodeArtsDeployApplications(session: BetterUiSession) {
-  return loadAcrossProjects(session, listCodeArtsDeployApplicationsForProject);
+  return loadAcrossCodeArtsProjects(session, listCodeArtsDeployApplicationsForProject);
 }

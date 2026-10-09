@@ -1,0 +1,60 @@
+export type CciNamespace = {
+  annotations: Array<{
+    key: string;
+    value: string;
+  }>;
+  configMapCount: number;
+  containerCount: number;
+  cronJobCount: number;
+  createdAt: string;
+  deploymentCount: number;
+  failedPods: number;
+  id: string;
+  jobCount: number;
+  labels: Array<{
+    key: string;
+    value: string;
+  }>;
+  name: string;
+  pendingPods: number;
+  phase: string;
+  podCount: number;
+  pods: Array<{
+    containerCount: number;
+    createdAt: string;
+    image: string;
+    ip: string;
+    name: string;
+    nodeName: string;
+    phase: string;
+    qosClass: string;
+    readyContainers: number;
+    reason: string;
+    restartCount: number;
+    startedAt: string;
+  }>;
+  projectId: string;
+  projectName: string;
+  readyContainers: number;
+  region: string;
+  restartCount: number;
+  runningPods: number;
+  secretCount: number;
+  serviceCount: number;
+  statefulSetCount: number;
+  stoppedPods: number;
+  succeededPods: number;
+  terminating: boolean;
+  unknownPods: number;
+  workloadCount: number;
+  workloads: Array<{
+    available: number;
+    createdAt: string;
+    desired: number;
+    kind: string;
+    name: string;
+    ready: number;
+    status: string;
+    updated: number;
+  }>;
+};

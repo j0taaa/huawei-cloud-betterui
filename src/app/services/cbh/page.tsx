@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { KeyRound } from "lucide-react";
 
 import { InventoryStatus, ServiceInventoryPage } from "@/app/services/_components/service-inventory";
+import { ResourceIdentity } from "@/components/console-ui";
 import { listCbhInstances, type CbhInstance, withCloudResult } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
 
 function upgradeTone(instance: CbhInstance) {
   const value = upgradeState(instance).toLowerCase();
-  return value.includes("new") || value.includes("cross") ? "warn" : "good";
+  return value.includes("new") || value.includes("cross") ? "warn" : value === "old" ? "good" : "neutral";
 }
 
 function upgradeState(instance: CbhInstance) {
@@ -28,7 +29,7 @@ export default async function CbhPage() {
   return (
     <ServiceInventoryPage
       actionLabel="Create bastion"
-      actionTitle="CBH instance creation is disabled in this read-only view."
+      managementService="cbh"
       active="Security"
       backHref="/services/security"
       backLabel="Back to Security"
@@ -50,10 +51,7 @@ export default async function CbhPage() {
         {
           header: "Instance",
           render: (instance) => (
-            <div>
-              <p className="font-black">{instance.name}</p>
-              <p className="mt-1 break-all text-xs text-[#98a2b3]">{instance.id}</p>
-            </div>
+            <ResourceIdentity id={instance.id} name={instance.name} />
           ),
         },
         { header: "Status", render: (instance) => <InventoryStatus>{instance.status}</InventoryStatus> },

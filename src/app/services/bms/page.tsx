@@ -29,6 +29,7 @@ export default async function BmsPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="bms"
       actionLabel="Create BMS"
       actionTitle="BMS provisioning is intentionally disabled in this read-only view."
       active="Compute"

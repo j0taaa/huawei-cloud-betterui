@@ -1,68 +1,35 @@
-import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Monitor } from "lucide-react";
-
 import { InventoryStatus, ServiceInventoryPage } from "@/app/services/_components/service-inventory";
-import { listWorkspaceTenants, type WorkspaceTenant, withCloudResult } from "@/lib/huawei-cloud";
+import { ConsolePanel, ConsolePanelBody, FieldGrid, ResourceIdentity } from "@/components/console-ui";
+import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
+import { listWorkspaceResources, listWorkspaceTenants, withCloudResult } from "@/lib/huawei-cloud";
 
-export const metadata: Metadata = {
-  title: "Workspace | Huawei Cloud Better UI",
-};
-
-function accessTone(tenant: WorkspaceTenant) {
-  return tenant.accessMode.toLowerCase().includes("internet") ? "warn" : "good";
-}
-
+export const metadata: Metadata = { title: "Workspace | Huawei Cloud Better UI" };
 export default async function WorkspacePage() {
-  const result = await withCloudResult<WorkspaceTenant[]>([], listWorkspaceTenants, cloudCacheKeys.listWorkspaceTenants);
-  const tenants = result.data;
-  const subscribed = tenants.filter((tenant) => tenant.status.toLowerCase().includes("subscribed")).length;
-  const internetAccess = tenants.filter((tenant) => tenant.accessMode.toLowerCase().includes("internet")).length;
-  const subnets = tenants.reduce((total, tenant) => total + tenant.subnetCount, 0);
-
-  return (
-    <ServiceInventoryPage
-      actionLabel="Subscribe workspace"
-      actionTitle="Workspace subscription changes are disabled in this read-only view."
-      active="Security"
-      backHref="/services/security"
-      backLabel="Back to Security"
-      description="Huawei Cloud Workspace tenant state, access mode, VPC placement, service subnets, security group, and enterprise ID."
-      empty="No Workspace tenant details were returned for the selected projects."
-      icon={Monitor}
-      result={result}
-      rows={tenants}
-      stats={[
-        { label: "Tenant records", value: tenants.length },
-        { label: "Subscribed", value: subscribed },
-        { label: "Internet access", value: internetAccess, tone: internetAccess ? "warn" : "good" },
-        { label: "Service subnets", value: subnets },
-      ]}
-      tableTitle="Workspace Tenant Configuration"
-      title="Workspace"
-      tone="red"
-      columns={[
-        {
-          header: "Enterprise",
-          render: (tenant) => (
-            <div>
-              <p className="font-black">{tenant.enterpriseId}</p>
-              <p className="mt-1 break-all text-xs text-[#98a2b3]">{tenant.id}</p>
-            </div>
-          ),
-        },
-        { header: "Status", render: (tenant) => <InventoryStatus>{tenant.status}</InventoryStatus> },
-        {
-          header: "Access",
-          render: (tenant) => (
-            <InventoryStatus tone={accessTone(tenant)}>{tenant.accessMode}</InventoryStatus>
-          ),
-        },
-        { header: "VPC", render: (tenant) => `${tenant.vpcName} · ${tenant.vpcId}` },
-        { header: "Subnets", render: (tenant) => `${tenant.subnetCount} service · mgmt ${tenant.managementSubnetCidr}` },
-        { header: "Security group", render: (tenant) => tenant.desktopSecurityGroup },
-        { header: "Project", render: (tenant) => `${tenant.projectName} · ${tenant.region}` },
-      ]}
-    />
-  );
+  const [result, configuration] = await Promise.all([
+    withCloudResult<Awaited<ReturnType<typeof listWorkspaceResources>>>([], listWorkspaceResources, cloudCacheKeys.listWorkspaceResources),
+    withCloudResult<Awaited<ReturnType<typeof listWorkspaceTenants>>>([], listWorkspaceTenants, cloudCacheKeys.listWorkspaceTenants),
+  ]);
+  const rows = result.data;
+  return <ServiceInventoryPage managementService="workspace" actionLabel="Create desktop" active="Security" backHref="/services/security" backLabel="Back to Security" title="Workspace" tableTitle="Desktops, users, and pools" description="Cloud desktop inventory, user accounts, pool configuration, and verified lifecycle operations." icon={Monitor} result={result} rows={rows} rowKey={row => `${row.projectId}:${row.id}`} empty="No Workspace resources found." tone="red" columns={[
+    { header: "Resource", render: row => <ResourceIdentity id={row.id} name={row.name} /> },
+    { header: "Type", render: row => row.id.startsWith("desktop:") ? "Desktop" : row.id.startsWith("user:") ? "User" : "Pool" },
+    { header: "State", render: row => <InventoryStatus>{row.status ?? "Unknown"}</InventoryStatus> },
+    { header: "Assignment", render: row => String(row.values?.user ?? row.values?.type ?? "-") },
+    { header: "Desktops", render: row => row.values?.desktops === undefined ? "-" : String(row.values.desktops) },
+    { header: "Project", render: row => `${row.projectName} · ${row.region}` },
+  ]} stats={[
+    { label: "Desktops", value: rows.filter(row => row.id.startsWith("desktop:")).length },
+    { label: "Users", value: rows.filter(row => row.id.startsWith("user:")).length },
+    { label: "Pools", value: rows.filter(row => row.id.startsWith("pool:")).length },
+    { label: "Tenant records", value: configuration.data.length },
+  ]}>
+    <ConsolePanel title="Tenant configuration"><ConsolePanelBody>
+      {configuration.error ? <p role="alert" className="mb-3 text-sm text-red-700">{configuration.error}</p> : null}
+      <FieldGrid items={configuration.data.map(tenant => ({ label: `${tenant.projectName} · ${tenant.region}`, value: `${tenant.status} · ${tenant.accessMode} · ${tenant.subnetCount} service subnets` }))} />
+      <Link className="mt-4 inline-block text-sm text-blue-600 underline" href="/services/workspace/configuration">View tenant networking and access configuration</Link>
+    </ConsolePanelBody></ConsolePanel>
+  </ServiceInventoryPage>;
 }

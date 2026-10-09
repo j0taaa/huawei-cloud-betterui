@@ -85,6 +85,7 @@ export default async function AutoScalingPage() {
   const groups = result.data;
   return (
     <ServiceInventoryPage
+      managementService="as"
       active="Compute"
       backHref="/services/compute"
       backLabel="Back to compute"

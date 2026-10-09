@@ -14,6 +14,7 @@ export default async function CdnPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="cdn"
       actionLabel="Add domain"
       actionTitle="CDN domain creation is intentionally disabled in this read-only view."
       active="Networking"

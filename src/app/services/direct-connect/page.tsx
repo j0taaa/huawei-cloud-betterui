@@ -2,7 +2,11 @@ import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
 import { Cable } from "lucide-react";
 
-import { InventoryStatus, ServiceInventoryPage } from "@/app/services/_components/service-inventory";
+import {
+  InventoryStatus,
+  inventoryStatusTone,
+  ServiceInventoryPage,
+} from "@/app/services/_components/service-inventory";
 import {
   listDirectConnectConnections,
   type DirectConnectConnection,
@@ -11,27 +15,13 @@ import {
 
 export const metadata: Metadata = { title: "Direct Connect | Huawei Cloud Better UI" };
 
-function statusTone(status: string) {
-  const normalized = status.toUpperCase();
-
-  if (["ACTIVE", "NORMAL"].includes(normalized)) {
-    return "good";
-  }
-
-  if (["DOWN", "BUILD", "PENDING_CREATE", "PENDING_UPDATE"].includes(normalized)) {
-    return "warn";
-  }
-
-  return normalized.includes("ERROR") ? "bad" : "neutral";
-}
-
 export default async function DirectConnectPage() {
   const result = await withCloudResult<DirectConnectConnection[]>(
     [],
     listDirectConnectConnections, cloudCacheKeys.listDirectConnectConnections,
   );
   const connections = result.data;
-  const active = connections.filter((connection) => statusTone(connection.status) === "good").length;
+  const active = connections.filter((connection) => inventoryStatusTone(connection.status) === "good").length;
   const bandwidthTotal = connections.reduce((total, connection) => {
     const value = Number.parseInt(connection.bandwidth, 10);
     return total + (Number.isFinite(value) ? value : 0);
@@ -39,8 +29,8 @@ export default async function DirectConnectPage() {
 
   return (
     <ServiceInventoryPage
-      actionLabel="Request connection"
-      actionTitle="Direct Connect ordering is intentionally disabled in this read-only view."
+      actionLabel="Create virtual gateway"
+      managementService="direct-connect"
       active="Networking"
       backHref="/services/networking"
       backLabel="Back to Networking"
@@ -52,7 +42,7 @@ export default async function DirectConnectPage() {
         {
           header: "Status",
           render: (connection) => (
-            <InventoryStatus tone={statusTone(connection.status)}>
+            <InventoryStatus tone={inventoryStatusTone(connection.status)}>
               {connection.status}
             </InventoryStatus>
           ),

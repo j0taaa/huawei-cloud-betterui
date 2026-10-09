@@ -190,7 +190,7 @@ test("OBS object failures stay visible and empty keys are rejected", async (t) =
   );
   await assert.rejects(
     getObsObjectDetail(session, "test-bucket", "key"),
-    /Object denied/,
+    /403.*permission denied/,
   );
   await assert.rejects(
     uploadObsObject(session, "test-bucket", "", new File([], "name")),

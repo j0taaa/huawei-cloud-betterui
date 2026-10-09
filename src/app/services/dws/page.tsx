@@ -4,22 +4,16 @@ import { Database } from "lucide-react";
 
 import {
   InventoryStatus,
+  inventoryStatusTone,
   type InventoryColumn,
   ServiceInventoryPage,
 } from "@/app/services/_components/service-inventory";
+import { CellStack, ResourceIdentity } from "@/components/console-ui";
 import { listDwsClusters, type DwsCluster, withCloudResult } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
   title: "DWS | Huawei Cloud Better UI",
 };
-
-function statusTone(status: string) {
-  const normalized = status.toLowerCase();
-  if (["available", "active", "running"].includes(normalized)) return "good";
-  if (["failed", "creation failed", "deletion failed"].includes(normalized)) return "bad";
-  if (["creating", "starting", "stoping", "stopped", "scaling"].includes(normalized)) return "warn";
-  return "neutral";
-}
 
 export default async function DwsPage() {
   const result = await withCloudResult<DwsCluster[]>([], listDwsClusters, cloudCacheKeys.listDwsClusters);
@@ -34,30 +28,30 @@ export default async function DwsPage() {
     {
       header: "Warehouse",
       render: (cluster) => (
-        <div>
-          <p className="font-black text-[#101828]">{cluster.name}</p>
-          <p className="mt-1 break-all text-xs text-[#98a2b3]">{cluster.id}</p>
-        </div>
+        <ResourceIdentity
+          className="text-[#101828]"
+          id={cluster.id}
+          idClassName="font-normal"
+          name={cluster.name}
+        />
       ),
     },
-    { header: "State", render: (cluster) => <InventoryStatus tone={statusTone(cluster.status)}>{cluster.status}</InventoryStatus> },
+    { header: "State", render: (cluster) => <InventoryStatus tone={inventoryStatusTone(cluster.status)}>{cluster.status}</InventoryStatus> },
     {
       header: "Compute",
       render: (cluster) => (
-        <div>
-          <p className="font-black">{cluster.nodes || "-"} nodes</p>
-          <p className="mt-1 text-xs text-[#667085]">{cluster.nodeType}</p>
-        </div>
+        <CellStack className="font-black" subValue={cluster.nodeType}>
+          {cluster.nodes || "-"} nodes
+        </CellStack>
       ),
     },
     { header: "Version", render: (cluster) => cluster.version },
     {
       header: "Endpoint",
       render: (cluster) => (
-        <div>
-          <p>{cluster.endpoint}</p>
-          <p className="mt-1 text-xs text-[#667085]">Port {cluster.port}</p>
-        </div>
+        <CellStack subValue={`Port ${cluster.port}`}>
+          {cluster.endpoint}
+        </CellStack>
       ),
     },
     { header: "AZ", render: (cluster) => cluster.availabilityZone },
@@ -66,6 +60,7 @@ export default async function DwsPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="dws"
       actionLabel="Create cluster"
       actionTitle="DWS cluster creation is disabled in this read-only view."
       active="Databases"

@@ -4,21 +4,16 @@ import { Box } from "lucide-react";
 
 import {
   InventoryStatus,
+  inventoryStatusTone,
   type InventoryColumn,
   ServiceInventoryPage,
 } from "@/app/services/_components/service-inventory";
+import { CellStack, ResourceIdentity } from "@/components/console-ui";
 import { listOmsMigrationTasks, type OmsMigrationTask, withCloudResult } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
   title: "OMS | Huawei Cloud Better UI",
 };
-
-function statusTone(status: string) {
-  if (["5", "success", "succeeded", "finished"].includes(status.toLowerCase())) return "good";
-  if (["4", "failed", "error"].includes(status.toLowerCase())) return "bad";
-  if (["1", "2", "3", "7", "migrating", "paused", "waiting"].includes(status.toLowerCase())) return "warn";
-  return "neutral";
-}
 
 export default async function OmsPage() {
   const result = await withCloudResult<OmsMigrationTask[]>([], listOmsMigrationTasks, cloudCacheKeys.listOmsMigrationTasks);
@@ -31,20 +26,19 @@ export default async function OmsPage() {
     {
       header: "Object task",
       render: (task) => (
-        <div>
-          <p className="font-black text-[#101828]">{task.name}</p>
-          <p className="mt-1 break-all text-xs text-[#98a2b3]">{task.id}</p>
-        </div>
+        <ResourceIdentity
+          className="text-[#101828]"
+          id={task.id}
+          idClassName="font-normal"
+          name={task.name}
+        />
       ),
     },
-    { header: "Status", render: (task) => <InventoryStatus tone={statusTone(task.status)}>{task.status}</InventoryStatus> },
+    { header: "Status", render: (task) => <InventoryStatus tone={inventoryStatusTone(task.status)}>{task.status}</InventoryStatus> },
     {
       header: "Path",
       render: (task) => (
-        <div>
-          <p className="font-black">{task.source} to {task.destination}</p>
-          <p className="mt-1 text-xs text-[#667085]">{task.sourceCloud}</p>
-        </div>
+        <CellStack subValue={task.sourceCloud}>{task.source} to {task.destination}</CellStack>
       ),
     },
     { header: "Type", render: (task) => task.taskType },
@@ -55,6 +49,7 @@ export default async function OmsPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="oms"
       actionLabel="Create migration"
       actionTitle="OMS migration creation is disabled in this read-only view."
       active="Storage"

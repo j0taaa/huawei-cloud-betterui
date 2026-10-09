@@ -1,13 +1,12 @@
 import "server-only";
 
 import type { BetterUiSession, HuaweiProjectSession } from "@/lib/auth-session";
-import { huaweiList } from "@/lib/huawei/http";
+import { huaweiArrayList } from "@/lib/huawei/http";
 import {
   asRecord,
-  firstResponseArray,
   firstString,
 } from "@/lib/huawei/parsers";
-import { loadAcrossProjects } from "@/lib/huawei/projects";
+import { loadAcrossCodeArtsProjects } from "@/lib/huawei/codearts-projects";
 
 export type CodeArtsRepository = {
   createdAt: string;
@@ -25,37 +24,18 @@ export type CodeArtsRepository = {
 export async function listCodeArtsRepositoriesForProject(
   session: HuaweiProjectSession,
 ) {
-  const body = await huaweiList<Record<string, unknown>>(
+  const repositories = await huaweiArrayList<Record<string, unknown>>(
     session,
     "codeartsrepo",
     `/v4/projects/${session.projectId}/repositories?offset=0&limit=100&order_by=updated_at&sort=desc`,
     {
-      items: [
-        "repositories",
-        "repository_list",
-        "result",
-        "repositories.repositories",
-        "repositories.repository_list",
-        "repositories.result",
-        "repository_list.repositories",
-        "repository_list.repository_list",
-        "repository_list.result",
-        "result.repositories",
-        "result.repository_list",
-        "result.result",
-      ],
       kind: "offset",
       parameter: "offset",
       size: 100,
-      total: ["total_count", "total", "data.total", "result.total"],
     },
   );
 
-  return firstResponseArray(body, [
-    "repositories",
-    "repository_list",
-    "result",
-  ]).map((repository): CodeArtsRepository => {
+  return repositories.map((repository): CodeArtsRepository => {
     const item = asRecord(repository);
 
     return {
@@ -91,5 +71,5 @@ export async function listCodeArtsRepositoriesForProject(
 }
 
 export async function listCodeArtsRepositories(session: BetterUiSession) {
-  return loadAcrossProjects(session, listCodeArtsRepositoriesForProject);
+  return loadAcrossCodeArtsProjects(session, listCodeArtsRepositoriesForProject);
 }

@@ -1,15 +1,21 @@
-import Link from "next/link";
-import { ArrowLeft, Plus, type LucideIcon } from "lucide-react";
-
-import {
-  DisabledCloudButton,
-  RefreshButton,
-} from "@/components/cloud-action-buttons";
-import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
 import { CloudErrorBanner } from "@/components/cloud-error";
+import { Plus, type LucideIcon } from "lucide-react";
+
+import { DisabledCloudButton, RefreshButton } from "@/components/cloud-action-buttons";
+import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
+import {
+  ConsoleMain,
+  ConsoleLinkButton,
+  ConsolePageHeader,
+  ConsoleTablePanel,
+  MetricCard,
+  StatusBadge,
+  type StatusTone,
+  DataFreshnessText,
+} from "@/components/console-ui";
 import { ConsoleShell } from "@/components/console-shell";
-import { LocalDateTime } from "@/components/local-date-time";
 import type { CloudResult } from "@/lib/huawei-cloud";
+import { managementAdapters } from "@/lib/huawei/management/registry";
 import type { ServiceCategory } from "@/lib/service-catalog";
 
 export type InventoryColumn<T> = {
@@ -22,38 +28,129 @@ export function InventoryStatus({
   tone = "neutral",
 }: {
   children: React.ReactNode;
-  tone?: "bad" | "good" | "neutral" | "warn";
+  tone?: StatusTone;
 }) {
-  const classes = {
-    bad: "border-[#fecdd3] bg-[#fff1f2] text-[#b42318]",
-    good: "border-[#bbf7d0] bg-[#f0fdf4] text-[#15803d]",
-    neutral: "border-[#d9e0eb] bg-white text-[#344054]",
-    warn: "border-[#fed7aa] bg-[#fff7ed] text-[#c2410c]",
-  };
+  return <StatusBadge tone={tone}>{children}</StatusBadge>;
+}
 
-  return (
-    <span
-      className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-black ${classes[tone]}`}
-    >
-      {children}
-    </span>
-  );
+const inventoryGoodStatuses = new Set([
+  "200",
+  "5",
+  "active",
+  "available",
+  "blue",
+  "completed",
+  "finished",
+  "inservice",
+  "migrate_success",
+  "normal",
+  "online",
+  "protected",
+  "running",
+  "success",
+  "succeeded",
+]);
+
+const inventoryBadStatuses = new Set([
+  "300",
+  "303",
+  "4",
+  "abnormal",
+  "abort",
+  "canceled",
+  "create_failed",
+  "creation failed",
+  "deletion failed",
+  "deleted",
+  "down",
+  "error",
+  "failed",
+  "fault",
+  "faulty",
+  "freezed",
+  "frozen",
+  "migrate_fail",
+  "red",
+  "start_failed",
+  "terminated",
+  "timeout",
+]);
+
+const inventoryWarnStatuses = new Set([
+  "1",
+  "2",
+  "3",
+  "7",
+  "100",
+  "500",
+  "910",
+  "920",
+  "aborting",
+  "attaching",
+  "build",
+  "building",
+  "creating",
+  "inactive",
+  "modifying",
+  "migrating",
+  "paused",
+  "pausing",
+  "pending",
+  "pending_create",
+  "pending_update",
+  "ready",
+  "rebooting",
+  "reprotecting",
+  "restarting",
+  "scaling",
+  "scaling-in",
+  "scaling-out",
+  "snapshooting",
+  "snapshotting",
+  "starting",
+  "stoping",
+  "stopped",
+  "stopping",
+  "syncing",
+  "terminating",
+  "upgrading",
+  "suspend",
+  "waiting",
+]);
+
+export function inventoryStatusTone(status: string): StatusTone {
+  const normalized = status.toLowerCase();
+
+  if (inventoryGoodStatuses.has(normalized)) {
+    return "good";
+  }
+
+  if (inventoryBadStatuses.has(normalized)) {
+    return "bad";
+  }
+
+  if (inventoryWarnStatuses.has(normalized)) {
+    return "warn";
+  }
+
+  return "neutral";
 }
 
 export function ServiceInventoryPage<T>({
   actionLabel,
   actionTitle,
+  managementService,
   active,
   backHref,
   backLabel,
   columns,
   children,
+  rowKey,
   description,
   empty,
   icon: Icon,
   result,
   rows,
-  rowKey,
   stats,
   tableTitle,
   title,
@@ -61,126 +158,94 @@ export function ServiceInventoryPage<T>({
 }: {
   actionLabel?: string;
   actionTitle?: string;
+  managementService?: string;
   active: ServiceCategory;
   backHref: string;
   backLabel: string;
   columns: InventoryColumn<T>[];
   children?: React.ReactNode;
+  rowKey?: (item: T) => string;
   description: string;
   empty: string;
   icon: LucideIcon;
-  result: Pick<
-    CloudResult<unknown>,
-    "error" | "isCached" | "isRefreshing" | "updatedAt"
-  >;
+  result: Pick<CloudResult<unknown>, "error" | "isCached" | "isRefreshing" | "updatedAt">;
   rows: T[];
-  rowKey?: (item: T) => string;
-  stats: Array<{
-    label: string;
-    value: number | string;
-    tone?: "bad" | "good" | "neutral" | "warn";
-  }>;
+  stats: Array<{ label: string; value: number | string; tone?: StatusTone }>;
   tableTitle: string;
   title: string;
   tone?: "blue" | "green" | "red";
 }) {
-  const toneClasses = {
+  const createOperation = managementService && Object.hasOwn(managementAdapters, managementService) ? managementAdapters[managementService].operations.find(operation => operation.kind === "create") : undefined;
+  const pageToneClasses = {
     blue: "bg-[#eef4ff] text-[#2563eb]",
     green: "bg-[#e9f8f1] text-[#15803d]",
     red: "bg-[#fff1f2] text-[#b42318]",
+  };
+  const statToneClasses: Record<StatusTone, string> = {
+    bad: "bg-[#fff1f2] text-[#b42318]",
+    good: "bg-[#f0fdf4] text-[#166534]",
+    neutral: "bg-[#f8fafc] text-[#475467]",
+    warn: "bg-[#fffbeb] text-[#92400e]",
   };
 
   return (
     <ConsoleShell active={active}>
       <CloudRefreshIndicator show={result.isRefreshing} />
-      <main className="grid gap-6 p-4 lg:p-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <Link
-              className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-[#2563eb]"
-              href={backHref}
-            >
-              <ArrowLeft className="size-4" />
-              {backLabel}
-            </Link>
-            <div className="flex items-center gap-3">
-              <div
-                className={`grid size-12 place-items-center rounded-xl ${toneClasses[tone]}`}
-              >
-                <Icon className="size-6" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-black tracking-tight">{title}</h1>
-                <p className="mt-1 max-w-3xl text-sm font-medium text-[#667085]">
-                  {description}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {actionLabel ? (
-              <DisabledCloudButton
-                title={actionTitle ?? "This page is read-only."}
-              >
-                <Plus className="size-4" />
-                {actionLabel}
-              </DisabledCloudButton>
-            ) : null}
+      <ConsoleMain>
+        <ConsolePageHeader
+          actions={
+            <>
+            {createOperation ? <ConsoleLinkButton href={`/services/${managementService}/manage?operation=${encodeURIComponent(createOperation.id)}`}><Plus className="size-4" />{createOperation.label}</ConsoleLinkButton> : actionLabel ? <DisabledCloudButton title={actionTitle ?? "This page is read-only."}>
+              <Plus className="size-4" />
+              {actionLabel}
+            </DisabledCloudButton> : null}
             <RefreshButton />
-          </div>
-        </div>
+            </>
+          }
+          backHref={backHref}
+          backLabel={backLabel}
+          description={description}
+          icon={Icon}
+          iconClassName={pageToneClasses[tone]}
+          title={title}
+        />
 
         <CloudErrorBanner error={result.error} isCached={result.isCached} />
-
         {children}
 
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {stats.map((stat) => (
-            <div
-              className="rounded-xl border border-[#e4e9f2] bg-white p-4 shadow-[0_12px_36px_rgba(16,24,40,0.04)]"
+            <MetricCard
+              icon={Icon}
+              iconClassName={stat.tone ? statToneClasses[stat.tone] : pageToneClasses[tone]}
               key={stat.label}
-            >
-              <p className="text-xs font-black uppercase text-[#667085]">
-                {stat.label}
-              </p>
-              <p className="mt-2 text-2xl font-black">
-                {result.error && !result.isCached ? "—" : stat.value}
-              </p>
-              {stat.tone ? (
-                <div className="mt-2">
-                  <InventoryStatus tone={stat.tone}>
-                    {stat.tone}
-                  </InventoryStatus>
-                </div>
-              ) : null}
-            </div>
+              label={stat.label}
+              value={result.error && !result.isCached ? "—" : stat.value}
+              variant="compact"
+            />
           ))}
         </section>
 
-        <section className="overflow-hidden rounded-xl border border-[#e4e9f2] bg-white shadow-[0_12px_36px_rgba(16,24,40,0.06)]">
-          <div className="p-5">
-            <p className="mt-1 text-sm font-medium text-[#667085]">
-              {result.error && !result.isCached ? (
-                "Complete data could not be retrieved."
-              ) : (
-                <>
-                  Showing {result.isCached ? "cached" : "fresh"} data from{" "}
-                  <LocalDateTime value={result.updatedAt} />.
-                </>
-              )}
-            </p>
-          </div>
-          <InventoryTable
-            columns={columns}
-            rows={rows}
-            rowKey={rowKey}
-            title={tableTitle}
-            empty={result.error ? "Data unavailable. Try refreshing." : empty}
-          />
-        </section>
-      </main>
+        <ConsoleTablePanel
+          columns={columns.map((column) => ({ header: column.header }))}
+          description={
+            result.error && !result.isCached ? "Complete data could not be retrieved." : <DataFreshnessText isCached={result.isCached} updatedAt={result.updatedAt} />
+          }
+          emptyState={<p className="text-lg font-black">{result.error ? "Data unavailable. Try refreshing." : empty}</p>}
+          minWidthClassName="min-w-[980px]"
+          rows={rows.map((row, rowIndex) => ({
+            cells: columns.map((column) => column.render(row)),
+            key: rowKey ? rowKey(row) : String(rowIndex),
+          }))}
+          title={tableTitle}
+        />
+      </ConsoleMain>
     </ConsoleShell>
   );
+}
+
+export function goodWhen(value: boolean) {
+  return value ? "good" : "warn";
 }
 
 export function InventoryTable<T>({
@@ -257,8 +322,4 @@ export function ResourceFacts({
       ))}
     </dl>
   );
-}
-
-export function goodWhen(value: boolean) {
-  return value ? "good" : "warn";
 }

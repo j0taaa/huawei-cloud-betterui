@@ -4,23 +4,16 @@ import { ArchiveRestore } from "lucide-react";
 
 import {
   InventoryStatus,
+  inventoryStatusTone,
   type InventoryColumn,
   ServiceInventoryPage,
 } from "@/app/services/_components/service-inventory";
+import { ResourceIdentity } from "@/components/console-ui";
 import { listSdrsProtectedInstances, type SdrsProtectedInstance, withCloudResult } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
   title: "SDRS | Huawei Cloud Better UI",
 };
-
-function statusTone(status: string) {
-  const normalized = status.toLowerCase();
-
-  if (["protected", "available", "normal"].includes(normalized)) return "good";
-  if (["error", "failed", "fault"].includes(normalized)) return "bad";
-  if (["creating", "syncing", "reprotecting", "attaching"].includes(normalized)) return "warn";
-  return "neutral";
-}
 
 export default async function SdrsPage() {
   const result = await withCloudResult<SdrsProtectedInstance[]>([], listSdrsProtectedInstances, cloudCacheKeys.listSdrsProtectedInstances);
@@ -33,13 +26,10 @@ export default async function SdrsPage() {
     {
       header: "Protected instance",
       render: (item) => (
-        <div>
-          <p className="font-black text-[#101828]">{item.name}</p>
-          <p className="mt-1 break-all text-xs text-[#98a2b3]">{item.id}</p>
-        </div>
+        <ResourceIdentity id={item.id} name={item.name} />
       ),
     },
-    { header: "Status", render: (item) => <InventoryStatus tone={statusTone(item.status)}>{item.status}</InventoryStatus> },
+    { header: "Status", render: (item) => <InventoryStatus tone={inventoryStatusTone(item.status)}>{item.status}</InventoryStatus> },
     { header: "Protection group", render: (item) => item.protectionGroupId },
     { header: "Production server", render: (item) => item.sourceServer },
     { header: "DR server", render: (item) => item.targetServer },
@@ -49,6 +39,7 @@ export default async function SdrsPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="sdrs"
       actionLabel="Create protection"
       actionTitle="SDRS protection creation is disabled in this read-only view."
       active="Storage"

@@ -12,6 +12,8 @@ export type DewKey = {
   keyId: string;
   keyState: string;
   keyType: string;
+  keySpec: string;
+  defaultKey: boolean;
   origin: string;
   projectId: string;
   projectName: string;
@@ -32,7 +34,7 @@ export async function listDewKeysForProject(session: HuaweiProjectSession) {
       inBody: true,
     },
     {
-      body: JSON.stringify({ limit: "100" }),
+      body: JSON.stringify({ limit: "100", key_spec: "ALL" }),
       method: "POST",
     },
   );
@@ -49,6 +51,8 @@ export async function listDewKeysForProject(session: HuaweiProjectSession) {
       keyId: firstString([item.key_id, item.id]),
       keyState: String(item.key_state ?? item.state ?? "-"),
       keyType: firstString([item.key_type, item.type], "-"),
+      keySpec: firstString([item.key_spec], "-"),
+      defaultKey: item.default_key_flag === "1" || item.default_key_flag === true,
       origin: firstString([item.origin, item.key_origin], "-"),
       projectId: session.projectId,
       projectName: session.projectName,

@@ -119,7 +119,7 @@ test("CodeArts page requests and CFW offsets preserve their read-only POST paylo
         );
         return Response.json(
           field === "records"
-            ? { data: { records: rows } }
+            ? { data: { total: 101, records: rows.map(row => ({ fw_instance_id: row.id, fw_instance_name: row.id })) } }
             : { result: { applications: rows } },
         );
       },
@@ -138,12 +138,11 @@ test("CodeArts Build retains its zero-based page index", async (t) => {
   t.mock.method(globalThis, "fetch", async (input: string) => {
     pages.push(new URL(input).searchParams.get("page_index")!);
     return Response.json({
-      result: {
-        job_list: Array.from(
+      total: 101,
+      jobs: Array.from(
           { length: pages.length === 1 ? 100 : 1 },
           (_, index) => ({ id: `${pages.length}-${index}` }),
         ),
-      },
     });
   });
   assert.equal((await listCodeArtsBuildJobsForProject(project)).length, 101);
@@ -224,7 +223,7 @@ test("FunctionGraph config/code failures remain visible on detail loads", async 
   });
   await assert.rejects(
     getFunctionGraphFunction(session, "urn-1"),
-    /code denied/,
+    /Function code: 403.*permission denied/,
   );
 });
 
@@ -310,9 +309,10 @@ test("CBH and ModelArts include later pages with their configured limits", async
       assert.equal(url.searchParams.get("limit"), String(size));
       offsets.push(url.searchParams.get("offset"));
       return Response.json({
+        total: size + 1,
         [field]: Array.from(
           { length: offsets.length === 1 ? size : 1 },
-          (_, i) => ({ id: `${offsets.length}-${i}` }),
+          (_, i) => field === "instance" ? { server_id: `${offsets.length}-${i}`, name: `Bastion ${offsets.length}-${i}` } : { id: `${offsets.length}-${i}` },
         ),
       });
     });
@@ -330,10 +330,14 @@ test("IAM session creation resolves subproject regions without changing project 
     async (input: string, init: RequestInit) => {
       if (input.endsWith("/v3/auth/projects"))
         return Response.json({
-          projects: [{ id: "subproject", name: "sa-brazil-1_team" }],
+          projects: [
+            { id: "obs-project", name: "MOS" },
+            { id: "subproject", name: "sa-brazil-1_team" },
+          ],
         });
       const body = JSON.parse(String(init.body));
       const scoped = body.auth.scope?.project;
+      if (scoped) assert.equal(scoped.id, "subproject");
       if (!scoped)
         assert.deepEqual(body.auth.scope, { domain: { name: "account" } });
       return Response.json(
@@ -361,6 +365,7 @@ test("IAM session creation resolves subproject regions without changing project 
     iamEndpoint: "https://iam.example.invalid",
   });
   assert.equal(result.projects[0].projectName, "sa-brazil-1_team");
+  assert.equal(result.projects.length, 1);
   assert.equal(result.projects[0].region, "sa-brazil-1");
   assert.equal(result.accountToken, "account-token");
 });
@@ -385,7 +390,7 @@ test("ECS monitoring retains its object shape when metric discovery partially fa
     getEcsMonitoring(session, "server-1"),
     (error: unknown) => {
       assert.ok(error instanceof CloudLoadError);
-      assert.match(error.message, /agent metrics denied/);
+      assert.match(error.message, /AGT.ECS: 403.*permission denied/);
       assert.equal(Array.isArray(error.partialData), false);
       assert.ok(
         Array.isArray((error.partialData as { metrics: unknown[] }).metrics),
@@ -394,3 +399,13 @@ test("ECS monitoring retains its object shape when metric discovery partially fa
     },
   );
 });
+
+ test("ModelArts inventory uses native capacity and rejects malformed project-scoped pages", async t => {
+  const { listModelArtsNotebooksForProject } = await import("@/lib/huawei/services/modelarts");
+  let response: Record<string, unknown> = { data: [{ id: "notebook-1", volume: { category: "EVS", capacity: 50 } }], total: 1 };
+  t.mock.method(globalThis, "fetch", async () => Response.json(response));
+  assert.equal((await listModelArtsNotebooksForProject(project))[0].storage, "50 GB");
+  response = { data: [], total: null }; await assert.rejects(listModelArtsNotebooksForProject(project), /native total/);
+  response = { total: 0 }; await assert.rejects(listModelArtsNotebooksForProject(project), /incomplete/);
+  response = { data: [{ id: "notebook-1", project_id: "foreign" }], total: 1 }; await assert.rejects(listModelArtsNotebooksForProject(project), /project scope/);
+ });

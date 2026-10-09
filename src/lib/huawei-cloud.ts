@@ -1,217 +1,85 @@
 import "server-only";
 
-// Stable public entry point. Implementations live in focused service adapters.
+export * from "@/lib/huawei/services/aom";
+export * from "@/lib/huawei/services/asm";
+export * from "@/lib/huawei/services/enterprise-projects";
+export * from "@/lib/huawei/services/dms-rabbitmq";
+export * from "@/lib/huawei/services/dms-rocketmq";
+
+export * from "@/lib/huawei/services/apig";
+export * from "@/lib/huawei/resource-cost";
+export * from "@/lib/huawei/services/bms";
+export * from "@/lib/huawei/services/cbh";
+export * from "@/lib/huawei/services/cbr";
+export * from "@/lib/huawei/services/cce";
+export * from "@/lib/huawei/services/cci";
+export * from "@/lib/huawei/services/cdm";
+export * from "@/lib/huawei/services/cdn";
+export * from "@/lib/huawei/services/ces";
+export * from "@/lib/huawei/services/cfw";
+export * from "@/lib/huawei/services/codearts-build";
+export * from "@/lib/huawei/services/codearts-deploy";
+export * from "@/lib/huawei/services/codearts-pipeline";
+export * from "@/lib/huawei/services/codearts-repo";
+export * from "@/lib/huawei/services/cph";
+export * from "@/lib/huawei/services/css";
+export * from "@/lib/huawei/services/cts";
+export * from "@/lib/huawei/services/dataarts";
+export * from "@/lib/huawei/services/dcs";
+export * from "@/lib/huawei/services/dds";
+export * from "@/lib/huawei/services/deh";
+export * from "@/lib/huawei/services/dew";
+export * from "@/lib/huawei/services/direct-connect";
+export * from "@/lib/huawei/services/dli";
+export * from "@/lib/huawei/services/dms-kafka";
+export * from "@/lib/huawei/services/dns";
+export * from "@/lib/huawei/services/drs";
+export * from "@/lib/huawei/services/dws";
+export * from "@/lib/huawei/services/ecs";
+export * from "@/lib/huawei/services/eip";
+export * from "@/lib/huawei/services/elb";
+export * from "@/lib/huawei/services/enterprise-router";
+export * from "@/lib/huawei/services/eventgrid";
+export * from "@/lib/huawei/services/evs";
+export * from "@/lib/huawei/services/flexus";
+export * from "@/lib/huawei/services/functiongraph";
+export * from "@/lib/huawei/services/gaussdb";
+export * from "@/lib/huawei/services/cc";
+export * from "@/lib/huawei/services/geminidb";
+export * from "@/lib/huawei/services/hss";
+export * from "@/lib/huawei/services/iam";
+export * from "@/lib/huawei/services/ims";
+export * from "@/lib/huawei/services/iotda";
+export * from "@/lib/huawei/services/koogallery";
+export * from "@/lib/huawei/services/lts";
+export * from "@/lib/huawei/services/mgc";
+export * from "@/lib/huawei/services/modelarts";
+export * from "@/lib/huawei/services/mrs";
+export * from "@/lib/huawei/services/nat";
+export * from "@/lib/huawei/services/obs";
+export * from "@/lib/huawei/services/oms";
+export * from "@/lib/huawei/services/rds";
+export * from "@/lib/huawei/services/sdrs";
+export * from "@/lib/huawei/services/secmaster";
+export * from "@/lib/huawei/services/servicestage";
+export * from "@/lib/huawei/services/sfs";
+export * from "@/lib/huawei/services/smn";
+export * from "@/lib/huawei/services/sms";
+export * from "@/lib/huawei/services/taurusdb";
+export * from "@/lib/huawei/services/vpc-endpoint";
+export * from "@/lib/huawei/services/vpc";
+export * from "@/lib/huawei/services/vpn";
+export * from "@/lib/huawei/services/waf";
+export * from "@/lib/huawei/services/workspace";
+export * from "@/lib/huawei/services/packages";
+export * from "@/lib/huawei/services/as";
+export * from "@/lib/huawei/services/swr";
+export * from "@/lib/huawei/services/billing";
 export {
-  getAsGroup,
-  listAsGroups,
-  type AsGroup,
-  type AsGroupDetail,
-  type AsInstance,
-  type AsPolicy,
-} from "./huawei/services/as";
-export {
-  getSwrRepository,
-  listSwrRepositories,
-  type SwrRepository,
-  type SwrRepositoryDetail,
-  type SwrTag,
-} from "./huawei/services/swr";
-export {
-  getBillingSummary,
-  getCostReport,
-  emptyBillingSummary,
-  emptyCostReport,
-  type BillRow,
-  type BillingSummary,
-  type CostReport,
-  type CostRow,
-} from "./huawei/services/billing";
-export {
-  invalidateCloudResult,
   withCloudResult,
+  invalidateCloudResult,
   type CloudResult,
-} from "./huawei/result";
-export { listApigInstances, type ApigInstance } from "./huawei/services/apig";
-export { listBmsServers, type BmsServer } from "./huawei/services/bms";
-export { listCbhInstances, type CbhInstance } from "./huawei/services/cbh";
-export { listCbrVaults, type CbrVault } from "./huawei/services/cbr";
-export {
-  getCceCluster,
-  listCceClusters,
-  type CceCluster,
-} from "./huawei/services/cce";
-export { listCciNamespaces, type CciNamespace } from "./huawei/services/cci";
-export { listCdmClusters, type CdmCluster } from "./huawei/services/cdm";
-export { listCdnDomains, type CdnDomain } from "./huawei/services/cdn";
-export { listCesAlarmRules, type CesAlarmRule } from "./huawei/services/ces";
-export { listCloudFirewalls, type CloudFirewall } from "./huawei/services/cfw";
-export {
-  listCodeArtsBuildJobs,
-  type CodeArtsBuildJob,
-} from "./huawei/services/codearts-build";
-export {
-  listCodeArtsDeployApplications,
-  type CodeArtsDeployApplication,
-} from "./huawei/services/codearts-deploy";
-export {
-  listCodeArtsPipelines,
-  type CodeArtsPipelineItem,
-} from "./huawei/services/codearts-pipeline";
-export {
-  listCodeArtsRepositories,
-  type CodeArtsRepository,
-} from "./huawei/services/codearts-repo";
-export { listCphServers, type CphServer } from "./huawei/services/cph";
-export { listCssClusters, type CssCluster } from "./huawei/services/css";
-export {
-  listCtsTraces,
-  listCtsTrackers,
-  type CtsTrace,
-  type CtsTracker,
-} from "./huawei/services/cts";
-export {
-  listDataArtsInstances,
-  type DataArtsInstance,
-} from "./huawei/services/dataarts";
-export {
-  listDcsRedisInstances,
-  type DcsRedisInstance,
-} from "./huawei/services/dcs";
-export { listDdsInstances, type DdsInstance } from "./huawei/services/dds";
-export { listDedicatedHosts, type DedicatedHost } from "./huawei/services/deh";
-export { listDewKeys, type DewKey } from "./huawei/services/dew";
-export {
-  listDirectConnectConnections,
-  type DirectConnectConnection,
-} from "./huawei/services/direct-connect";
-export { listDliQueues, type DliQueue } from "./huawei/services/dli";
-export {
-  listDmsKafkaInstances,
-  type DmsKafkaInstance,
-} from "./huawei/services/dms-kafka";
-export { listDnsZones, type DnsZone } from "./huawei/services/dns";
-export { listDrsJobs, type DrsJob } from "./huawei/services/drs";
-export { listDwsClusters, type DwsCluster } from "./huawei/services/dws";
-export {
-  getEcsInstance,
-  getEcsMonitoring,
-  getEcsSnapshots,
-  listEcsInstances,
-  runEcsAction,
-  type EcsInstance,
-  type EcsMonitoring,
-  type EcsMonitoringMetric,
-} from "./huawei/services/ecs";
-export { listEips, type EipItem } from "./huawei/services/eip";
-export { getElb, listElbs, type ElbItem } from "./huawei/services/elb";
-export {
-  listEnterpriseRouters,
-  type EnterpriseRouter,
-} from "./huawei/services/enterprise-router";
-export {
-  listEventGridSubscriptions,
-  type EventGridSubscription,
-} from "./huawei/services/eventgrid";
-export {
-  createEvsSnapshot,
-  deleteEvsSnapshot,
-  getEvsDisk,
-  listEvsDisks,
-  listEvsSnapshots,
-  type EvsDisk,
-  type EvsSnapshot,
-} from "./huawei/services/evs";
-export {
-  listFlexusResources,
-  type FlexusResource,
-} from "./huawei/services/flexus";
-export {
-  getFunctionGraphFunction,
-  listFunctionGraphFunctions,
-  type FunctionGraphFunction,
-} from "./huawei/services/functiongraph";
-export {
-  listGaussDbInstances,
-  type GaussDbInstance,
-} from "./huawei/services/gaussdb";
-export {
-  listGeminiDbInstances,
-  type GeminiDbInstance,
-} from "./huawei/services/geminidb";
-export { listHssHosts, type HssHost } from "./huawei/services/hss";
-export { listIamUsers, type IamUser } from "./huawei/services/iam";
-export { listImages, type ImsImage } from "./huawei/services/ims";
-export { listIotdaDevices, type IotdaDevice } from "./huawei/services/iotda";
-export {
-  listKooGalleryPurchasedApis,
-  type KooGalleryPurchasedApi,
-} from "./huawei/services/koogallery";
-export { listLtsLogGroups, type LtsLogGroup } from "./huawei/services/lts";
-export {
-  listMgcMigrationItems,
-  type MgcMigrationItem,
-} from "./huawei/services/mgc";
-export {
-  listModelArtsNotebooks,
-  type ModelArtsNotebook,
-} from "./huawei/services/modelarts";
-export { listMrsClusters, type MrsCluster } from "./huawei/services/mrs";
-export { listNatGateways, type NatGateway } from "./huawei/services/nat";
-export {
-  downloadObsObject,
-  getObsBucket,
-  getObsObjectDetail,
-  listObsBuckets,
-  uploadObsObject,
-  type ObsBucket,
-  type ObsBucketDetail,
-  type ObsObject,
-  type ObsObjectDetail,
-} from "./huawei/services/obs";
-export {
-  listOmsMigrationTasks,
-  type OmsMigrationTask,
-} from "./huawei/services/oms";
-export {
-  getRdsInstance,
-  listRdsInstances,
-  type RdsInstance,
-} from "./huawei/services/rds";
-export {
-  listSdrsProtectedInstances,
-  type SdrsProtectedInstance,
-} from "./huawei/services/sdrs";
-export {
-  listSecMasterWorkspaces,
-  type SecMasterWorkspace,
-} from "./huawei/services/secmaster";
-export {
-  listServiceStageApplications,
-  type ServiceStageApplication,
-} from "./huawei/services/servicestage";
-export { listSfsShares, type SfsShare } from "./huawei/services/sfs";
-export { listSmnTopics, type SmnTopic } from "./huawei/services/smn";
-export { listSmsTasks, type SmsMigrationTask } from "./huawei/services/sms";
-export {
-  listTaurusDbInstances,
-  type TaurusDbInstance,
-} from "./huawei/services/taurusdb";
-export {
-  listSecurityGroups,
-  listSubnets,
-  listVpcs,
-  type SecurityGroupItem,
-  type SubnetItem,
-  type VpcItem,
-} from "./huawei/services/vpc";
-export {
-  listVpcEndpoints,
-  type VpcEndpoint,
-} from "./huawei/services/vpc-endpoint";
-export { listVpnConnections, type VpnConnection } from "./huawei/services/vpn";
-export { listWafInstances, type WafInstance } from "./huawei/services/waf";
-export {
-  listWorkspaceTenants,
-  type WorkspaceTenant,
-} from "./huawei/services/workspace";
-export { loadCloudSummary, type CloudSummary } from "./huawei/summary";
+} from "@/lib/huawei/result";
+export { loadCloudSummary, type CloudSummary } from "@/lib/huawei/summary";
+
+export * from "@/lib/huawei/services/aad";

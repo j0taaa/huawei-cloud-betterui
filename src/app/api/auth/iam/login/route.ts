@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 import {
-  createSession,
+  appSessionExpiresAt,
+  createRefreshableSession,
   getSessionCookieOptions,
   sessionCookieName,
 } from "@/lib/auth-session";
@@ -44,30 +45,38 @@ export async function POST(request: Request) {
 
   try {
     const iamToken = await createHuaweiIamSession(fields);
-    const sessionId = createSession({
+    const expiresAt = appSessionExpiresAt();
+    const sessionId = createRefreshableSession({
       accountName: fields.accountName,
       accountToken: iamToken.accountToken,
       createdAt: new Date().toISOString(),
-      expiresAt: iamToken.expiresAt,
+      expiresAt,
       iamEndpoint: iamToken.iamEndpoint,
       projectId: iamToken.projectId,
       projectName: iamToken.projectName,
       projects: iamToken.projects,
       region: iamToken.region,
       token: iamToken.token,
+      tokenExpiresAt: iamToken.expiresAt,
       userId: iamToken.userId,
+      username: fields.username,
+    }, {
+      accountName: fields.accountName,
+      iamEndpoint: fields.iamEndpoint,
+      password: fields.password,
       username: fields.username,
     });
 
     const response = NextResponse.json({
-      expiresAt: iamToken.expiresAt,
+      expiresAt,
       ok: true,
+      tokenExpiresAt: iamToken.expiresAt,
     });
 
     response.cookies.set(
       sessionCookieName,
       sessionId,
-      getSessionCookieOptions(iamToken.expiresAt),
+      getSessionCookieOptions(expiresAt),
     );
 
     return response;

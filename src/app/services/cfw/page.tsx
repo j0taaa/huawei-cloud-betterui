@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { ShieldAlert } from "lucide-react";
 
 import { InventoryStatus, ServiceInventoryPage } from "@/app/services/_components/service-inventory";
+import { ResourceIdentity } from "@/components/console-ui";
 import { listCloudFirewalls, type CloudFirewall, withCloudResult } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
@@ -24,14 +25,14 @@ function serviceTypeLabel(value: string) {
 export default async function CfwPage() {
   const result = await withCloudResult<CloudFirewall[]>([], listCloudFirewalls, cloudCacheKeys.listCloudFirewalls);
   const firewalls = result.data;
-  const protectedEips = firewalls.reduce((total, firewall) => total + firewall.eipCount, 0);
-  const protectedVpcs = firewalls.reduce((total, firewall) => total + firewall.vpcCount, 0);
+  const eipCapacity = firewalls.every(firewall => firewall.eipCount !== null) ? firewalls.reduce((total, firewall) => total + firewall.eipCount!, 0) : "Unknown";
+  const vpcCapacity = firewalls.every(firewall => firewall.vpcCount !== null) ? firewalls.reduce((total, firewall) => total + firewall.vpcCount!, 0) : "Unknown";
   const eastWest = firewalls.filter((firewall) => firewall.serviceType === "1").length;
 
   return (
     <ServiceInventoryPage
       actionLabel="Create firewall"
-      actionTitle="Firewall creation is disabled in this read-only view."
+      managementService="cfw"
       active="Security"
       backHref="/services/security"
       backLabel="Back to Security"
@@ -42,8 +43,8 @@ export default async function CfwPage() {
       rows={firewalls}
       stats={[
         { label: "Firewalls", value: firewalls.length },
-        { label: "Protected EIPs", value: protectedEips },
-        { label: "Protected VPCs", value: protectedVpcs },
+        { label: "EIP capacity", value: eipCapacity },
+        { label: "VPC capacity", value: vpcCapacity },
         { label: "East-west", value: eastWest },
       ]}
       tableTitle="Firewall Instances"
@@ -53,10 +54,7 @@ export default async function CfwPage() {
         {
           header: "Firewall",
           render: (firewall) => (
-            <div>
-              <p className="font-black">{firewall.name}</p>
-              <p className="mt-1 break-all text-xs text-[#98a2b3]">{firewall.id}</p>
-            </div>
+            <ResourceIdentity id={firewall.id} name={firewall.name} />
           ),
         },
         {
@@ -68,7 +66,7 @@ export default async function CfwPage() {
           ),
         },
         { header: "Border", render: (firewall) => serviceTypeLabel(firewall.serviceType) },
-        { header: "Capacity", render: (firewall) => `${firewall.eipCount} EIPs · ${firewall.vpcCount} VPCs` },
+        { header: "Capacity", render: (firewall) => `${firewall.eipCount ?? "Unknown"} EIPs · ${firewall.vpcCount ?? "Unknown"} VPCs` },
         { header: "Bandwidth", render: (firewall) => firewall.bandwidth },
         { header: "HA / engine", render: (firewall) => `HA ${firewall.haType} · engine ${firewall.engineType}` },
         { header: "Project", render: (firewall) => `${firewall.projectName} · ${firewall.enterpriseProjectId}` },

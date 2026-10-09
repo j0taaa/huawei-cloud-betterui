@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 import { cookies } from "next/headers";
 
 import { sessionCookieName } from "@/lib/auth-constants";
+import { createHuaweiIamSession } from "@/lib/huawei-iam";
 
 export { sessionCookieName };
 
@@ -19,6 +20,7 @@ export type BetterUiSession = {
   projects: HuaweiProjectSession[];
   region: string;
   token: string;
+  tokenExpiresAt: string;
   userId?: string;
   username: string;
 };
@@ -33,7 +35,17 @@ export type HuaweiProjectSession = {
 
 type SessionRecord = BetterUiSession & {
   id: string;
+  refreshCredentials?: {
+    accountName: string;
+    iamEndpoint?: string;
+    password: string;
+    username: string;
+  };
 };
+
+const appSessionDurationMs = 30 * 24 * 60 * 60 * 1000;
+const tokenRefreshWindowMs = 10 * 60 * 1000;
+const refreshingSessions = new Map<string, Promise<SessionRecord | null>>();
 
 const globalSessions = globalThis as typeof globalThis & {
   __betterUiSessions?: Map<string, SessionRecord>;
@@ -50,7 +62,65 @@ export function createSession(session: BetterUiSession) {
   return id;
 }
 
-export function getSessionById(id: string | undefined) {
+export function appSessionExpiresAt(from = new Date()) {
+  return new Date(from.getTime() + appSessionDurationMs).toISOString();
+}
+
+export function createRefreshableSession(
+  session: BetterUiSession,
+  refreshCredentials: NonNullable<SessionRecord["refreshCredentials"]>,
+) {
+  const id = randomUUID();
+  sessions.set(id, { ...session, id, refreshCredentials });
+  return id;
+}
+
+function isExpired(value: string, offsetMs = 0) {
+  return new Date(value).getTime() - offsetMs <= Date.now();
+}
+
+async function refreshSessionToken(id: string, session: SessionRecord) {
+  if (!session.refreshCredentials) {
+    return null;
+  }
+
+  const existingRefresh = refreshingSessions.get(id);
+
+  if (existingRefresh) {
+    return existingRefresh;
+  }
+
+  const refresh = createHuaweiIamSession(session.refreshCredentials)
+    .then((iamToken): SessionRecord => {
+      const refreshedSession: SessionRecord = {
+        ...session,
+        accountToken: iamToken.accountToken,
+        iamEndpoint: iamToken.iamEndpoint,
+        projectId: iamToken.projectId,
+        projectName: iamToken.projectName,
+        projects: iamToken.projects,
+        region: iamToken.region,
+        token: iamToken.token,
+        tokenExpiresAt: iamToken.expiresAt,
+        userId: iamToken.userId,
+      };
+
+      sessions.set(id, refreshedSession);
+      return refreshedSession;
+    })
+    .catch(() => {
+      sessions.delete(id);
+      return null;
+    })
+    .finally(() => {
+      refreshingSessions.delete(id);
+    });
+
+  refreshingSessions.set(id, refresh);
+  return refresh;
+}
+
+export async function getSessionById(id: string | undefined) {
   if (!id) {
     return null;
   }
@@ -61,9 +131,13 @@ export function getSessionById(id: string | undefined) {
     return null;
   }
 
-  if (new Date(session.expiresAt).getTime() <= Date.now()) {
+  if (isExpired(session.expiresAt)) {
     sessions.delete(id);
     return null;
+  }
+
+  if (isExpired(session.tokenExpiresAt, tokenRefreshWindowMs)) {
+    return refreshSessionToken(id, session);
   }
 
   return session;
@@ -97,7 +171,7 @@ export function getSessionProjects(session: BetterUiSession) {
     ? session.projects
     : [
         {
-          expiresAt: session.expiresAt,
+          expiresAt: session.tokenExpiresAt,
           projectId: session.projectId,
           projectName: session.projectName,
           region: session.region,

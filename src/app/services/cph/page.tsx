@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Smartphone } from "lucide-react";
 
 import { InventoryStatus, ServiceInventoryPage } from "@/app/services/_components/service-inventory";
+import { ResourceIdentity } from "@/components/console-ui";
 import { listCphServers, type CphServer, withCloudResult } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
@@ -18,6 +19,7 @@ export default async function CphPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="cph"
       actionLabel="Buy server"
       actionTitle="Cloud phone server purchases are disabled in this read-only view."
       active="Compute"
@@ -41,10 +43,7 @@ export default async function CphPage() {
         {
           header: "Server",
           render: (server) => (
-            <div>
-              <p className="font-black">{server.name}</p>
-              <p className="mt-1 break-all text-xs text-[#98a2b3]">{server.id}</p>
-            </div>
+            <ResourceIdentity id={server.id} name={server.name} />
           ),
         },
         { header: "Status", render: (server) => <InventoryStatus>{server.status}</InventoryStatus> },

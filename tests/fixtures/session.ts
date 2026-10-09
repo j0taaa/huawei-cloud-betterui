@@ -9,6 +9,7 @@ export const project: HuaweiProjectSession = {
 };
 export const session: BetterUiSession = {
   ...project,
+  tokenExpiresAt: project.expiresAt,
   accountName: "test-account",
   createdAt: "2026-01-01T00:00:00Z",
   iamEndpoint: "https://iam.example.invalid",

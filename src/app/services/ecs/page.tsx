@@ -1,62 +1,64 @@
 import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ArrowLeft, Plus, Server, TerminalSquare } from "lucide-react";
+import {
+  Activity,
+  Globe2,
+  Plus,
+  Server,
+  TerminalSquare,
+} from "lucide-react";
 
 import {
   DisabledCloudButton,
   RefreshButton,
 } from "@/components/cloud-action-buttons";
 import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
+import {
+  ConsoleMain,
+  ConsoleCallout,
+  ConsolePageHeader,
+  ConsolePanel,
+  DataFreshnessText,
+  MetricCard,
+  MetricGrid,
+} from "@/components/console-ui";
+import { EcsInstancesTable } from "@/components/ecs-instances-table";
 import { ConsoleShell } from "@/components/console-shell";
-import { EcsInstanceActions } from "@/components/ecs-instance-actions";
-import { listEcsInstances, withCloudResult } from "@/lib/huawei-cloud";
-import { LocalDateTime } from "@/components/local-date-time";
+import { listEcsInstances, type EcsInstance, withCloudResult } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
   title: "ECS | Huawei Cloud Better UI",
   description: "Elastic Cloud Server management page.",
 };
 
-const statusClasses: Record<string, string> = {
-  ACTIVE: "bg-[#e9f8f1] text-[#15803d]",
-  ERROR: "bg-[#fff1f2] text-[#b42318]",
-  SHUTOFF: "bg-[#f2f4f7] text-[#667085]",
-};
-
-export default async function EcsPage() {
-  const result = await withCloudResult([], listEcsInstances, cloudCacheKeys.listEcsInstances);
+export default async function EcsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ az?: string; project?: string; status?: string }>;
+}) {
+  const query = await searchParams;
+  const result = await withCloudResult<EcsInstance[]>([], listEcsInstances, cloudCacheKeys.listEcsInstances);
   const instances = result.data;
+  const statusFilter = query.status;
+  const projectFilter = query.project;
+  const azFilter = query.az;
+  const filteredInstances = instances.filter(
+    (instance) =>
+      (!statusFilter || instance.status === statusFilter) &&
+      (!projectFilter || instance.projectId === projectFilter) &&
+      (!azFilter || instance.availabilityZone === azFilter),
+  );
+  const runningCount = instances.filter((instance) => instance.status === "ACTIVE").length;
+  const stoppedCount = instances.filter((instance) => instance.status === "SHUTOFF").length;
+  const publicCount = instances.filter((instance) => instance.publicIp !== "-").length;
 
   return (
     <ConsoleShell active="Compute">
       <CloudRefreshIndicator show={result.isRefreshing} />
-      <main className="grid gap-6 p-4 lg:p-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <Link
-              className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-[#2563eb]"
-              href="/"
-            >
-              <ArrowLeft className="size-4" />
-              Back to dashboard
-            </Link>
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="grid size-12 place-items-center rounded-xl bg-[#eaf2ff] text-[#2563eb]">
-                <Server className="size-6" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-black tracking-tight">
-                  Elastic Cloud Server
-                </h1>
-                <p className="mt-1 text-sm font-medium text-[#667085]">
-                  Real ECS instances for the selected project.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
+      <ConsoleMain>
+        <ConsolePageHeader
+          actions={
+            <>
             <DisabledCloudButton title="ECS creation is not implemented yet.">
               <Plus className="size-4" />
               Create ECS
@@ -66,97 +68,56 @@ export default async function EcsPage() {
               Remote login
             </DisabledCloudButton>
             <RefreshButton />
-          </div>
-        </div>
+            </>
+          }
+          backHref="/"
+          backLabel="Back to dashboard"
+          description="Real ECS instances for the selected project."
+          icon={Server}
+          iconClassName="bg-[#eaf2ff] text-[#2563eb]"
+          title="Elastic Cloud Server"
+        />
 
-        {result.error ? (
-          <section className="rounded-xl border border-[#fecdd3] bg-[#fff1f2] p-4 text-sm font-bold text-[#b42318]">
-            {result.error}
-          </section>
-        ) : null}
+        {result.error ? <ConsoleCallout>{result.error}</ConsoleCallout> : null}
 
-        <section className="overflow-hidden rounded-xl border border-[#e4e9f2] bg-white shadow-[0_12px_36px_rgba(16,24,40,0.06)]">
-          <div className="border-b border-[#e4e9f2] p-5">
-            <h2 className="text-lg font-black">Instances</h2>
-            <p className="mt-1 text-sm font-medium text-[#667085]">
-              {instances.length} instances · Showing {result.isCached ? "cached" : "fresh"} data from{" "}
-              <LocalDateTime value={result.updatedAt} />.
-            </p>
-          </div>
+        <MetricGrid>
+          <MetricCard
+            icon={Server}
+            label="Total ECS"
+            value={instances.length}
+          />
+          <MetricCard
+            icon={Activity}
+            iconClassName="bg-[#f0fdf4] text-[#166534]"
+            label="Running"
+            value={runningCount}
+          />
+          <MetricCard
+            icon={Activity}
+            iconClassName="bg-[#f8fafc] text-[#475467]"
+            label="Stopped"
+            value={stoppedCount}
+          />
+          <MetricCard
+            icon={Globe2}
+            label="With EIP"
+            value={publicCount}
+          />
+        </MetricGrid>
 
-          {instances.length ? (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[920px] text-left text-sm">
-                <thead className="bg-[#f7f9fc] text-xs font-black uppercase text-[#667085]">
-                  <tr>
-                    <th className="px-5 py-3">Name</th>
-                    <th className="px-5 py-3">Status</th>
-                    <th className="px-5 py-3">Flavor</th>
-                    <th className="px-5 py-3">Private IP</th>
-                    <th className="px-5 py-3">Public IP</th>
-                    <th className="px-5 py-3">AZ</th>
-                    <th className="px-5 py-3">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#eef2f7]">
-                  {instances.map((instance) => (
-                    <tr key={instance.id}>
-                      <td className="px-5 py-4">
-                        <Link
-                          className="font-black text-[#2563eb]"
-                          href={`/services/ecs/${instance.id}`}
-                        >
-                          {instance.name}
-                        </Link>
-                        <p className="mt-1 text-xs font-semibold text-[#98a2b3]">
-                          {instance.id}
-                        </p>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-xs font-black ${
-                            statusClasses[instance.status] ??
-                            "bg-[#eef4ff] text-[#2563eb]"
-                          }`}
-                        >
-                          {instance.status}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 font-semibold">
-                        {instance.flavor}
-                      </td>
-                      <td className="px-5 py-4 font-semibold">
-                        {instance.privateIp}
-                      </td>
-                      <td className="px-5 py-4 font-semibold">
-                        {instance.publicIp}
-                      </td>
-                      <td className="px-5 py-4 font-semibold">
-                        {instance.availabilityZone}
-                      </td>
-                      <td className="px-5 py-4">
-                        <EcsInstanceActions
-                          id={instance.id}
-                          projectId={instance.projectId}
-                          status={instance.status}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="grid place-items-center px-6 py-16 text-center">
-              <p className="text-lg font-black">No ECS instances found</p>
-              <p className="mt-2 max-w-md text-sm font-medium text-[#667085]">
-                This project returned an empty ECS list, or the IAM user lacks
-                ECS list permissions.
-              </p>
-            </div>
-          )}
-        </section>
-      </main>
+        <ConsolePanel
+          description={
+            <DataFreshnessText
+              isCached={result.isCached}
+              prefix={`${filteredInstances.length} of ${instances.length} instances`}
+              updatedAt={result.updatedAt}
+            />
+          }
+          title="Instances"
+        >
+          <EcsInstancesTable instances={filteredInstances} />
+        </ConsolePanel>
+      </ConsoleMain>
     </ConsoleShell>
   );
 }

@@ -29,6 +29,7 @@ export default async function DehPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="deh"
       actionLabel="Allocate DeH"
       actionTitle="Dedicated host allocation is intentionally disabled in this read-only view."
       active="Compute"

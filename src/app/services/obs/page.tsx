@@ -1,15 +1,24 @@
 import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
-import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Box, Database, UploadCloud } from "lucide-react";
+import type { Metadata } from "next";
+import { Box, Database, UploadCloud } from "lucide-react";
 
 import {
   DisabledCloudButton,
   RefreshButton,
 } from "@/components/cloud-action-buttons";
 import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
+import {
+  ConsoleMain,
+  ConsoleCallout,
+  ConsoleEmptyPanelBody,
+  ConsolePageHeader,
+  ConsolePanel,
+  DataFreshnessText,
+  MetricCard,
+  MetricGrid,
+} from "@/components/console-ui";
 import { ConsoleShell } from "@/components/console-shell";
-import { LocalDateTime } from "@/components/local-date-time";
 import { ObsBucketSearchTable } from "@/components/obs-search-tables";
 import { listObsBuckets, withCloudResult } from "@/lib/huawei-cloud";
 
@@ -20,70 +29,66 @@ export const metadata: Metadata = {
 export default async function ObsPage() {
   const result = await withCloudResult([], listObsBuckets, cloudCacheKeys.listObsBuckets);
   const buckets = result.data;
+  const regions = new Set(buckets.map((bucket) => bucket.location).filter((location) => location && location !== "-"));
+  const storageClasses = new Set(
+    buckets
+      .map((bucket) => bucket.storageClass)
+      .filter((storageClass) => storageClass && storageClass !== "-"),
+  );
 
   return (
     <ConsoleShell active="Storage">
       <CloudRefreshIndicator show={result.isRefreshing} />
-      <main className="grid gap-6 p-4 lg:p-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <Link className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-[#2563eb]" href="/services/storage">
-              <ArrowLeft className="size-4" />
-              Back to Storage
-            </Link>
-            <div className="flex items-center gap-3">
-              <div className="grid size-12 place-items-center rounded-xl bg-[#e9f8f1] text-[#16a34a]">
-                <Box className="size-6" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-black tracking-tight">Object Storage Service</h1>
-                <p className="mt-1 text-sm font-medium text-[#667085]">
-                  Real OBS buckets discovered through signed temporary OBS credentials.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <DisabledCloudButton title="Bucket creation is not implemented yet.">
+      <ConsoleMain>
+        <ConsolePageHeader
+          actions={
+            <>
+            <Link className="inline-flex items-center gap-2 rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-bold text-white" href="/services/obs/manage">
               <Box className="size-4" />
               Create bucket
-            </DisabledCloudButton>
-            <DisabledCloudButton title="Object upload is not implemented yet.">
+            </Link>
+            <DisabledCloudButton title="Open a bucket to upload objects.">
               <UploadCloud className="size-4" />
               Upload object
             </DisabledCloudButton>
             <RefreshButton />
-          </div>
-        </div>
+            </>
+          }
+          backHref="/services/storage"
+          backLabel="Back to Storage"
+          description="Real OBS buckets discovered through signed temporary OBS credentials."
+          icon={Box}
+          iconClassName="bg-[#e9f8f1] text-[#16a34a]"
+          title="Object Storage Service"
+        />
 
-        {result.error ? (
-          <section className="rounded-xl border border-[#fecdd3] bg-[#fff1f2] p-4 text-sm font-bold text-[#b42318]">
-            {result.error}
-          </section>
-        ) : null}
+        {result.error ? <ConsoleCallout>{result.error}</ConsoleCallout> : null}
 
-        <section className="overflow-hidden rounded-xl border border-[#e4e9f2] bg-white shadow-[0_12px_36px_rgba(16,24,40,0.06)]">
-          <div className="border-b border-[#e4e9f2] p-5">
-            <h2 className="text-lg font-black">Buckets</h2>
-            <p className="mt-1 text-sm font-medium text-[#667085]">
-              {buckets.length} buckets · Showing {result.isCached ? "cached" : "fresh"} data from <LocalDateTime value={result.updatedAt} />.
-            </p>
-          </div>
+        <MetricGrid className="gap-3" columns={3}>
+          <MetricCard icon={Box} iconClassName="bg-[#e9f8f1] text-[#16a34a]" label="Buckets" value={buckets.length} variant="compact" />
+          <MetricCard icon={Database} label="Regions" value={regions.size} variant="compact" />
+          <MetricCard icon={Database} iconClassName="bg-[#f5f3ff] text-[#7c3aed]" label="Storage classes" value={storageClasses.size} variant="compact" />
+        </MetricGrid>
+
+        <ConsolePanel
+          description={
+            <DataFreshnessText
+              isCached={result.isCached}
+              prefix={`${buckets.length} buckets`}
+              updatedAt={result.updatedAt}
+            />
+          }
+          title="Buckets"
+        >
           {buckets.length ? (
             <ObsBucketSearchTable buckets={buckets} />
           ) : (
-            <div className="grid place-items-center px-6 py-16 text-center">
-              <div>
-                <Database className="mx-auto size-10 text-[#98a2b3]" />
-                <p className="mt-4 text-lg font-black">No OBS buckets found</p>
-                <p className="mt-2 text-sm font-semibold text-[#667085]">
-                  No buckets were returned for this account or OBS access is not permitted.
-                </p>
-              </div>
-            </div>
+            <ConsoleEmptyPanelBody icon={Database} title="No OBS buckets found">
+              No buckets were returned for this account or OBS access is not permitted.
+            </ConsoleEmptyPanelBody>
           )}
-        </section>
-      </main>
+        </ConsolePanel>
+      </ConsoleMain>
     </ConsoleShell>
   );
 }

@@ -4,22 +4,16 @@ import { Search } from "lucide-react";
 
 import {
   InventoryStatus,
+  inventoryStatusTone,
   type InventoryColumn,
   ServiceInventoryPage,
 } from "@/app/services/_components/service-inventory";
+import { CellStack, ResourceIdentity } from "@/components/console-ui";
 import { listCssClusters, type CssCluster, withCloudResult } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
   title: "CSS | Huawei Cloud Better UI",
 };
-
-function statusTone(status: string) {
-  const normalized = status.toLowerCase();
-  if (["available", "running", "200"].includes(normalized)) return "good";
-  if (["failed", "error", "faulty"].includes(normalized)) return "bad";
-  if (["creating", "scaling", "rebooting", "upgrading"].includes(normalized)) return "warn";
-  return "neutral";
-}
 
 export default async function CssPage() {
   const result = await withCloudResult<CssCluster[]>([], listCssClusters, cloudCacheKeys.listCssClusters);
@@ -34,21 +28,15 @@ export default async function CssPage() {
     {
       header: "Search cluster",
       render: (cluster) => (
-        <div>
-          <p className="font-black text-[#101828]">{cluster.name}</p>
-          <p className="mt-1 break-all text-xs text-[#98a2b3]">{cluster.id}</p>
-        </div>
+        <ResourceIdentity id={cluster.id} name={cluster.name} />
       ),
     },
-    { header: "State", render: (cluster) => <InventoryStatus tone={statusTone(cluster.status)}>{cluster.status}</InventoryStatus> },
+    { header: "State", render: (cluster) => <InventoryStatus tone={inventoryStatusTone(cluster.status)}>{cluster.status}</InventoryStatus> },
     { header: "Engine", render: (cluster) => cluster.datastore },
     {
       header: "Nodes",
       render: (cluster) => (
-        <div>
-          <p className="font-black">{cluster.nodeCount || "-"} nodes</p>
-          <p className="mt-1 text-xs text-[#667085]">{cluster.nodeSpec}</p>
-        </div>
+        <CellStack subValue={cluster.nodeSpec}>{cluster.nodeCount || "-"} nodes</CellStack>
       ),
     },
     { header: "Storage", render: (cluster) => cluster.storage },
@@ -58,6 +46,7 @@ export default async function CssPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="css"
       actionLabel="Create cluster"
       actionTitle="CSS cluster creation is disabled in this read-only view."
       active="Databases"

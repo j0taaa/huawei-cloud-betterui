@@ -4,6 +4,7 @@ import type { BetterUiSession, HuaweiProjectSession } from "@/lib/auth-session";
 import { huaweiFetch } from "@/lib/huawei/http";
 import { asArray, asRecord, asString, firstString } from "@/lib/huawei/parsers";
 import { loadAcrossProjects } from "@/lib/huawei/projects";
+import { workspaceManagement } from "@/lib/huawei/management/adapters/workspace";
 
 export type WorkspaceTenant = {
   accessMode: string;
@@ -63,4 +64,9 @@ export async function listWorkspaceTenantsForProject(
 
 export async function listWorkspaceTenants(session: BetterUiSession) {
   return loadAcrossProjects(session, listWorkspaceTenantsForProject);
+}
+
+/** Load complete native desktop/user/pool inventory separately for each selected project. */
+export async function listWorkspaceResources(session: BetterUiSession) {
+  return loadAcrossProjects(session, async project => (await workspaceManagement.inventory({ ...session, ...project, projects: [project] })).map(resource => ({ ...resource, projectId: project.projectId, projectName: project.projectName, region: project.region })));
 }

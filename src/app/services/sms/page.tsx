@@ -4,23 +4,16 @@ import { Server } from "lucide-react";
 
 import {
   InventoryStatus,
+  inventoryStatusTone,
   type InventoryColumn,
   ServiceInventoryPage,
 } from "@/app/services/_components/service-inventory";
+import { CellStack, ResourceIdentity } from "@/components/console-ui";
 import { listSmsTasks, type SmsMigrationTask, withCloudResult } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
   title: "SMS | Huawei Cloud Better UI",
 };
-
-function statusTone(status: string) {
-  const normalized = status.toLowerCase();
-
-  if (["migrate_success", "success", "finished"].includes(normalized)) return "good";
-  if (["migrate_fail", "failed", "error", "abort"].includes(normalized)) return "bad";
-  if (["running", "syncing", "ready", "aborting"].includes(normalized)) return "warn";
-  return "neutral";
-}
 
 export default async function SmsPage() {
   const result = await withCloudResult<SmsMigrationTask[]>([], listSmsTasks, cloudCacheKeys.listSmsTasks);
@@ -33,29 +26,29 @@ export default async function SmsPage() {
     {
       header: "Migration task",
       render: (task) => (
-        <div>
-          <p className="font-black text-[#101828]">{task.name}</p>
-          <p className="mt-1 break-all text-xs text-[#98a2b3]">{task.id}</p>
-        </div>
+        <ResourceIdentity
+          className="text-[#101828]"
+          id={task.id}
+          idClassName="font-normal"
+          name={task.name}
+        />
       ),
     },
-    { header: "State", render: (task) => <InventoryStatus tone={statusTone(task.state)}>{task.state}</InventoryStatus> },
+    { header: "State", render: (task) => <InventoryStatus tone={inventoryStatusTone(task.state)}>{task.state}</InventoryStatus> },
     {
       header: "Source",
       render: (task) => (
-        <div>
-          <p>{task.sourceServer}</p>
-          <p className="mt-1 break-all text-xs text-[#667085]">{task.sourceServerId}</p>
-        </div>
+        <CellStack subValue={task.sourceServerId} subValueClassName="break-all">
+          {task.sourceServer}
+        </CellStack>
       ),
     },
     {
       header: "Target",
       render: (task) => (
-        <div>
-          <p>{task.targetServer}</p>
-          <p className="mt-1 break-all text-xs text-[#667085]">{task.targetServerId}</p>
-        </div>
+        <CellStack subValue={task.targetServerId} subValueClassName="break-all">
+          {task.targetServer}
+        </CellStack>
       ),
     },
     { header: "Progress", render: (task) => task.progress },
@@ -65,6 +58,7 @@ export default async function SmsPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="sms"
       actionLabel="Create task"
       actionTitle="SMS task creation is disabled in this read-only view."
       active="Compute"

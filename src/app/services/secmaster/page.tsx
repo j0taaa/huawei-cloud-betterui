@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { ShieldCheck } from "lucide-react";
 
 import { InventoryStatus, ServiceInventoryPage } from "@/app/services/_components/service-inventory";
+import { ResourceIdentity } from "@/components/console-ui";
 import { listSecMasterWorkspaces, type SecMasterWorkspace, withCloudResult } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
@@ -18,6 +19,7 @@ export default async function SecMasterPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="secmaster"
       actionLabel="Create workspace"
       actionTitle="Workspace creation is disabled in this read-only view."
       active="Security"
@@ -41,10 +43,7 @@ export default async function SecMasterPage() {
         {
           header: "Workspace",
           render: (workspace) => (
-            <div>
-              <p className="font-black">{workspace.name}</p>
-              <p className="mt-1 break-all text-xs text-[#98a2b3]">{workspace.id}</p>
-            </div>
+            <ResourceIdentity id={workspace.id} name={workspace.name} />
           ),
         },
         {

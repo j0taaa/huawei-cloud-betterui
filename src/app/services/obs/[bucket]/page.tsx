@@ -1,27 +1,43 @@
 import { CloudErrorPage } from "@/components/cloud-error";
-import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Box, FileText, Folder } from "lucide-react";
+import { Box, Database, FileText, Folder, HardDrive, Layers3 } from "lucide-react";
 
 import { RefreshButton } from "@/components/cloud-action-buttons";
 import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
+import {
+  ConsoleMain,
+  ConsoleCallout,
+  ConsoleEmptyPanelBody,
+  ConsolePanel,
+  ConsoleResourceLink,
+  DataFreshnessText,
+  MetricCard,
+  MetricGrid,
+  ResourceDetailHero,
+} from "@/components/console-ui";
 import { ConsoleShell } from "@/components/console-shell";
-import { LocalDateTime } from "@/components/local-date-time";
-import { UploadObsObjectButton } from "@/components/obs-object-actions";
+import {
+  CreateObsFolderButton,
+  DeleteObsBucketButton,
+  UploadObsObjectButton,
+} from "@/components/obs-object-actions";
 import { ObsObjectSearchTable } from "@/components/obs-search-tables";
 import { getObsBucket, type ObsBucketDetail, withCloudResult } from "@/lib/huawei-cloud";
 
 export default async function ObsBucketPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ bucket: string }>;
+  searchParams: Promise<{ prefix?: string }>;
 }) {
   const { bucket } = await params;
+  const { prefix = "" } = await searchParams;
   const result = await withCloudResult<ObsBucketDetail | null>(
     null,
-    (session) => getObsBucket(session, bucket),
-    cloudCacheKeys.obsBucket(bucket),
+    (session) => getObsBucket(session, bucket, prefix),
+    `obs-bucket:${bucket}:${prefix}`,
   );
   if (!result.data && result.error) return <CloudErrorPage active="Storage" backHref="/services/obs" error={result.error} />;
   const detail = result.data;
@@ -30,75 +46,97 @@ export default async function ObsBucketPage({
     notFound();
   }
 
+  const parentPrefix = detail.currentPrefix.split("/").filter(Boolean).slice(0, -1).join("/");
+  const parentHref = `/services/obs/${encodeURIComponent(detail.name)}${
+    parentPrefix ? `?prefix=${encodeURIComponent(`${parentPrefix}/`)}` : ""
+  }`;
+
   return (
     <ConsoleShell active="Storage">
       <CloudRefreshIndicator show={result.isRefreshing} />
-      <main className="grid gap-6 p-4 lg:p-8">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <Link className="mb-4 inline-flex w-fit items-center gap-2 text-sm font-bold text-[#2563eb]" href="/services/obs">
-              <ArrowLeft className="size-4" />
-              Back to OBS
-            </Link>
-            <div className="flex items-center gap-4">
-              <div className="grid size-12 place-items-center rounded-xl bg-[#e9f8f1] text-[#16a34a]">
-                <Box className="size-6" />
-              </div>
-              <div>
-                <p className="text-sm font-black uppercase tracking-[0.14em] text-[#667085]">OBS bucket</p>
-                <h1 className="mt-1 break-words text-3xl font-black tracking-tight">{detail.name}</h1>
-                <p className="mt-1 text-xs font-bold text-[#98a2b3]">
-                  Showing {result.isCached ? "cached" : "fresh"} data from <LocalDateTime value={result.updatedAt} />.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <UploadObsObjectButton bucket={detail.name} />
+      <ConsoleMain>
+        <ResourceDetailHero
+          actions={
+            <>
+            <CreateObsFolderButton bucket={detail.name} prefix={detail.currentPrefix} />
+            <UploadObsObjectButton bucket={detail.name} prefix={detail.currentPrefix} />
+            <DeleteObsBucketButton bucket={detail.name} redirectTo="/services/obs" />
             <RefreshButton />
-          </div>
-        </div>
+            </>
+          }
+          backHref="/services/obs"
+          backLabel="Back to OBS"
+          description={
+            <DataFreshnessText isCached={result.isCached} updatedAt={result.updatedAt} />
+          }
+          eyebrow="OBS bucket"
+          icon={Box}
+          iconClassName="bg-[#e9f8f1] text-[#16a34a]"
+          title={detail.name}
+        />
 
-        {result.error ? (
-          <section className="rounded-xl border border-[#fecdd3] bg-[#fff1f2] p-4 text-sm font-bold text-[#b42318]">
-            {result.error}
-          </section>
+        {result.error ? <ConsoleCallout>{result.error}</ConsoleCallout> : null}
+
+        <MetricGrid className="gap-3">
+          <MetricCard icon={FileText} label="Objects here" value={detail.objects.length} variant="compact" />
+          <MetricCard icon={Folder} iconClassName="bg-[#e9f8f1] text-[#16a34a]" label="Folders here" value={detail.commonPrefixes.length} variant="compact" />
+          <MetricCard icon={HardDrive} iconClassName="bg-[#f5f3ff] text-[#7c3aed]" label="Listed size" value={detail.size} variant="compact" />
+          <MetricCard icon={Database} iconClassName="bg-[#f8fafc] text-[#475467]" label="Region" value={detail.location} valueClassName="break-words" variant="compact" />
+        </MetricGrid>
+
+        {detail.currentPrefix ? (
+          <ConsolePanel className="p-4 text-sm font-semibold text-[#344054] dark:text-[#cbd5e1]">
+            <div className="flex flex-wrap items-center gap-2">
+              <Layers3 className="size-4 text-[#2563eb]" />
+              <ConsoleResourceLink href={`/services/obs/${encodeURIComponent(detail.name)}`}>
+                {detail.name}
+              </ConsoleResourceLink>
+              <span>/</span>
+              <span className="break-all">{detail.currentPrefix}</span>
+              <ConsoleResourceLink className="ml-auto" href={parentHref}>
+                Up one level
+              </ConsoleResourceLink>
+            </div>
+          </ConsolePanel>
         ) : null}
 
         {detail.commonPrefixes.length ? (
-          <section className="rounded-xl border border-[#e4e9f2] bg-white p-5 shadow-[0_12px_36px_rgba(16,24,40,0.06)]">
-            <h2 className="text-lg font-black">Folders</h2>
+          <ConsolePanel className="p-5">
+            <h2 className="text-lg font-black text-[#101828] dark:text-white">Folders</h2>
             <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-              {detail.commonPrefixes.map((prefix) => (
-                <div className="flex items-center gap-2 rounded-lg bg-[#f7f9fc] px-3 py-2 text-sm font-bold text-[#344054]" key={prefix}>
+              {detail.commonPrefixes.map((folderPrefix) => (
+                <Link
+                  className="flex items-center gap-2 rounded-lg bg-[#f7f9fc] px-3 py-2 text-sm font-bold text-[#344054] hover:bg-[#eef4ff]"
+                  href={`/services/obs/${encodeURIComponent(detail.name)}?prefix=${encodeURIComponent(folderPrefix)}`}
+                  key={folderPrefix}
+                >
                   <Folder className="size-4 text-[#2563eb]" />
-                  {prefix}
-                </div>
+                  <span className="break-all">
+                    {folderPrefix.slice(detail.currentPrefix.length) || folderPrefix}
+                  </span>
+                </Link>
               ))}
             </div>
-          </section>
+          </ConsolePanel>
         ) : null}
 
-        <section className="overflow-hidden rounded-xl border border-[#e4e9f2] bg-white shadow-[0_12px_36px_rgba(16,24,40,0.06)]">
-          <div className="border-b border-[#e4e9f2] p-5">
-            <h2 className="text-lg font-black">Objects</h2>
-            <p className="mt-1 text-sm font-medium text-[#667085]">
-              Showing {detail.objects.length} objects returned by OBS.
-            </p>
-          </div>
+        <ConsolePanel
+          description={`Showing up to 1,000 objects at this level${detail.isTruncated ? "; more objects exist" : ""}.`}
+          title="Objects"
+        >
           {detail.objects.length ? (
-            <ObsObjectSearchTable bucketName={detail.name} objects={detail.objects} />
+            <ObsObjectSearchTable
+              bucketName={detail.name}
+              objects={detail.objects}
+              prefix={detail.currentPrefix}
+            />
           ) : (
-            <div className="grid place-items-center px-6 py-16 text-center">
-              <div>
-                <FileText className="mx-auto size-10 text-[#98a2b3]" />
-                <p className="mt-4 text-lg font-black">No objects found</p>
-                <p className="mt-2 text-sm font-semibold text-[#667085]">This bucket is empty or the current credentials cannot list objects.</p>
-              </div>
-            </div>
+            <ConsoleEmptyPanelBody icon={FileText} title="No objects found">
+              This bucket is empty or the current credentials cannot list objects.
+            </ConsoleEmptyPanelBody>
           )}
-        </section>
-      </main>
+        </ConsolePanel>
+      </ConsoleMain>
     </ConsoleShell>
   );
 }

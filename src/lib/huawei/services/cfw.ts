@@ -1,13 +1,10 @@
 import "server-only";
 
 import type { BetterUiSession, HuaweiProjectSession } from "@/lib/auth-session";
-import { huaweiList } from "@/lib/huawei/http";
+import { listNativeCloudFirewalls } from "./cfw-native";
 import {
-  asArray,
   asRecord,
   asString,
-  firstString,
-  numberWithUnit,
 } from "@/lib/huawei/parsers";
 import { loadAcrossProjects } from "@/lib/huawei/projects";
 
@@ -16,7 +13,7 @@ export type CloudFirewall = {
   chargeMode: string;
   engineType: string;
   enterpriseProjectId: string;
-  eipCount: number;
+  eipCount: number | null;
   haType: string;
   id: string;
   name: string;
@@ -25,54 +22,36 @@ export type CloudFirewall = {
   region: string;
   serviceType: string;
   status: string;
-  vpcCount: number;
+  vpcCount: number | null;
 };
+
+const count = (value: unknown) => typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : null;
+const enumText = (value: unknown, values: number[]) => typeof value === "number" && values.includes(value) ? String(value) : "UNKNOWN";
 
 export async function listCloudFirewallsForProject(
   session: HuaweiProjectSession,
 ) {
-  const body = await huaweiList<{
-    data?: { records?: unknown[] };
-    records?: unknown[];
-  }>(
-    session,
-    "cfw",
-    `/v1/${session.projectId}/firewalls/list?enterprise_project_id=all_granted_eps`,
-    {
-      items: ["data.records", "records"],
-      kind: "offset",
-      parameter: "offset",
-      size: 100,
-      total: ["total_count", "total", "data.total", "result.total"],
-      inBody: true,
-    },
-    {
-      body: JSON.stringify({ limit: 100, offset: 0 }),
-      method: "POST",
-    },
-  );
-  const data = asRecord(body.data);
-
-  return asArray(data.records ?? body.records).map(
+  const { records } = await listNativeCloudFirewalls(session);
+  return records.map(
     (firewall): CloudFirewall => {
       const item = asRecord(firewall);
       const flavor = asRecord(item.flavor);
 
       return {
-        bandwidth: numberWithUnit(flavor.bandwidth, "Mbit/s"),
-        chargeMode: String(item.charge_mode ?? "-"),
-        engineType: String(item.engine_type ?? "-"),
+        bandwidth: typeof flavor.bandwidth === "number" && Number.isFinite(flavor.bandwidth) && flavor.bandwidth >= 0 ? `${flavor.bandwidth} Mbit/s` : "Unknown",
+        chargeMode: enumText(item.charge_mode, [0, 1]),
+        engineType: enumText(item.engine_type, [0, 1, 2]),
         enterpriseProjectId: asString(item.enterprise_project_id, "-"),
-        eipCount: Number(flavor.eip_count ?? item.eip_count ?? 0),
-        haType: String(item.ha_type ?? "-"),
-        id: firstString([item.fw_instance_id, item.resource_id, item.id]),
-        name: firstString([item.fw_instance_name, item.name, item.id]),
+        eipCount: count(flavor.eip_count),
+        haType: enumText(item.ha_type, [0, 1]),
+        id: asString(item.fw_instance_id),
+        name: asString(item.fw_instance_name),
         projectId: session.projectId,
         projectName: session.projectName,
         region: session.region,
-        serviceType: String(item.service_type ?? "-"),
-        status: String(item.status ?? "UNKNOWN"),
-        vpcCount: Number(flavor.vpc_count ?? item.vpc_count ?? 0),
+        serviceType: enumText(item.service_type, [0, 1]),
+        status: enumText(item.status, [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]),
+        vpcCount: count(flavor.vpc_count),
       };
     },
   );

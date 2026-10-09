@@ -1,72 +1,109 @@
-import "server-only";
-
+import { getImageNameForProject } from "@/lib/huawei/services/ims";
 import {
   finishCloudLoad,
   mapCloudLoad,
   settledValue,
 } from "@/lib/huawei/errors";
+import { huaweiList } from "@/lib/huawei/http";
+import "server-only";
 
 import type { BetterUiSession, HuaweiProjectSession } from "@/lib/auth-session";
-import { huaweiFetch, huaweiList } from "@/lib/huawei/http";
 import {
   asArray,
   asRecord,
   asString,
   firstIp,
   firstString,
-} from "@/lib/huawei/parsers";
-import { loadAcrossProjects, sessionProjects } from "@/lib/huawei/projects";
+  huaweiFetch,
+  loadAcrossProjects,
+  sessionProjects,
+  projectForId,
+} from "@/lib/huawei/core";
 import {
   listEvsDisksForProject,
   listEvsSnapshotsForProject,
 } from "@/lib/huawei/services/evs";
-import { getImageNameForProject } from "@/lib/huawei/services/ims";
+import type {
+  EcsInstance,
+  EcsMonitoringMetric,
+} from "@/lib/huawei/services/ecs.types";
 
-export type EcsInstance = {
-  attachedDiskIds: string[];
-  availabilityZone: string;
-  createdAt: string;
-  flavor: string;
-  id: string;
-  image: string;
-  imageId: string;
-  imageName: string;
-  name: string;
-  privateIp: string;
-  publicIp: string;
-  securityGroups: Array<{
-    id: string;
-    name: string;
-  }>;
-  status: string;
-  systemDisk: {
-    id: string;
-    name: string;
-    size: string;
-    status: string;
-    type: string;
-  } | null;
-  projectId: string;
-  projectName: string;
-  region: string;
-};
+function asDisplayString(value: unknown, fallback = "-") {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
 
-export type EcsMonitoringMetric = {
-  datapoints: Array<{
-    timestamp: string;
-    value: number;
-  }>;
-  label: string;
-  metricName: string;
-  namespace: string;
-  unit: string;
-};
+  if (typeof value === "boolean") {
+    return value ? "true" : "false";
+  }
 
-export type EcsMonitoring = {
-  metrics: EcsMonitoringMetric[];
-  projectId: string;
-  region: string;
-};
+  return asString(value, fallback);
+}
+
+function parseEcsAddresses(addresses: unknown): EcsInstance["addresses"] {
+  return Object.entries(asRecord(addresses)).flatMap(([network, values]) =>
+    asArray(values).map((address) => {
+      const item = asRecord(address);
+      const type = asString(item["OS-EXT-IPS:type"], "").toLowerCase();
+
+      return {
+        ip: asString(item.addr),
+        macAddress: asString(item["OS-EXT-IPS-MAC:mac_addr"]),
+        network,
+        type:
+          type === "fixed"
+            ? "private"
+            : type === "floating"
+              ? "public"
+              : "unknown",
+        version: asDisplayString(item.version),
+      };
+    }),
+  );
+}
+
+function parseEcsTags(value: unknown): EcsInstance["tags"] {
+  if (Array.isArray(value)) {
+    return value
+      .map((tag) => {
+        if (typeof tag === "string") {
+          const [key, ...rest] = tag.split("=");
+
+          return key
+            ? {
+                key,
+                value: rest.join("=") || "-",
+              }
+            : null;
+        }
+
+        const item = asRecord(tag);
+        const key = firstString([item.key, item.name], "");
+
+        return key
+          ? {
+              key,
+              value: firstString([item.value], "-"),
+            }
+          : null;
+      })
+      .filter((tag): tag is { key: string; value: string } => tag !== null);
+  }
+
+  return Object.entries(asRecord(value)).map(([key, tagValue]) => ({
+    key,
+    value: asDisplayString(tagValue),
+  }));
+}
+
+function parseEcsMetadata(value: unknown): EcsInstance["metadata"] {
+  return Object.entries(asRecord(value))
+    .filter(([key]) => !key.startsWith("__"))
+    .map(([key, metadataValue]) => ({
+      key,
+      value: asDisplayString(metadataValue),
+    }));
+}
 
 export async function listEcsInstancesForProject(
   session: HuaweiProjectSession,
@@ -89,6 +126,7 @@ export async function listEcsInstancesForProject(
     const flavor = asRecord(item.flavor);
     const image = asRecord(item.image);
     const metadata = asRecord(item.metadata);
+    const addresses = parseEcsAddresses(item.addresses);
     const imageId = asString(image.id, "-");
     const imageName = firstString([image.name, metadata.image_name, imageId]);
     const securityGroups = asArray(item.security_groups).map((group) => {
@@ -100,6 +138,7 @@ export async function listEcsInstancesForProject(
     });
 
     return {
+      addresses,
       attachedDiskIds: asArray(item["os-extended-volumes:volumes_attached"])
         .map((volume) => asRecord(volume).id)
         .filter((volumeId): volumeId is string => typeof volumeId === "string"),
@@ -107,13 +146,38 @@ export async function listEcsInstancesForProject(
         item["OS-EXT-AZ:availability_zone"],
         item.availability_zone,
       ]),
+      chargingMode: firstString([
+        item.charging_mode === undefined ? undefined : String(item.charging_mode),
+        item.chargingMode === undefined ? undefined : String(item.chargingMode),
+        metadata.charging_mode === undefined ? undefined : String(metadata.charging_mode),
+      ]),
       createdAt: asString(item.created, "-"),
+      description: firstString([item.description, metadata.description]),
+      enterpriseProjectId: firstString([
+        item.enterprise_project_id,
+        item.enterpriseProjectId,
+      ]),
       flavor: firstString([flavor.name, flavor.id]),
+      flavorId: asString(flavor.id),
       id: asString(item.id),
       image: imageName,
       imageId,
       imageName,
+      keyName: firstString([item.key_name, item.keyName, item.keypair_name]),
+      launchedAt: firstString([
+        item["OS-SRV-USG:launched_at"],
+        item.launched_at,
+      ]),
+      metadata: parseEcsMetadata(metadata),
       name: asString(item.name),
+      osType: firstString([metadata.os_type, metadata.os_bit, item.os_type]),
+      powerState: firstString(
+        [
+          asDisplayString(item["OS-EXT-STS:power_state"], ""),
+          asDisplayString(item.power_state, ""),
+        ],
+        "-",
+      ),
       privateIp: firstIp(item.addresses, "private"),
       projectId: session.projectId,
       projectName: session.projectName,
@@ -122,6 +186,10 @@ export async function listEcsInstancesForProject(
       securityGroups,
       status: asString(item.status, "UNKNOWN"),
       systemDisk: null,
+      tags: parseEcsTags(item.tags),
+      taskState: firstString([item["OS-EXT-STS:task_state"], item.task_state]),
+      updatedAt: firstString([item.updated, item.updated_at]),
+      vmState: firstString([item["OS-EXT-STS:vm_state"], item.vm_state]),
     };
   });
 }
@@ -447,12 +515,7 @@ export async function runEcsAction(
   action: "restart" | "start" | "stop",
   projectId?: string,
 ) {
-  const project =
-    sessionProjects(session).find((item) => item.projectId === projectId) ??
-    sessionProjects(session).find(
-      (item) => item.projectId === session.projectId,
-    ) ??
-    sessionProjects(session)[0];
+  const project = projectForId(session, projectId);
 
   const payload =
     action === "start"
@@ -508,3 +571,5 @@ export async function getEcsSnapshots(session: BetterUiSession, id: string) {
 
   return snapshots.filter((snapshot) => diskIds.has(snapshot.diskId));
 }
+
+export type * from "@/lib/huawei/services/ecs.types";

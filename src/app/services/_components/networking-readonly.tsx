@@ -1,12 +1,22 @@
-import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { ArrowLeft, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 
 import {
   DisabledCloudButton,
   RefreshButton,
 } from "@/components/cloud-action-buttons";
 import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
+import {
+  ConsoleMain,
+  ConsoleCallout,
+  ConsoleLinkButton,
+  ConsolePageHeader,
+  ConsoleResourceLink,
+  ConsoleTablePanel,
+  MetricCard,
+  StatusBadge as ConsoleStatusBadge,
+  type StatusTone,
+} from "@/components/console-ui";
 import { ConsoleShell } from "@/components/console-shell";
 import { LocalDateTime } from "@/components/local-date-time";
 
@@ -17,15 +27,15 @@ export type ReadonlyTableRow = {
 
 export type StatusCount = {
   label: string;
-  tone?: "bad" | "good" | "neutral" | "warn";
+  tone?: StatusTone;
   value: number | string;
 };
 
-const statusToneClass = {
-  bad: "border-[#fecdd3] bg-[#fff1f2] text-[#b42318]",
-  good: "border-[#bbf7d0] bg-[#f0fdf4] text-[#15803d]",
-  neutral: "border-[#d9e0eb] bg-white text-[#344054]",
-  warn: "border-[#fed7aa] bg-[#fff7ed] text-[#c2410c]",
+const statusMetricClasses: Record<StatusTone, string> = {
+  bad: "bg-[#fff1f2] text-[#b42318]",
+  good: "bg-[#f0fdf4] text-[#166534]",
+  neutral: "bg-[#f8fafc] text-[#475467]",
+  warn: "bg-[#fffbeb] text-[#92400e]",
 };
 
 export function valueOrDash(value: unknown) {
@@ -59,13 +69,7 @@ export function StatusBadge({
   children: React.ReactNode;
   tone?: StatusCount["tone"];
 }) {
-  return (
-    <span
-      className={`inline-flex h-7 items-center rounded-full border px-2.5 text-xs font-black ${statusToneClass[tone ?? "neutral"]}`}
-    >
-      {children}
-    </span>
-  );
+  return <ConsoleStatusBadge className="h-7 items-center" tone={tone}>{children}</ConsoleStatusBadge>;
 }
 
 export function ResourceLink({
@@ -79,14 +83,11 @@ export function ResourceLink({
     return <span className="font-black">{children}</span>;
   }
 
-  return (
-    <Link className="font-black text-[#2563eb] hover:underline" href={href}>
-      {children}
-    </Link>
-  );
+  return <ConsoleResourceLink href={href}>{children}</ConsoleResourceLink>;
 }
 
 export async function ReadonlyNetworkingPage({
+  actionHref,
   actionLabel,
   actionTitle,
   children,
@@ -96,8 +97,9 @@ export async function ReadonlyNetworkingPage({
   isRefreshing,
   title,
 }: {
+  actionHref?: string;
   actionLabel: string;
-  actionTitle: string;
+  actionTitle?: string;
   children: React.ReactNode;
   description: string;
   error: string | null;
@@ -108,45 +110,28 @@ export async function ReadonlyNetworkingPage({
   return (
     <ConsoleShell active="Networking">
       <CloudRefreshIndicator show={isRefreshing} />
-      <main className="grid gap-6 p-4 lg:p-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <Link
-              className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-[#2563eb]"
-              href="/services/networking"
-            >
-              <ArrowLeft className="size-4" />
-              Back to networking
-            </Link>
-            <div className="flex items-center gap-3">
-              <div className="grid size-12 place-items-center rounded-xl bg-[#eef4ff] text-[#2563eb]">
-                <Icon className="size-6" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-black tracking-tight">{title}</h1>
-                <p className="mt-1 text-sm font-medium text-[#667085]">
-                  {description}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <DisabledCloudButton title={actionTitle}>
+      <ConsoleMain>
+        <ConsolePageHeader
+          actions={
+            <>
+            {actionHref ? <ConsoleLinkButton href={actionHref}><Plus className="size-4" />{actionLabel}</ConsoleLinkButton> : <DisabledCloudButton title={actionTitle ?? "This workflow is unavailable."}>
               <Plus className="size-4" />
               {actionLabel}
-            </DisabledCloudButton>
+            </DisabledCloudButton>}
             <RefreshButton />
-          </div>
-        </div>
+            </>
+          }
+          backHref="/services/networking"
+          backLabel="Back to networking"
+          description={description}
+          icon={Icon}
+          title={title}
+        />
 
-        {error ? (
-          <section className="rounded-xl border border-[#fecdd3] bg-[#fff1f2] p-4 text-sm font-bold text-[#b42318]">
-            {error}
-          </section>
-        ) : null}
+        {error ? <ConsoleCallout>{error}</ConsoleCallout> : null}
 
         {children}
-      </main>
+      </ConsoleMain>
     </ConsoleShell>
   );
 }
@@ -155,13 +140,14 @@ export function StatusSummary({ items }: { items: StatusCount[] }) {
   return (
     <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {items.map((item) => (
-        <div
-          className={`rounded-lg border px-4 py-3 ${statusToneClass[item.tone ?? "neutral"]}`}
+        <MetricCard
+          iconClassName={statusMetricClasses[item.tone ?? "neutral"]}
           key={item.label}
-        >
-          <p className="text-xs font-black uppercase">{item.label}</p>
-          <p className="mt-1 text-2xl font-black">{item.value}</p>
-        </div>
+          label={item.label}
+          value={item.value}
+          valueClassName={statusMetricClasses[item.tone ?? "neutral"]}
+          variant="compact"
+        />
       ))}
     </section>
   );
@@ -183,48 +169,21 @@ export function OperationalTable({
   updatedAt: string;
 }) {
   return (
-    <section className="overflow-hidden rounded-xl border border-[#e4e9f2] bg-white shadow-[0_12px_36px_rgba(16,24,40,0.06)]">
-      <div className="border-b border-[#e4e9f2] p-5">
-        <h2 className="text-lg font-black">{title}</h2>
-        <p className="mt-1 text-sm font-medium text-[#667085]">
+    <ConsoleTablePanel
+      columns={columns.map((column) => ({ header: column }))}
+      description={
+        <>
           Showing {isCached ? "cached" : "fresh"} data from{" "}
           <LocalDateTime value={updatedAt} />.
-        </p>
-      </div>
-
-      {rows.length ? (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] text-left text-sm">
-            <thead className="bg-[#f7f9fc] text-xs font-black uppercase text-[#667085]">
-              <tr>
-                {columns.map((column) => (
-                  <th className="px-5 py-3" key={column}>
-                    {column}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#eef2f7]">
-              {rows.map((row) => (
-                <tr className="align-top" key={row.id}>
-                  {row.cells.map((cell, index) => (
-                    <td
-                      className="max-w-[280px] px-5 py-4 font-semibold text-[#344054]"
-                      key={`${row.id}-${index}`}
-                    >
-                      {cell}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <div className="grid place-items-center px-6 py-16 text-center">
-          <p className="text-lg font-black">{empty}</p>
-        </div>
-      )}
-    </section>
+        </>
+      }
+      emptyState={<p className="text-lg font-black">{empty}</p>}
+      minWidthClassName="min-w-[980px]"
+      rows={rows.map((row) => ({
+        cells: row.cells,
+        key: row.id,
+      }))}
+      title={title}
+    />
   );
 }

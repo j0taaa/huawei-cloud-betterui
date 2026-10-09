@@ -7,11 +7,24 @@ import {
   Cloud,
   Eye,
   EyeOff,
+  IdCard,
   Loader2,
   LockKeyhole,
   Server,
   ShieldCheck,
+  UserRound,
 } from "lucide-react";
+
+import {
+  ConsoleButton,
+  ConsoleCallout,
+  ConsoleChoiceButton,
+  ConsoleFeatureList,
+  ConsoleField,
+  ConsoleIconButton,
+  ConsoleIconTile,
+  ConsoleInput,
+} from "@/components/console-ui";
 
 type LoginResult = {
   error?: string;
@@ -19,8 +32,21 @@ type LoginResult = {
 };
 
 const defaultIamEndpoint = "https://iam.myhuaweicloud.com";
+const loginTypes = {
+  huaweiId: {
+    description: "Account and password",
+    label: "Huawei ID",
+  },
+  iam: {
+    description: "Account, IAM username, and password",
+    label: "IAM",
+  },
+} as const;
+
+type LoginType = keyof typeof loginTypes;
 
 export function LoginForm() {
+  const [loginType, setLoginType] = useState<LoginType>("huaweiId");
   const [accountName, setAccountName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -43,12 +69,16 @@ export function LoginForm() {
     setError("");
     setLoading(true);
 
+    const submittedAccountName = accountName.trim();
+    const submittedUsername =
+      loginType === "huaweiId" ? submittedAccountName : username.trim();
+
     const response = await fetch("/api/auth/iam/login", {
       body: JSON.stringify({
-        accountName,
+        accountName: submittedAccountName,
         iamEndpoint,
         password,
-        username,
+        username: submittedUsername,
       }),
       headers: {
         "Content-Type": "application/json",
@@ -87,35 +117,25 @@ export function LoginForm() {
 
           <div className="mt-16 max-w-md">
             <p className="text-sm font-black uppercase tracking-[0.18em] text-[#2563eb]">
-              IAM access
+              Huawei Cloud access
             </p>
             <h1 className="mt-4 text-5xl font-black tracking-tight">
-              Sign in with a real Huawei Cloud IAM user.
+              Sign in with Huawei ID or IAM.
             </h1>
             <p className="mt-5 text-base font-medium leading-8 text-[#667085]">
-              Better UI exchanges your IAM credentials server-side for a Huawei
+              Better UI exchanges your credentials server-side for a Huawei
               Cloud token, then keeps the session in an HTTP-only cookie.
             </p>
           </div>
         </div>
 
-        <div className="grid gap-3">
-          {[
-            ["Official token flow", ShieldCheck],
-            ["No browser-readable cloud token", LockKeyhole],
-            ["Ready for real resource APIs", Server],
-          ].map(([label, Icon]) => (
-            <div
-              className="flex items-center gap-3 rounded-xl border border-[#e4e9f2] bg-[#fbfcfe] p-4 text-sm font-bold"
-              key={label as string}
-            >
-              <div className="grid size-9 place-items-center rounded-lg bg-[#eef4ff] text-[#2563eb]">
-                <Icon className="size-4" />
-              </div>
-              {label as string}
-            </div>
-          ))}
-        </div>
+        <ConsoleFeatureList
+          items={[
+            { icon: ShieldCheck, label: "Official token flow" },
+            { icon: LockKeyhole, label: "No browser-readable cloud token" },
+            { icon: Server, label: "Ready for real resource APIs" },
+          ]}
+        />
       </aside>
 
       <main className="flex items-center justify-center p-4 lg:p-10">
@@ -126,96 +146,131 @@ export function LoginForm() {
                 Login
               </p>
               <h2 className="mt-2 text-3xl font-black tracking-tight">
-                Huawei Cloud IAM
+                Huawei Cloud
               </h2>
             </div>
-            <div className="grid size-12 place-items-center rounded-xl bg-[#eef4ff] text-[#2563eb]">
+            <ConsoleIconTile>
               <Cloud className="size-6" />
-            </div>
-          </div>
-
-          <div className="mt-6 rounded-xl border border-[#dbe7ff] bg-[#f5f8ff] p-4 text-sm font-semibold leading-6 text-[#344054]">
-            Use an IAM user, not your HUAWEI ID. Huawei does not expose a
-            public API token exchange for direct HUAWEI ID password login.
+            </ConsoleIconTile>
           </div>
 
           <form className="mt-6 grid gap-4" onSubmit={handleSubmit}>
-            <label className="grid gap-2 text-sm font-bold">
-              Account or tenant name
-              <input
+            <ConsoleField as="div" label="Login type">
+              <div className="grid gap-2 sm:grid-cols-2" role="radiogroup">
+                {(
+                  [
+                    ["huaweiId", UserRound],
+                    ["iam", IdCard],
+                  ] as const
+                ).map(([type, Icon]) => {
+                  const selected = loginType === type;
+
+                  return (
+                    <ConsoleChoiceButton
+                      aria-checked={selected}
+                      description={loginTypes[type].description}
+                      icon={Icon}
+                      key={type}
+                      label={loginTypes[type].label}
+                      onClick={() => {
+                        setLoginType(type);
+                        setError("");
+                      }}
+                      role="radio"
+                      selected={selected}
+                    />
+                  );
+                })}
+              </div>
+            </ConsoleField>
+
+            <ConsoleField
+              label={loginType === "huaweiId" ? "Huawei ID account" : "Account or tenant name"}
+            >
+              <ConsoleInput
                 autoComplete="organization"
-                className="h-12 rounded-lg border border-[#d9e0eb] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10"
+                className="h-12 px-4 focus:ring-4 focus:ring-[#2563eb]/10"
                 onChange={(event) => setAccountName(event.target.value)}
-                placeholder="Example: g50047609 or account domain"
+                placeholder={
+                  loginType === "huaweiId"
+                    ? "Huawei ID account"
+                    : "Example: g50047609 or account domain"
+                }
                 required
                 value={accountName}
               />
-            </label>
+            </ConsoleField>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="grid gap-2 text-sm font-bold">
-                IAM username
-                <input
-                  autoComplete="username"
-                  className="h-12 rounded-lg border border-[#d9e0eb] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10"
-                  onChange={(event) => setUsername(event.target.value)}
-                  placeholder="iam-user"
-                  required
-                  value={username}
-                />
-              </label>
+            <div
+              className={`grid gap-4 ${loginType === "iam" ? "sm:grid-cols-2" : ""}`}
+            >
+              {loginType === "iam" ? (
+                <ConsoleField label="IAM username">
+                  <ConsoleInput
+                    autoComplete="username"
+                    className="h-12 px-4 focus:ring-4 focus:ring-[#2563eb]/10"
+                    onChange={(event) => setUsername(event.target.value)}
+                    placeholder="iam-user"
+                    required
+                    value={username}
+                  />
+                </ConsoleField>
+              ) : null}
 
-              <label className="grid gap-2 text-sm font-bold">
-                Password
+              <ConsoleField as="div" label={<label htmlFor="login-password">Password</label>}>
                 <span className="relative">
-                  <input
+                  <ConsoleInput
                     autoComplete="current-password"
-                    className="h-12 w-full rounded-lg border border-[#d9e0eb] bg-white px-4 pr-11 text-sm font-semibold outline-none transition focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10"
+                    className="h-12 px-4 pr-11 focus:ring-4 focus:ring-[#2563eb]/10"
+                    id="login-password"
                     onChange={(event) => setPassword(event.target.value)}
-                    placeholder="IAM password"
+                    placeholder={
+                      loginType === "huaweiId"
+                        ? "Huawei ID password"
+                        : "IAM password"
+                    }
                     required
                     type={showPassword ? "text" : "password"}
                     value={password}
                   />
-                  <button
+                  <ConsoleIconButton
                     aria-label={showPassword ? "Hide password" : "Show password"}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#667085]"
+                    className="absolute right-2 top-1/2 -translate-y-1/2"
                     onClick={() => setShowPassword(!showPassword)}
-                    type="button"
                   >
                     {showPassword ? (
                       <EyeOff className="size-4" />
                     ) : (
                       <Eye className="size-4" />
                     )}
-                  </button>
+                  </ConsoleIconButton>
                 </span>
-              </label>
+              </ConsoleField>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="grid gap-2 text-sm font-bold">
-                IAM endpoint
-                <input
-                  className="h-12 rounded-lg border border-[#d9e0eb] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10"
+              <ConsoleField label="IAM endpoint">
+                <ConsoleInput
+                  className="h-12 px-4 focus:ring-4 focus:ring-[#2563eb]/10"
                   onChange={(event) => setIamEndpoint(event.target.value)}
                   placeholder={defaultIamEndpoint}
                   required
                   type="url"
                   value={iamEndpoint}
                 />
-              </label>
+              </ConsoleField>
             </div>
 
             {error ? (
-              <div className="rounded-xl border border-[#fecdd3] bg-[#fff1f2] p-4 text-sm font-bold leading-6 text-[#b42318]">
+              <ConsoleCallout className="leading-6">
                 {error}
-              </div>
+              </ConsoleCallout>
             ) : null}
 
-            <button
-              className="mt-2 flex h-12 items-center justify-center gap-2 rounded-lg bg-[#2563eb] px-5 text-sm font-black text-white shadow-[0_14px_32px_rgba(37,99,235,0.28)] transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-70"
+            <ConsoleButton
+              className="mt-2 h-12 font-black shadow-[0_14px_32px_rgba(37,99,235,0.28)]"
               disabled={loading}
+              size="lg"
               type="submit"
             >
               {loading ? (
@@ -225,7 +280,7 @@ export function LoginForm() {
               )}
               Sign in
               <ArrowRight className="size-4" />
-            </button>
+            </ConsoleButton>
           </form>
         </section>
       </main>

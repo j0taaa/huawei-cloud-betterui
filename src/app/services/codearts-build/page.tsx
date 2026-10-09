@@ -4,9 +4,11 @@ import { Hammer } from "lucide-react";
 
 import {
   InventoryStatus,
+  inventoryStatusTone,
   ServiceInventoryPage,
   type InventoryColumn,
 } from "@/app/services/_components/service-inventory";
+import { ResourceIdentity } from "@/components/console-ui";
 import {
   listCodeArtsBuildJobs,
   type CodeArtsBuildJob,
@@ -17,25 +19,14 @@ export const metadata: Metadata = {
   title: "CodeArts Build | Huawei Cloud Better UI",
 };
 
-function statusTone(status: string): "bad" | "good" | "neutral" | "warn" {
-  const normalized = status.toLowerCase();
-  if (["blue", "success", "succeeded", "completed"].includes(normalized)) return "good";
-  if (["red", "failed", "timeout"].includes(normalized)) return "bad";
-  if (["building", "running"].includes(normalized)) return "warn";
-  return "neutral";
-}
-
 const columns: InventoryColumn<CodeArtsBuildJob>[] = [
   {
     header: "Build task",
     render: (job) => (
-      <div>
-        <p className="font-black">{job.name}</p>
-        <p className="mt-1 break-all text-xs text-[#98a2b3]">{job.id}</p>
-      </div>
+      <ResourceIdentity id={job.id} name={job.name} />
     ),
   },
-  { header: "Last result", render: (job) => <InventoryStatus tone={statusTone(job.lastBuildStatus)}>{job.lastBuildStatus}</InventoryStatus> },
+  { header: "Last result", render: (job) => <InventoryStatus tone={inventoryStatusTone(job.lastBuildStatus)}>{job.lastBuildStatus}</InventoryStatus> },
   { header: "Branch", render: (job) => job.branch },
   { header: "Trigger", render: (job) => job.triggerType },
   { header: "Repository", render: (job) => <span className="break-all">{job.repository}</span> },
@@ -46,11 +37,12 @@ const columns: InventoryColumn<CodeArtsBuildJob>[] = [
 export default async function CodeArtsBuildPage() {
   const result = await withCloudResult<CodeArtsBuildJob[]>([], listCodeArtsBuildJobs, cloudCacheKeys.listCodeArtsBuildJobs);
   const jobs = result.data;
-  const failed = jobs.filter((job) => statusTone(job.lastBuildStatus) === "bad").length;
-  const running = jobs.filter((job) => statusTone(job.lastBuildStatus) === "warn").length;
+  const failed = jobs.filter((job) => inventoryStatusTone(job.lastBuildStatus) === "bad").length;
+  const running = jobs.filter((job) => inventoryStatusTone(job.lastBuildStatus) === "warn").length;
 
   return (
     <ServiceInventoryPage
+      managementService="codearts-build"
       actionLabel="Create build"
       actionTitle="Build task creation is disabled in this read-only view."
       active="Compute"

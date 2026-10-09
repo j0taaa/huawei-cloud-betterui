@@ -7,6 +7,7 @@ import {
   ServiceInventoryPage,
   type InventoryColumn,
 } from "@/app/services/_components/service-inventory";
+import { ResourceIdentity } from "@/components/console-ui";
 import {
   listEventGridSubscriptions,
   type EventGridSubscription,
@@ -21,10 +22,7 @@ const columns: InventoryColumn<EventGridSubscription>[] = [
   {
     header: "Subscription",
     render: (subscription) => (
-      <div>
-        <p className="font-black">{subscription.name}</p>
-        <p className="mt-1 break-all text-xs text-[#98a2b3]">{subscription.id}</p>
-      </div>
+      <ResourceIdentity id={subscription.id} name={subscription.name} />
     ),
   },
   { header: "Status", render: (subscription) => <InventoryStatus>{subscription.status}</InventoryStatus> },
@@ -42,6 +40,7 @@ export default async function EventGridPage() {
 
   return (
     <ServiceInventoryPage
+      managementService="eventgrid"
       actionLabel="Create subscription"
       actionTitle="Event subscription creation is disabled in this read-only view."
       active="Monitoring"
