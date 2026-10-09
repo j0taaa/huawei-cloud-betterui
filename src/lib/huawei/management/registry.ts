@@ -44,6 +44,7 @@ import { taurusdbManagement } from "./adapters/taurusdb";
 import { geminidbManagement } from "./adapters/geminidb";
 import { codeartsBuildManagement } from "./adapters/codearts-build";
 import { codeartsRepoManagement } from "./adapters/codearts-repo";
+import { cdmManagement } from "./adapters/cdm";
 import { sdrsManagement } from "./adapters/sdrs";
 import type { ManagementAdapter } from "./types";
 
@@ -78,6 +79,7 @@ export const managementAdapters: Record<string, ManagementAdapter> = {
   "codearts-repo": codeartsRepoManagement,
   "codearts-build": codeartsBuildManagement,
   sdrs: sdrsManagement,
+  cdm: cdmManagement,
   ecs: ecsManagement,
   dew: dewManagement,
   cdn: cdnManagement,
