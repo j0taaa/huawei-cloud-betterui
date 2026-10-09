@@ -62,6 +62,7 @@ export type ServiceKey =
   | "sms"
   | "sdrs"
   | "servicestage"
+  | "asm"
   | "taurusdb"
   | "vpn"
   | "vpcep"
@@ -131,6 +132,7 @@ export const endpointEnv: Record<ServiceKey, string> = {
   sms: "HUAWEI_SMS_ENDPOINT",
   sdrs: "HUAWEI_SDRS_ENDPOINT",
   servicestage: "HUAWEI_SERVICESTAGE_ENDPOINT",
+  asm: "HUAWEI_ASM_ENDPOINT",
   taurusdb: "HUAWEI_TAURUSDB_ENDPOINT",
   vpn: "HUAWEI_VPN_ENDPOINT",
   vpcep: "HUAWEI_VPCEP_ENDPOINT",

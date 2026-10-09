@@ -1,6 +1,7 @@
 import "server-only";
 
 export * from "@/lib/huawei/services/aom";
+export * from "@/lib/huawei/services/asm";
 export * from "@/lib/huawei/services/enterprise-projects";
 export * from "@/lib/huawei/services/dms-rabbitmq";
 export * from "@/lib/huawei/services/dms-rocketmq";

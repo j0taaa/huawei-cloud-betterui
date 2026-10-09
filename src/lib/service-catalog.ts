@@ -315,7 +315,8 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       shortName: "ASM",
       description:
         "Service mesh traffic governance and observability for microservices.",
-      status: "Catalog",
+      href: "/services/asm",
+      status: "Available",
       icon: Boxes,
       aliases: [],
     },

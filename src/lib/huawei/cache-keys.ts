@@ -79,6 +79,7 @@ export const cloudCacheKeys = {
   listSecMasterWorkspaces: "listSecMasterWorkspaces",
   listSecurityGroups: "listSecurityGroups",
   listServiceStageApplications: "listServiceStageApplications",
+  listAsmMeshes: "listAsmMeshes",
   listSfsShares: "listSfsShares",
   listSmnTopics: "listSmnTopics",
   listSmsTasks: "listSmsTasks",
