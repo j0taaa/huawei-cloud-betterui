@@ -26,6 +26,7 @@ const existingWorkflows: Record<string, string[]> = {
   "dms-kafka": ["Restart instance"],
 };
 const remainingAreas: Record<string, string[]> = {
+  "direct-connect": ["Physical circuit ordering and administration, hosted connections, global/ER gateways, and link aggregation", "BFD/NQA, QoS, complete routing and IPv6 enablement workflows", "Tags, quotas, monitoring, pricing, and billing"],
   asm: ["Mesh configuration, namespace sidecar injection, traffic governance, and release workflows", "Canary upgrades, fleet editions, advanced telemetry, and proxy settings", "Quotas, pricing, logs, metrics, and workload sidecar removal"],
   servicestage: ["Complete component configuration, variables/secrets, storage, probes, lifecycle hooks, and source builds", "VM deployment, HTTPS/certificates, templates, release pipelines, autoscaling, and quotas", "Environment updates with private variable/resource settings, runtime administration, logs, metrics, billing, and pricing"],
   cph: ["Subscription payment, renewal, cancellation, and bare server provisioning", "Private images, image lifecycle, shared/IPv6 networking, application ports, property editing, and ADB/application management", "Monitoring, quotas, pricing, recovery, and additional storage/network workflows"],

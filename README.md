@@ -153,3 +153,5 @@ ServiceStage adds application and environment lifecycle, verified CCE resource a
 ASM now has a native mesh inventory and typed Basic InCluster mesh creation with current ASM cluster choices and explicit CCE control-plane nodes, inspection, and deletion with resource-state observation. Advanced mesh configuration, injection, upgrades, and traffic governance remain tracked in coverage.
 
 FunctionGraph management adds typed inline function creation, configuration preservation, version publishing/deletion, aliases, instance limits, timer triggers, and guarded whole-function deletion. Timers default to disabled. Existing configuration edits now preserve environment data and unrelated advanced settings from fresh native configuration.
+
+Direct Connect adds virtual gateway, virtual interface, and peer lifecycle with live owned VPC/circuit choices, validated addresses, circuit capacity checks, private inspection, and guarded deletion. Creation and deletion stay submitted until native resource state confirms the result. Physical circuit ordering, advanced routing, and other console workflows remain coverage gaps.

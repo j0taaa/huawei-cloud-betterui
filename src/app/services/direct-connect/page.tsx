@@ -29,8 +29,8 @@ export default async function DirectConnectPage() {
 
   return (
     <ServiceInventoryPage
-      actionLabel="Request connection"
-      actionTitle="Direct Connect ordering is intentionally disabled in this read-only view."
+      actionLabel="Create virtual gateway"
+      managementService="direct-connect"
       active="Networking"
       backHref="/services/networking"
       backLabel="Back to Networking"
