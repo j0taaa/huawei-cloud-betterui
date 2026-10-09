@@ -90,6 +90,7 @@ function mock(t: TestContext, handle: (url: URL, init: RequestInit) => unknown =
 }
 
 function defaultHandle(url: URL, init: RequestInit): unknown {
+  if (url.searchParams.get("group_type") === "flexus" && /^\/v3\/[^/]+\/instances$/.test(url.pathname)) return { instances: [], total_count: 0 };
   if (url.origin === "https://iam.example.invalid" && url.pathname === "/v3/auth/tokens") {
     return { token: { domain: { id: domainId }, user: { id: "user-1", domain: { id: domainId } } } };
   }
@@ -520,7 +521,8 @@ test("Flexus L resource name is the product bundle name, distinct from the nativ
     { id: "l:bundle-1:server-l-1", name: "bundle-l-web" },
   );
   assert.equal(updateWrites[0].method, "PUT");
-  assert.equal(updated.jobId, "server-l-1");
+  assert.equal(updated.observationId, "server-l-1");
+  assert.equal(updated.jobId, undefined);
 });
 
 test("Flexus X mutations require the fresh native server name", async t => {
@@ -618,7 +620,8 @@ test("Flexus metadata updates verify optional acknowledged server and project ec
   const outcome = await flexusManagement.execute(session, "update-server", { currentName: "l-web", name: "l-web-2" }, lResource);
   assert.equal(writes.length, 1);
   assert.equal(outcome.asynchronous, true);
-  assert.equal(outcome.jobId, "server-l-1");
+  assert.equal(outcome.observationId, "server-l-1");
+  assert.equal(outcome.jobId, undefined);
 });
 
 test("Flexus metadata updates succeed only on a matching fresh readback", async t => {
@@ -645,14 +648,16 @@ test("Flexus metadata updates stay pending with the original server id as observ
   const { writes } = mock(t);
   const outcome = await flexusManagement.execute(session, "update-server", { currentName: "l-web", name: "l-web-2" }, lResource);
   assert.equal(outcome.asynchronous, true);
-  assert.equal(outcome.jobId, "server-l-1");
+  assert.equal(outcome.observationId, "server-l-1");
+  assert.equal(outcome.jobId, undefined);
   assert.match(outcome.message, /not visible on the fresh server state/);
   assert.deepEqual(outcome.verification, flexusUpdateFingerprint({ name: "l-web-2" }));
   assert.equal(writes.filter((write) => write.method === "PUT").length, 1);
   mock(t, url => (url.pathname === "/v1/project-1/cloudservers/server-l-1" ? { server: lServer({ description: 42 }) } : undefined));
   const unverifiedDescription = await flexusManagement.execute(session, "update-server", { currentName: "l-web", description: "notes" }, lResource);
   assert.equal(unverifiedDescription.asynchronous, true);
-  assert.equal(unverifiedDescription.jobId, "server-l-1");
+  assert.equal(unverifiedDescription.observationId, "server-l-1");
+  assert.equal(unverifiedDescription.jobId, undefined);
 });
 
 test("Flexus metadata updates send only requested fields and clear descriptions natively", async t => {
@@ -930,7 +935,8 @@ test("Main Flexus inventory uses no name or datastore heuristics", async t => {
   const { reads } = mock(t, url => (url.pathname.endsWith("/cloudservers/detail") ? { servers: [trap] } : undefined));
   const resources = await listFlexusResources(session);
   assert.deepEqual(resources, [expectedFlexusResource({ id: "l:bundle-1:server-l-1", name: "l-web", projectId: "project-1", projectName: "sa-brazil-1_team", signal: "L" })]);
-  assert.ok(reads.every((read) => !read.url.includes("rds")));
+  const rdsRead = reads.find(read => read.url.includes("rds"));
+  assert.equal(new URLSearchParams(rdsRead?.search).get("group_type"), "flexus");
   const source = readFileSync(fileURLToPath(new URL("../src/lib/huawei/services/flexus.ts", import.meta.url)), "utf8");
   assert.match(source, /flexus-native/);
   assert.doesNotMatch(source, /listEcsInstances|listRdsInstances|huawei\/services\/ecs"|huawei\/services\/rds"/);

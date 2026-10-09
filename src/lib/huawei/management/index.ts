@@ -63,7 +63,7 @@ export async function runManagementOperation(session: BetterUiSession, service: 
   const previous = operation.kind === "inspect" ? null : await readManagementHistory(session, requestId);
   if (previous) {
     if (previous.service !== service || previous.operation !== operation.label || previous.projectId !== (adapter.accountWide ? undefined : selected.projectId) || (previous.resourceId && operation.kind !== "create" && previous.resourceId !== input.resourceId)) throw new ManagementInputError("This request ID belongs to another operation.", 409);
-    if (["submitted", "succeeded"].includes(previous.state)) return { ok: true, message: previous.message ?? "This operation has already been accepted.", resourceId: previous.resultResourceId ?? previous.resourceId, jobId: previous.jobId, asynchronous: previous.state === "submitted", replayed: true };
+    if (["submitted", "succeeded"].includes(previous.state)) return { ok: true, message: previous.message ?? "This operation has already been accepted.", resourceId: previous.resultResourceId ?? previous.resourceId, jobId: previous.jobId, observationId: previous.observationId, asynchronous: previous.state === "submitted", replayed: true };
     throw new ManagementInputError(previous.state === "failed" ? `This request already failed: ${previous.message ?? "Cloud operation failed."} Start a new operation to retry.` : "This request is already being processed or its outcome is uncertain. Check operation history and cloud resource state before starting another request.", 409);
   }
   if (operation.kind !== "create" && typeof input.resourceId !== "string") throw new ManagementInputError("Select a resource for this operation.");
@@ -101,7 +101,7 @@ export async function runManagementOperation(session: BetterUiSession, service: 
     const maintenance = await Promise.allSettled([
       ...[...new Set(adapter.invalidationKeys(resource))].map((key) => invalidateCloudResult(session, key)),
       ...(operation.kind === "create" ? [deleteCreationDraft(session, { service, projectId: adapter.accountWide ? "account" : selected.projectId, operation })] : []),
-      saveManagementHistory(session, { ...entry, resourceId: entry.resourceId ?? outcome.resourceId, resultResourceId: outcome.resourceId, ...(outcome.asynchronous ? {} : { finishedAt: new Date().toISOString() }), state: outcome.asynchronous ? "submitted" : "succeeded", jobId: outcome.jobId, verification: outcome.verification, message: outcome.message }),
+      saveManagementHistory(session, { ...entry, resourceId: entry.resourceId ?? outcome.resourceId, resultResourceId: outcome.resourceId, ...(outcome.asynchronous ? {} : { finishedAt: new Date().toISOString() }), state: outcome.asynchronous ? "submitted" : "succeeded", jobId: outcome.jobId, observationId: outcome.observationId, verification: outcome.verification, message: outcome.message }),
     ]);
     if (maintenance.some((result) => result.status === "rejected")) outcome = { ...outcome, message: `${outcome.message} Local history, cache refresh, or draft cleanup failed; reload the inventory to verify cloud state. This request was accepted; do not resubmit it.` };
   }

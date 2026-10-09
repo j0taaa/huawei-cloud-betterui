@@ -46,8 +46,8 @@ export default async function FlexusPage() {
       backHref="/services"
       backLabel="Back to services"
       columns={columns}
-      description="Native Flexus L bundles and Flexus X servers, with verified identities and project scope. Management covers inspection, power actions, server metadata, and administrator password resets."
-      empty="No native Flexus L or X resources were returned."
+      description="Native Flexus L bundles, Flexus X servers, and Flexus RDS instances. Manage server power and metadata, database backups and storage autoscaling, and password resets within their original project."
+      empty="No native Flexus L, X, or RDS resources were returned."
       icon={ServerCog}
       result={result}
       rows={resources}
@@ -55,6 +55,7 @@ export default async function FlexusPage() {
         { label: "Flexus resources", value: resources.length },
         { label: "Flexus L bundles", value: lInstances },
         { label: "Flexus X servers", value: xInstances },
+        { label: "Flexus RDS instances", value: resources.filter(resource => resource.signal === "RDS").length },
         { label: "Projects", value: new Set(resources.map((resource) => resource.projectId)).size },
       ]}
       tableTitle="Flexus resources"

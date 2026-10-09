@@ -421,3 +421,40 @@ test("native cloud-job failure diagnostics never enter HTTP responses or persist
     assert.ok(!JSON.stringify(await readManagementHistory(session, id)).includes("PRIVATE-"));
   } finally { deleteSession(cookie); }
 });
+
+test("resource observations persist and refresh independently of native cloud jobs", async () => {
+  const { GET } = await import("@/app/api/cloud/operations/[id]/route");
+  const original = managementAdapters.aom;
+  const requestId = randomUUID();
+  let writes = 0;
+  let complete = false;
+  const scoped = { ...session, userId: `observation-${requestId}` };
+  managementAdapters.aom = { ...original, operations: [{ id: "change", label: "Observed change", kind: "update", description: "Observe", fields: [] }], inventory: async () => [{ id: "parent", name: "Parent" }], execute: async () => { writes++; return { message: "Accepted", resourceId: "parent", observationId: "native-child", asynchronous: true }; }, poll: async (selected, entry) => {
+    assert.equal(selected.projectId, session.projectId);
+    assert.equal(entry.resourceId, "parent");
+    assert.equal(entry.jobId, undefined);
+    assert.equal(entry.observationId, "native-child");
+    return { state: complete ? "succeeded" : "submitted", message: complete ? "Verified" : "Pending" };
+  } };
+  const cookie = createSession(scoped);
+  try {
+    const input = { requestId, operation: "change", projectId: session.projectId, resourceId: "parent", values: {} };
+    const outcome = await runManagementOperation(scoped, "aom", input);
+    assert.equal(outcome.jobId, undefined);
+    assert.equal(outcome.observationId, "native-child");
+    const replay = await runManagementOperation(scoped, "aom", input);
+    assert.equal(replay.observationId, "native-child");
+    assert.equal(writes, 1);
+    const refresh = () => withSessionCookie(cookie, () => GET(new Request(`http://localhost/api/cloud/operations/${requestId}`), { params: Promise.resolve({ id: requestId }) }));
+    const pending = await refresh();
+    assert.equal(pending.status, 200);
+    assert.equal((await pending.json()).canRefresh, true);
+    complete = true;
+    const done = await refresh();
+    const result = await done.json();
+    assert.equal(result.entry.state, "succeeded");
+    assert.equal(result.canRefresh, false);
+    assert.equal(result.entry.observationId, "native-child");
+    assert.equal(result.entry.jobId, undefined);
+  } finally { deleteSession(cookie); managementAdapters.aom = original; }
+});

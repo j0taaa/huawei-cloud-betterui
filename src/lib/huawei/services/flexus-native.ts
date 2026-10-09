@@ -645,14 +645,16 @@ function assertPollProjectScope(session: BetterUiSession, entry: ManagementHisto
 }
 
 /**
- * Observer for a pending rename/describe change: the entry's job id is the ORIGINAL server id (no
+ * Observer for a pending rename/describe change: the observation id is the ORIGINAL server id (no
  * native job exists for metadata updates), and the change is confirmed only when the fresh server's
  * current values hash to the stored fingerprint over the same field schema.
  */
 async function pollFlexusUpdateObserver(session: BetterUiSession, entry: ManagementHistoryEntry): Promise<FlexusPollOutcome> {
   assertPollProjectScope(session, entry);
   const target = parseFlexusResourceId(entry.resourceId);
-  const observerId = typeof entry.jobId === "string" ? entry.jobId.trim() : "";
+  // Keep previously persisted rename observations refreshable.
+  const reference = entry.observationId ?? entry.jobId;
+  const observerId = typeof reference === "string" ? reference.trim() : "";
   if (!observerId || observerId !== target.serverId) {
     throw new ManagementInputError("This history entry is not a pending Flexus rename observation.", 409);
   }

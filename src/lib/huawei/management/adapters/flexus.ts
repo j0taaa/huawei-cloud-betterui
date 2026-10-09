@@ -23,6 +23,7 @@ import type { ManagementAdapter } from "../types";
 import type { BetterUiSession } from "@/lib/auth-session";
 import type { ManagementResource } from "@/lib/management-contract";
 import { finishCloudLoad } from "@/lib/huawei/errors";
+import { flexusRdsManagement } from "./flexus-rds";
 
 /*
  * Explicit console gaps left for root coverage; none of these has a verified live contract in the
@@ -33,7 +34,6 @@ import { finishCloudLoad } from "@/lib/huawei/errors";
  *   an ECS delete is never used to bypass prepaid unsubscription.
  * - Flexus X creation and performance resize require the current live X flavor catalog with exact
  *   x1.Nu.Ng / x1e.Nu.Ng flavorRef values and prepaid quota proof.
- * - Flexus RDS has no verified native inventory contract yet.
  * - Tag lifecycle operations have no verified Flexus contract in the reviewed notes.
  * - Hostname changes (which require a restart) are not exposed by the metadata update.
  *
@@ -188,20 +188,23 @@ async function flexusPlaneInventory(session: BetterUiSession, kind: "l" | "x"): 
 }
 
 export const flexusManagement: ManagementAdapter = {
-  title: "Flexus Cloud Servers",
-  operations,
+  title: "Flexus",
+  operations: [...operations, ...flexusRdsManagement.operations],
   inventory: async (session) => {
-    const results = await Promise.allSettled([flexusPlaneInventory(session, "l"), flexusPlaneInventory(session, "x")]);
-    return finishCloudLoad(results, results.flatMap(result => result.status === "fulfilled" ? result.value : []), ["Flexus L", "Flexus X"]);
+    const results = await Promise.allSettled([flexusPlaneInventory(session, "l"), flexusPlaneInventory(session, "x"), flexusRdsManagement.inventory(session)]);
+    return finishCloudLoad(results, results.flatMap(result => result.status === "fulfilled" ? result.value : []), ["Flexus L", "Flexus X", "Flexus RDS"]);
   },
-  inventoryForResource: (session, id) => flexusPlaneInventory(session, parseFlexusResourceId(id).kind),
-  poll: async (session, entry) => pollNativeFlexusJob(session, entry),
+  inventoryForResource: (session, id) => id.startsWith("rds:") ? flexusRdsManagement.inventory(session) : flexusPlaneInventory(session, parseFlexusResourceId(id).kind),
+  options: (session, operation, resource) => flexusRdsManagement.operations.some(item => item.id === operation) ? flexusRdsManagement.options!(session, operation, resource) : Promise.resolve({}),
+  poll: async (session, entry) => entry.resourceId?.startsWith("rds:") ? flexusRdsManagement.poll!(session, entry) : pollNativeFlexusJob(session, entry),
   invalidationKeys: (resource) => {
+    if (resource?.id.startsWith("rds:")) return [cloudCacheKeys.listFlexusResources, ...flexusRdsManagement.invalidationKeys(resource)];
     const serverId = resource ? parseFlexusResourceId(resource.id).serverId : undefined;
     return [cloudCacheKeys.listFlexusResources, cloudCacheKeys.listEcsInstances, cloudCacheKeys.summary,
       ...(serverId ? [cloudCacheKeys.ecs(serverId), cloudCacheKeys.ecsMonitoring(serverId), cloudCacheKeys.ecsSnapshots(serverId)] : [])];
   },
   execute: async (session, operation, values, resource): Promise<ManagementOutcome> => {
+    if (flexusRdsManagement.operations.some(item => item.id === operation)) return flexusRdsManagement.execute(session, operation, values, resource);
     const target = parseFlexusResourceId(resource?.id);
     const mutation = operation !== "inspect";
     const selectedName = typeof resource?.name === "string" ? resource.name : "";
@@ -258,7 +261,7 @@ export const flexusManagement: ManagementAdapter = {
       return {
         message: "Server name and description update accepted; the change is not visible on the fresh server state yet and stays pending.",
         resourceId: resource!.id,
-        jobId: target.serverId,
+        observationId: target.serverId,
         asynchronous: true,
         verification,
       };

@@ -13,7 +13,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     const entry = await readManagementHistory(session, id);
     if (!entry) throw new ManagementInputError("Operation not found.", 404);
     const adapter = Object.hasOwn(managementAdapters, entry.service) ? managementAdapters[entry.service] : undefined;
-    if (entry.state !== "submitted" || !entry.jobId || !adapter?.poll) return Response.json({ entry, canRefresh: false });
+    if (entry.state !== "submitted" || (!entry.jobId && !entry.observationId) || !adapter?.poll) return Response.json({ entry, canRefresh: false });
     const project = getSessionProjects(session).find((project) => project.projectId === entry.projectId);
     if (!project && !adapter.accountWide) throw new ManagementInputError("The operation's project is no longer in this session.", 403);
     const selected = adapter.accountWide ? session : { ...session, ...project!, projects: [project!] };

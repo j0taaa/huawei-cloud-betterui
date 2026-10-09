@@ -15,6 +15,7 @@ let failCosts = false;
 let showRdsDetails = false;
 let failRdsBackups = false;
 let failAom = true;
+let flexusBackupCreated = false;
 const billingMonth = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Asia/Shanghai",
   year: "numeric",
@@ -219,7 +220,20 @@ const mock = createServer(async (req, res) => {
   else if (url.pathname.startsWith("/css/")) body = url.pathname.endsWith("/es-flavors") ? { versions: [{ version: "7.10.2", type: "ess", flavors: [{ name: "ess.spec", flavor_id: "css-flavor", cpu: 2, ram: 8, diskrange: "40,800", availableAZ: "az-1" }] }] } : { clusters: [], total_count: 0 };
   else if (url.pathname.startsWith("/cce/")) body = { items: [] };
   else if (url.pathname.startsWith("/rds/")) {
-    if (url.pathname.includes("/flavors/")) body = { flavors: [{ instance_mode: "single", version_name: ["8.0"], spec_code: "rds.single", vcpus: "2", ram: 4096, az_status: { "az-1": "normal" }, az_desc: { "az-1": "Zone 1" } }] };
+    if (url.searchParams.get("group_type") === "flexus") {
+      assert.equal(url.searchParams.get("datastore_type"), "MySQL");
+      assert.equal(req.headers["x-auth-token"], "mock-project-token");
+      body = { instances: [{ id: "flexus-db", name: "Flexus database", status: "ACTIVE", region: "sa-brazil-1", datastore: { type: "MySQL", version: "8.0" }, charge_info: { charge_mode: "prePaid" }, volume: { size: 100 } }], total_count: 1 };
+    } else if (url.pathname === `/rds/v3/${projectId}/backups` && req.method === "POST") {
+      let raw = ""; for await (const chunk of req) raw += chunk;
+      const input = JSON.parse(raw);
+      assert.deepEqual(input, { instance_id: "flexus-db", name: "Browser-Backup" });
+      flexusBackupCreated = true;
+      body = { backup: { id: "flexus-backup", name: input.name, instance_id: "flexus-db", type: "manual", status: "BUILDING" } };
+    } else if (url.pathname === `/rds/v3/${projectId}/backups` && url.searchParams.get("instance_id") === "flexus-db") {
+      body = { backups: flexusBackupCreated ? [{ id: "flexus-backup", name: "Browser-Backup", instance_id: "flexus-db", type: "manual", status: "COMPLETED" }] : [], total_count: flexusBackupCreated ? 1 : 0 };
+    }
+    else if (url.pathname.includes("/flavors/")) body = { flavors: [{ instance_mode: "single", version_name: ["8.0"], spec_code: "rds.single", vcpus: "2", ram: 4096, az_status: { "az-1": "normal" }, az_desc: { "az-1": "Zone 1" } }] };
     else if (url.pathname.includes("/storage-type/")) body = { storage_type: [{ name: "ULTRAHIGH", az_status: { "az-1": "normal" } }] };
     else if (showRdsDetails) {
       const backups = url.pathname.includes("/backups");

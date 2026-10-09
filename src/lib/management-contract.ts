@@ -35,6 +35,8 @@ export type ManagementResource = {
 export type ManagementValues = Record<string, string | number | boolean | string[]>;
 export type ManagementVerification = { fields: string[]; digest: string };
 export type ManagementOutcome = {
+  /** Original native resource observation reference; never presented as a cloud job. */
+  observationId?: string;
   verification?: ManagementVerification;
   message: string;
   resourceId?: string;
@@ -43,6 +45,7 @@ export type ManagementOutcome = {
   facts?: Array<{ label: string; value: string }>;
 };
 export type ManagementHistoryEntry = {
+  observationId?: string;
   observedTask?: string;
   verification?: ManagementVerification;
   resultResourceId?: string;

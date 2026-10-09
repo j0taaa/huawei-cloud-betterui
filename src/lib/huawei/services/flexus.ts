@@ -10,6 +10,8 @@ import {
   type FlexusXNativeInstance,
 } from "@/lib/huawei/services/flexus-native";
 
+import { listNativeFlexusRdsInstances, type NativeFlexusRdsInstance } from "./flexus-rds-native";
+
 export type FlexusResource = {
   createdAt: string;
   id: string;
@@ -28,8 +30,7 @@ export type FlexusResource = {
  * Native Flexus inventory across every session project: Flexus L bundles come from the account RMS
  * catalog with their exact l:bundle:server identity, and Flexus X servers come from the project ECS
  * catalog with the documented x1/x1e flavor grammar. No name, image, or datastore heuristic is
- * used; Flexus RDS has no verified native contract yet and stays an explicit gap, so every resource
- * is ECS-backed. Created times and IP addresses stay unknown ("-") until a verified fresh source
+ * used; Flexus RDS instances come from the project RDS API with the native group_type=flexus filter. Created times and IP addresses stay unknown ("-") until a verified fresh source
  * provides them, and per-plane load failures stay visible while the remaining partial inventory is
  * still shown.
  */
@@ -71,6 +72,10 @@ function flexusXResource(projectName: string, instance: FlexusXNativeInstance): 
   };
 }
 
+function flexusRdsResource(projectName: string, instance: NativeFlexusRdsInstance): FlexusResource {
+  return { createdAt: "-", id: `rds:${instance.id}`, name: instance.name, privateIp: "-", projectId: instance.projectId, projectName, publicIp: "-", region: instance.region, signal: "RDS", sourceService: "RDS", status: instance.status };
+}
+
 export async function listFlexusResources(session: BetterUiSession) {
   const projects = sessionProjects(session);
   const loads = projects.flatMap((project: HuaweiProjectSession) => {
@@ -83,6 +88,10 @@ export async function listFlexusResources(session: BetterUiSession) {
       {
         context: `Flexus X in ${project.projectName} (${project.region})`,
         run: async () => (await listNativeFlexusXInstances(projectSession)).map((instance) => flexusXResource(projectSession.projectName, instance)),
+      },
+      {
+        context: `Flexus RDS in ${project.projectName} (${project.region})`,
+        run: async () => (await listNativeFlexusRdsInstances(projectSession)).map((instance) => flexusRdsResource(projectSession.projectName, instance)),
       },
     ];
   });
