@@ -1,5 +1,6 @@
 import "server-only";
 import { workspaceManagement } from "./adapters/workspace";
+import { packagesManagement } from "./adapters/packages";
 import { enterpriseProjectsManagement } from "./adapters/enterprise-projects";
 import { aomManagement } from "./adapters/aom";
 import { messagingManagement } from "./adapters/messaging";
@@ -68,6 +69,7 @@ import type { ManagementAdapter } from "./types";
 
 export const managementAdapters: Record<string, ManagementAdapter> = {
   workspace: workspaceManagement,
+  packages: packagesManagement,
   cc: cloudConnectManagement,
   mrs: mrsManagement,
   "enterprise-projects": enterpriseProjectsManagement,

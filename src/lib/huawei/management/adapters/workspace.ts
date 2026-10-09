@@ -185,7 +185,7 @@ async function networkChoice(session: BetterUiSession, subnetId: string, tenant:
     const page = await huaweiFetch<Record<string, unknown>>(session, "vpc", `/v1/${session.projectId}/subnets?${query}`);
     strictRows(page.subnets, "VPC subnet", ["id"]);
     return page;
-  }, { items: ["subnets"], kind: "marker", parameter: "marker", size: 100, next: ["page_info.next_marker", "next_marker"] });
+  }, { items: ["subnets"], kind: "marker", parameter: "marker", size: 100, next: ["page_info.next_marker", "next_marker"], fallbackKey: "id" });
   const vpcSubnets = strictRows(body.subnets, "VPC subnet", ["id"]);
   if (subnet.status !== "ACTIVE" || !vpcSubnets.some((row) => row.vpc_id === vpcId && row.id === subnetId && row.neutron_subnet_id === networkId && row.status === "ACTIVE")) throw new ManagementInputError("The selected subnet could not be verified against the project's VPC subnets.");
   return { networkId, vpcId };

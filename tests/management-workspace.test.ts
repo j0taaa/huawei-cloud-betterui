@@ -744,6 +744,23 @@ test("root: subnet identity must match both native VPC fields exactly", async t 
   assert.equal(cloud.writes.length, 0);
 });
 
+test("root: VPC subnet pagination follows the documented ID marker when no page info is returned", async t => {
+  const cloud = mockCloud(t);
+  const markers: (string | null)[] = [];
+  const original = globalThis.fetch;
+  t.mock.method(globalThis, "fetch", async (input: string, init?: RequestInit) => {
+    const url = new URL(input);
+    if (!init?.method && url.pathname === "/v1/project-1/subnets") {
+      markers.push(url.searchParams.get("marker"));
+      return Response.json({ subnets: url.searchParams.has("marker") ? vpcSubnets : Array.from({ length: 100 }, (_, index) => ({ id: `subnet-${index}`, vpc_id: "vpc-1", neutron_subnet_id: `native-${index}`, status: "ACTIVE" })) });
+    }
+    return original(input, init);
+  });
+  assert.equal((await workspaceManagement.execute(session, "create-desktop", createDesktopValues)).jobId, "cloud-job");
+  assert.deepEqual(markers, [null, "subnet-99"]);
+  assert.equal(cloud.writes.length, 1);
+});
+
 test("root: missing or numeric tenant configuration and subnet totals block provisioning", async t => {
   const cloud = mockCloud(t, { tenant: { ...tenant, config_status: 0 } });
   await assert.rejects(workspaceManagement.execute(session, "create-desktop", createDesktopValues), /fully configured/);

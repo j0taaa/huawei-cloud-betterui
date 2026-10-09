@@ -71,6 +71,7 @@ export * from "@/lib/huawei/services/vpc";
 export * from "@/lib/huawei/services/vpn";
 export * from "@/lib/huawei/services/waf";
 export * from "@/lib/huawei/services/workspace";
+export * from "@/lib/huawei/services/packages";
 export * from "@/lib/huawei/services/as";
 export * from "@/lib/huawei/services/swr";
 export * from "@/lib/huawei/services/billing";
