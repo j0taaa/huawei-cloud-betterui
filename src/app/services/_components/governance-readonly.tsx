@@ -16,6 +16,7 @@ import { LocalDateTime } from "@/components/local-date-time";
 import type { CloudResult } from "@/lib/huawei-cloud";
 
 type GovernanceShellProps = {
+  actions?: React.ReactNode;
   active: "Monitoring" | "Security";
   backHref: string;
   backLabel: string;
@@ -49,6 +50,7 @@ const statusIntentMap: Record<"good" | "muted" | "warn" | "bad" | "info", Status
 };
 
 export function GovernanceShell({
+  actions,
   active,
   backHref,
   backLabel,
@@ -65,7 +67,7 @@ export function GovernanceShell({
       <ConsoleMain>
         <ConsolePageHeader
           actions={
-            <RefreshButton />
+            <>{actions}<RefreshButton /></>
           }
           backHref={backHref}
           backLabel={backLabel}

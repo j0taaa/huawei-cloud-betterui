@@ -33,6 +33,13 @@ export async function parseError(response: Response) {
   return `${response.status} ${message}`;
 }
 
+/** Normalize all standard HeadersInit forms before merging authentication and service headers. */
+export function huaweiRequestHeaders(session: HuaweiProjectSession, supplied?: HeadersInit) {
+  const headers = new Headers({ "Content-Type": "application/json;charset=utf8", "X-Auth-Token": session.token });
+  new Headers(supplied).forEach((value, name) => headers.set(name, value));
+  return headers;
+}
+
 export async function huaweiFetch<T>(
   session: HuaweiProjectSession,
   service: ServiceKey,
@@ -44,11 +51,7 @@ export async function huaweiFetch<T>(
     {
       ...init,
       cache: "no-store",
-      headers: {
-        "Content-Type": "application/json;charset=utf8",
-        "X-Auth-Token": session.token,
-        ...init?.headers,
-      },
+      headers: huaweiRequestHeaders(session, init?.headers),
     },
   );
 
@@ -70,11 +73,7 @@ export async function huaweiAccountFetch<T>(
     {
       ...init,
       cache: "no-store",
-      headers: {
-        "Content-Type": "application/json;charset=utf8",
-        "X-Auth-Token": session.token,
-        ...init?.headers,
-      },
+      headers: huaweiRequestHeaders(session, init?.headers),
     },
   );
 

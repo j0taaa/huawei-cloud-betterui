@@ -1,8 +1,9 @@
-import { asRecord, firstString } from "@/lib/huawei/parsers";
+import { asRecord } from "@/lib/huawei/parsers";
 import "server-only";
 import { createHmac } from "node:crypto";
 import type { BetterUiSession, HuaweiProjectSession } from "@/lib/auth-session";
 import { createObsCredential } from "@/lib/huawei/services/obs";
+import { HuaweiApiError, huaweiRequestHeaders } from "@/lib/huawei/http";
 import { serviceEndpoint } from "@/lib/huawei/endpoints";
 export async function downloadFunctionGraphCodeLink(
   session: BetterUiSession,
@@ -32,10 +33,7 @@ export async function downloadFunctionGraphCodeLink(
   });
 
   if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(
-      `Function code download returned ${response.status}: ${text.slice(0, 160)}`,
-    );
+    throw new HuaweiApiError(`Function code download returned ${response.status}.`, response.status);
   }
 
   return Buffer.from(await response.arrayBuffer()).toString("base64");
@@ -63,24 +61,21 @@ export async function functionGraphFetchWithHeaders(
     {
       ...init,
       cache: "no-store",
-      headers: {
-        "Content-Type": "application/json;charset=utf8",
-        "X-Auth-Token": session.token,
-        ...init?.headers,
-      },
+      headers: huaweiRequestHeaders(session, init?.headers),
     },
   );
   const text = await response.text().catch(() => "");
 
   if (!response.ok) {
-    const body = asRecord(parseJsonOrText(text));
-    const message = firstString(
-      [body.error_msg, body.message, body.errorMessage, response.statusText],
-      "Huawei FunctionGraph request failed.",
-    );
-
-    throw new Error(`${response.status} ${message}`);
+    throw new HuaweiApiError(`Huawei rejected this FunctionGraph request (${response.status}).`, response.status);
+  }
+  const parsed = parseJsonOrText(text);
+  // Invocation output belongs to the function and may legitimately be text or contain error-like keys.
+  if (!path.split("?", 1)[0].endsWith("/invocations")) {
+    if (typeof parsed === "string") throw new Error("Huawei returned an unverifiable FunctionGraph response. Check native state before retrying.");
+    const row = asRecord(parsed);
+    if (row.error_code !== undefined && String(row.error_code) !== "0") throw new HuaweiApiError("Huawei rejected this FunctionGraph request.", 502);
   }
 
-  return { body: parseJsonOrText(text), response };
+  return { body: parsed, response };
 }

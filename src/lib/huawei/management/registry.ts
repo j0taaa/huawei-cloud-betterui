@@ -51,6 +51,7 @@ import { mgcManagement } from "./adapters/mgc";
 import { smsManagement } from "./adapters/sms";
 import { serviceStageManagement } from "./adapters/servicestage";
 import { asmManagement } from "./adapters/asm";
+import { hssManagement } from "./adapters/hss";
 import { drsManagement } from "./adapters/drs";
 import { directConnectManagement } from "./adapters/direct-connect";
 import { functionGraphManagement } from "./adapters/functiongraph";
@@ -104,6 +105,7 @@ export const managementAdapters: Record<string, ManagementAdapter> = {
   functiongraph: functionGraphManagement,
   "direct-connect": directConnectManagement,
   drs: drsManagement,
+  hss: hssManagement,
   ecs: ecsManagement,
   dew: dewManagement,
   cdn: cdnManagement,

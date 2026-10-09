@@ -5,13 +5,13 @@ import {
   GovernanceShell,
   StatStrip,
 } from "@/app/services/_components/governance-readonly";
-import { ConsolePanel, DataFreshnessText } from "@/components/console-ui";
+import { ConsolePanel, ConsoleLinkButton, DataFreshnessText } from "@/components/console-ui";
 import { HssHostsTable, type HssHostRow } from "@/components/hss-hosts-table";
 import { listHssHosts, withCloudResult } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
   title: "HSS | Huawei Cloud Better UI",
-  description: "Read-only Host Security Service host risk posture.",
+  description: "Host Security Service protection and host risk posture.",
 };
 
 export default async function HssPage() {
@@ -24,6 +24,7 @@ export default async function HssPage() {
 
   return (
     <GovernanceShell
+      actions={<ConsoleLinkButton href="/services/hss/manage?operation=create-group">Create host group</ConsoleLinkButton>}
       active="Security"
       backHref="/services/security"
       backLabel="Back to Security"
