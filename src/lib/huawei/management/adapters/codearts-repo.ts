@@ -58,7 +58,7 @@ function v3Outcome(body: unknown, action: string) {
   const record = asRecord(body);
   if (typeof record.error === "string" && record.error.trim()) throw new ManagementInputError(`${action} was rejected by CodeArts: ${record.error}`, 409);
   const error = asRecord(record.error);
-  if (Object.keys(error).length) throw new ManagementInputError(`${action} was rejected by CodeArts: ${firstString([error.message, error.code], "the repository service reported an error.")}`, 409);
+  if (Object.keys(error).length) throw new ManagementInputError(`${action} was rejected by CodeArts. Check the repository state and native task details before retrying.`, 409);
   const status = typeof record.status === "string" ? record.status.trim().toLowerCase() : "";
   if (status && status !== "success") throw new ManagementInputError(`${action} was rejected by CodeArts (status ${record.status}).`, 409);
   if (!status) throw new Error(`${action} returned no verified success status. Check the repository before submitting another request.`);

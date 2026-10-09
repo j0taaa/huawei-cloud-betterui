@@ -203,8 +203,8 @@ export const gaussdbManagement: ManagementAdapter = {
     const resourceId = firstString([asRecord(job.instance).id], "") || undefined;
     if (entry.resourceId && resourceId && entry.resourceId !== resourceId) throw new ManagementInputError("The GaussDB job does not belong to the selected instance.");
     if (status === "completed") return { state: "succeeded", message: "The GaussDB cloud job completed successfully.", resourceId };
-    if (status === "failed") return { state: "failed", message: firstString([job.fail_reason], "The GaussDB cloud job failed. Review the instance status before retrying.") };
-    return { state: "submitted", message: `The GaussDB cloud job is ${status || "still processing"}.` };
+    if (status === "failed") return { state: "failed", message: "The GaussDB cloud job failed. Review the instance status before retrying." };
+    return { state: "submitted", message: "The GaussDB cloud job is still processing." };
   },
   invalidationKeys: (resource) => [cloudCacheKeys.listGaussDbInstances, cloudCacheKeys.summary, ...(resource ? [cloudCacheKeys.gaussDb(resource.id)] : [])],
   execute: async (session, operation, values, resource) => {

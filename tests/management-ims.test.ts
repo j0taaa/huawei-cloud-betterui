@@ -227,7 +227,7 @@ test("IMS job polling maps native job states and surfaces created images", async
   response = { status: "FAIL", fail_reason: "Insufficient image quota", entities: {} };
   outcome = await imsManagement.poll!(session, entry);
   assert.equal(outcome.state, "failed");
-  assert.match(outcome.message ?? "", /Insufficient image quota/);
+  assert.match(outcome.message ?? "", /image job failed/);
   response = { status: "RUNNING", entities: { process_percent: 0.4 } };
   outcome = await imsManagement.poll!(session, entry);
   assert.equal(outcome.state, "submitted");

@@ -152,8 +152,8 @@ export const rdsManagement: ManagementAdapter = {
     const status = String(job.status ?? "").toLowerCase();
     const resourceId = firstString([asArray(asRecord(job.entities).resource_ids)[0]], "") || undefined;
     if (status === "completed") return { state: "succeeded", message: "The RDS cloud job completed successfully.", resourceId };
-    if (status === "failed") return { state: "failed", message: firstString([job.fail_reason], "The RDS cloud job failed. Review the instance status before retrying.") };
-    return { state: "submitted", message: `The RDS cloud job is ${status || "still processing"}.` };
+    if (status === "failed") return { state: "failed", message: "The RDS cloud job failed. Review the instance status before retrying." };
+    return { state: "submitted", message: "The RDS cloud job is still processing." };
   },
   invalidationKeys: (resource) => [cloudCacheKeys.listRdsInstances, cloudCacheKeys.summary, ...(resource ? [cloudCacheKeys.rds(resource.id)] : [])],
   execute: async (session, operation, values, resource) => {

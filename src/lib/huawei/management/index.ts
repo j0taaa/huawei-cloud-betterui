@@ -65,7 +65,10 @@ export async function runManagementOperation(session: BetterUiSession, service: 
     if (["submitted", "succeeded"].includes(previous.state)) return { ok: true, message: previous.message ?? "This operation has already been accepted.", resourceId: previous.resultResourceId ?? previous.resourceId, jobId: previous.jobId, asynchronous: previous.state === "submitted", replayed: true };
     throw new ManagementInputError(previous.state === "failed" ? `This request already failed: ${previous.message ?? "Cloud operation failed."} Start a new operation to retry.` : "This request is already being processed or its outcome is uncertain. Check operation history and cloud resource state before starting another request.", 409);
   }
-  const resource = operation.kind === "create" ? undefined : (await adapter.inventory(selected)).find((resource) => resource.id === input.resourceId);
+  if (operation.kind !== "create" && typeof input.resourceId !== "string") throw new ManagementInputError("Select a resource for this operation.");
+  const resource = operation.kind === "create" ? undefined : (await (adapter.inventoryForResource
+    ? adapter.inventoryForResource(selected, input.resourceId as string)
+    : adapter.inventory(selected))).find((resource) => resource.id === input.resourceId);
   if (operation.kind !== "create" && !resource) throw new ManagementInputError("The resource was not found in the selected project.", 404);
   if (resource && operation.resourcePrefixes && !operation.resourcePrefixes.some((prefix) => resource.id.startsWith(prefix))) throw new ManagementInputError("Select a resource of the correct type for this operation.", 409);
   if (resource && operation.excludedResourceIds?.includes(resource.id)) throw new ManagementInputError("This operation is unavailable for the default or protected resource.", 409);

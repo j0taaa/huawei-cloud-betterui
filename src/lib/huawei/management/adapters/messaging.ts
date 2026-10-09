@@ -172,7 +172,7 @@ export function messagingManagement(engine: MessagingEngine): ManagementAdapter 
       const response = await huaweiFetch<Record<string, unknown>>(session, engine, url, { method, ...(input ? { body: JSON.stringify(input) } : {}) });
       const results = asArray(response.results).map(asRecord);
       const rejected = results.filter((result) => result.result === "failed" || result.success === false || (result.error_code && result.error_code !== "0"));
-      if (rejected.length) throw new Error(firstString([rejected[0].error_msg, rejected[0].message], "Huawei rejected the messaging operation."));
+      if (rejected.length) throw new Error("Huawei rejected the messaging operation. Check the instance state and native task details before retrying.");
       return { message: `${operations.concat(engine === "rabbitmq" ? rabbitOperations : rocketOperations).find((item) => item.id === operation)?.label ?? "Messaging operation"} ${["create", "delete", "restart", "expand-storage"].includes(operation) ? "submitted" : "completed"}.`, resourceId: firstString([response.instance_id, response.id, resource?.id], "") || undefined, jobId: firstString([response.job_id, response.task_id], "") || undefined, asynchronous: ["create", "delete", "restart", "expand-storage"].includes(operation) };
     },
   };

@@ -217,8 +217,8 @@ export const taurusdbManagement: ManagementAdapter = {
     const resourceId = firstString([asRecord(job.instance).id], "") || undefined;
     if (entry.resourceId && resourceId && resourceId !== entry.resourceId) throw new ManagementInputError("The TaurusDB job does not belong to the selected instance.");
     if (status === "completed") return { state: "succeeded", message: "The TaurusDB cloud job completed successfully.", resourceId };
-    if (status === "failed") return { state: "failed", message: firstString([job.fail_reason], "The TaurusDB cloud job failed. Review the instance status before retrying.") };
-    return { state: "submitted", message: `The TaurusDB cloud job is ${status || "still processing"}.` };
+    if (status === "failed") return { state: "failed", message: "The TaurusDB cloud job failed. Review the instance status before retrying." };
+    return { state: "submitted", message: "The TaurusDB cloud job is still processing." };
   },
   invalidationKeys: (resource) => [cloudCacheKeys.listTaurusDbInstances, cloudCacheKeys.summary, ...(resource ? [cloudCacheKeys.taurusDb(resource.id)] : [])],
   execute: async (session, operation, values, resource) => {

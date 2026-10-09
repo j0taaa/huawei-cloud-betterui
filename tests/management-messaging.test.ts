@@ -88,6 +88,6 @@ test("messaging expansion refuses shrinking storage and propagates background fa
   t.mock.method(globalThis, "fetch", async (url: string, init: RequestInit) => { if (!init.method) return Response.json(response(new URL(url))); writes++; return Response.json({ results: [{ instance: "broker-1", result: "failed", error_msg: "Restart not allowed" }] }); });
   await assert.rejects(runManagementOperation(session, "dms-rabbitmq", input("expand-storage", { storage: 200 })), /must exceed/);
   assert.equal(writes, 0);
-  await assert.rejects(runManagementOperation(session, "dms-rabbitmq", input("restart")), /Restart not allowed/);
+  await assert.rejects(runManagementOperation(session, "dms-rabbitmq", input("restart")), /Huawei rejected/);
   assert.equal(writes, 1);
 });

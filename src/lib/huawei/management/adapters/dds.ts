@@ -236,8 +236,8 @@ export const ddsManagement: ManagementAdapter = {
     const resourceId = firstString([asRecord(job.instance).id], "") || undefined;
     if (entry.resourceId && resourceId !== entry.resourceId) throw new ManagementInputError("The DDS job does not belong to the selected instance.");
     if (status === "completed") return { state: "succeeded", message: "The DDS cloud job completed successfully.", resourceId };
-    if (status === "failed") return { state: "failed", message: firstString([job.fail_reason], "The DDS cloud job failed. Review the instance status before retrying.") };
-    return { state: "submitted", message: `The DDS cloud job is ${status || "still processing"}.` };
+    if (status === "failed") return { state: "failed", message: "The DDS cloud job failed. Review the instance status before retrying." };
+    return { state: "submitted", message: "The DDS cloud job is still processing." };
   },
   invalidationKeys: (resource) => [cloudCacheKeys.listDdsInstances, cloudCacheKeys.summary, ...(resource ? [cloudCacheKeys.dds(resource.id)] : [])],
   execute: async (session, operation, values, resource) => {

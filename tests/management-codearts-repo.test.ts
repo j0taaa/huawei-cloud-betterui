@@ -98,7 +98,7 @@ test("Repository creation rejects HTTP 200 native error envelopes", async t => {
     if (method === "POST" && url.pathname === "/v1/repositories") return { error: { code: "RepoDuplicateName", message: "repository name already exists" }, result: null, status: "failed" };
     return undefined;
   });
-  await assert.rejects(codeartsRepoManagement.execute(session, "create-repository", { workspace: workspaceId, name: "orders-service" }), /rejected by CodeArts.*repository name already exists/);
+  await assert.rejects(codeartsRepoManagement.execute(session, "create-repository", { workspace: workspaceId, name: "orders-service" }), /rejected by CodeArts/);
 });
 
 test("Repository creation rejects a failed native status without an error object", async t => {
@@ -153,7 +153,7 @@ test("Repository deletion refuses unverified UUIDs and unconfirmed native result
   });
   await assert.rejects(codeartsRepoManagement.execute(session, "delete", {}, resource), /UUID could not be verified/);
   missingUuid = false; nativeReject = true;
-  await assert.rejects(codeartsRepoManagement.execute(session, "delete", {}, resource), /rejected by CodeArts.*running pipelines/);
+  await assert.rejects(codeartsRepoManagement.execute(session, "delete", {}, resource), /rejected by CodeArts/);
   nativeReject = false; silentResult = true;
   await assert.rejects(codeartsRepoManagement.execute(session, "delete", {}, resource), /did not confirm repository deletion/);
 });

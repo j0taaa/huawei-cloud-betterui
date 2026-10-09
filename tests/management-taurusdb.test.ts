@@ -369,7 +369,8 @@ test("job polling maps native job states and rejects foreign jobs", async (t) =>
   assert.equal(succeeded.resourceId, "taurus-1");
   const failed = await taurusdbManagement.poll!(session, entry);
   assert.equal(failed.state, "failed");
-  assert.match(failed.message!, /Insufficient quota/);
+  assert.match(failed.message!, /cloud job failed/);
+  assert.ok(!failed.message!.includes("Insufficient quota"));
   const running = await taurusdbManagement.poll!(session, entry);
   assert.equal(running.state, "submitted");
   await assert.rejects(taurusdbManagement.poll!(session, entry), /different TaurusDB job/);

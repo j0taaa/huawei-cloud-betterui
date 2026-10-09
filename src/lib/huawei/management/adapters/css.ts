@@ -228,7 +228,7 @@ export const cssManagement: ManagementAdapter = {
         }),
         { label: "Automatic snapshots", value: policy.backupEnable === true ? `${firstString([policy.bakFrequency], "-")} at ${firstString([policy.bakPeriod], "-")}, kept ${String(policy.bakKeepDay ?? "-")} days` : "Disabled" },
         ...(asArray(detail.actions).length ? [{ label: "Tasks in progress", value: asArray(detail.actions).map(String).join(", ") }] : []),
-        ...(firstString([failed.errorCode], "") ? [{ label: "Last failure", value: [firstString([failed.errorCode], ""), firstString([failed.errorMsg, failed.error_msg], "")].filter(Boolean).join(": ") }] : []),
+        ...(firstString([failed.errorCode], "") ? [{ label: "Last failure", value: "Huawei reported a failure. Check native task details for diagnostics." }] : []),
       ] };
     }
     if (operation === "restart") {

@@ -90,7 +90,7 @@ function assertPassword(value: string) {
 function assertResults(response: Record<string, unknown>, id: string) {
   const results = asArray(response.results).map(asRecord);
   const own = results.find((result) => firstString([result.instance], "") === id);
-  if (!own || own.result !== "success") throw new Error(firstString([own?.error_msg, own?.message], "Huawei rejected the DCS Redis operation."));
+  if (!own || own.result !== "success") throw new Error("Huawei rejected the DCS Redis operation. Check the instance state and native task details before retrying.");
 }
 
 export const dcsManagement: ManagementAdapter = {
@@ -111,7 +111,7 @@ export const dcsManagement: ManagementAdapter = {
     if (operation === "configure-backup-policy") return { weekdays: [1, 2, 3, 4, 5, 6, 7].map((day) => choice(String(day), ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][day - 1])) };
     return {};
   },
-  invalidationKeys: () => [cloudCacheKeys.listDcsRedisInstances, cloudCacheKeys.summary],
+  invalidationKeys: (resource) => [cloudCacheKeys.listDcsRedisInstances, cloudCacheKeys.summary, ...(resource ? [`dcs-instance:${resource.id}`] : [])],
   execute: async (session, operation, values, resource) => {
     const base = `/v2/${session.projectId}/instances`;
     if (operation === "create") {

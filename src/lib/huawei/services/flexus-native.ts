@@ -112,7 +112,7 @@ export async function verifyFlexusAccountDomain(session: BetterUiSession): Promi
     throw new ManagementInputError("The sign-in token is scoped to a project instead of the account. Sign out and sign in again to administer Flexus.", 409);
   }
   const domainId = nativeString(asRecord(token.domain).id);
-  if (!domainId || asRecord(asRecord(token.user).domain).id !== domainId || (session.userId !== undefined && asRecord(token.user).id !== session.userId)) {
+  if (!domainId || typeof session.userId !== "string" || !session.userId.trim() || asRecord(asRecord(token.user).domain).id !== domainId || asRecord(token.user).id !== session.userId) {
     throw new ManagementInputError("Unable to verify this account's IAM domain for Flexus. Sign out and sign in again.", 409);
   }
   return domainId;

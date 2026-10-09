@@ -168,5 +168,5 @@ export const cciManagement: ManagementAdapter = {
     if (operation === "delete-secret") { await child(s, ns, "secrets", v.secret); await write(`${path}/secrets/${encodeURIComponent(String(v.secret))}`, "DELETE"); return { message: "Secret deleted." }; }
     throw new ManagementInputError("Unsupported CCI operation.");
   },
-  invalidationKeys: () => [cloudCacheKeys.listCciNamespaces],
+  invalidationKeys: (resource) => [cloudCacheKeys.listCciNamespaces, ...(resource ? [`cci-namespace:${resource.id}`] : [])],
 };

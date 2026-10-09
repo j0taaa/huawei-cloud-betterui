@@ -20,6 +20,9 @@ import {
   type NativeFlexusServer,
 } from "@/lib/huawei/services/flexus-native";
 import type { ManagementAdapter } from "../types";
+import type { BetterUiSession } from "@/lib/auth-session";
+import type { ManagementResource } from "@/lib/management-contract";
+import { finishCloudLoad } from "@/lib/huawei/errors";
 
 /*
  * Explicit console gaps left for root coverage; none of these has a verified live contract in the
@@ -165,13 +168,8 @@ function inspectOutcome(target: FlexusResourceTarget, server: NativeFlexusServer
   return { message: `Native details loaded for ${server.name}.`, facts };
 }
 
-export const flexusManagement: ManagementAdapter = {
-  title: "Flexus Cloud Servers",
-  operations,
-  inventory: async (session) => {
-    const [lInstances, xInstances] = await Promise.all([listNativeFlexusLInstances(session), listNativeFlexusXInstances(session)]);
-    return [
-      ...lInstances.map((instance) => ({
+async function flexusPlaneInventory(session: BetterUiSession, kind: "l" | "x"): Promise<ManagementResource[]> {
+  if (kind === "l") return (await listNativeFlexusLInstances(session)).map((instance) => ({
         id: `l:${instance.bundleId}:${instance.serverId}`,
         name: instance.name,
         values: {
@@ -180,17 +178,29 @@ export const flexusManagement: ManagementAdapter = {
           serverId: instance.serverId,
           chargeMode: instance.chargingMode === "prePaid" ? "prePaid" : "unverified",
         },
-      })),
-      ...xInstances.map((instance) => ({
+      }));
+  return (await listNativeFlexusXInstances(session)).map((instance) => ({
         id: `x:${instance.serverId}`,
         name: instance.name,
         status: instance.status,
         values: { kind: "X", serverId: instance.serverId, flavor: instance.flavor, vcpus: instance.vcpus, ramGb: instance.ramGb },
-      })),
-    ];
+      }));
+}
+
+export const flexusManagement: ManagementAdapter = {
+  title: "Flexus Cloud Servers",
+  operations,
+  inventory: async (session) => {
+    const results = await Promise.allSettled([flexusPlaneInventory(session, "l"), flexusPlaneInventory(session, "x")]);
+    return finishCloudLoad(results, results.flatMap(result => result.status === "fulfilled" ? result.value : []), ["Flexus L", "Flexus X"]);
   },
+  inventoryForResource: (session, id) => flexusPlaneInventory(session, parseFlexusResourceId(id).kind),
   poll: async (session, entry) => pollNativeFlexusJob(session, entry),
-  invalidationKeys: () => [cloudCacheKeys.listFlexusResources, cloudCacheKeys.listEcsInstances, cloudCacheKeys.summary],
+  invalidationKeys: (resource) => {
+    const serverId = resource ? parseFlexusResourceId(resource.id).serverId : undefined;
+    return [cloudCacheKeys.listFlexusResources, cloudCacheKeys.listEcsInstances, cloudCacheKeys.summary,
+      ...(serverId ? [cloudCacheKeys.ecs(serverId), cloudCacheKeys.ecsMonitoring(serverId), cloudCacheKeys.ecsSnapshots(serverId)] : [])];
+  },
   execute: async (session, operation, values, resource): Promise<ManagementOutcome> => {
     const target = parseFlexusResourceId(resource?.id);
     const mutation = operation !== "inspect";

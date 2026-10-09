@@ -949,3 +949,8 @@ test("cost analysis keeps an empty native grouping distinct from a literal Unall
   const report = await getCostReport(account, { month, group: "ENTERPRISE_PROJECT_ID", type: "ORIGINAL_COST" });
   assert.deepEqual(report.rows.map(row => row.dimension), ["", "Unallocated"]); assert.equal(report.amount, "3");
 });
+
+test("cost account proof rejects a missing signed-in user identity", async t => {
+  mockCostAdapter(t, { token: { domain: { id: "domain-1" }, user: { domain: { id: "domain-1" } } } });
+  for (const userId of [undefined, "", " "]) await assert.rejects(costManagement.inventory({ ...account, userId }), /IAM domain/);
+});

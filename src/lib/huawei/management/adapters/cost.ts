@@ -93,7 +93,7 @@ async function verifyAccount(s: BetterUiSession) {
   const user = asRecord(token.user);
   if (
     !domainId ||
-    (s.userId && user.id !== s.userId) ||
+    typeof s.userId !== "string" || !s.userId.trim() || user.id !== s.userId ||
     asRecord(user.domain).id !== domainId
   )
     throw new ManagementInputError(

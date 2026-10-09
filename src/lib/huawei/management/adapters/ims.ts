@@ -106,7 +106,7 @@ export const imsManagement: ManagementAdapter = {
     const state = status === "SUCCESS" ? "succeeded" : status === "FAIL" ? "failed" : "submitted";
     return {
       state,
-      message: state === "failed" ? firstString([job.fail_reason, job.error_code], "The image job failed.") : state === "succeeded" ? "The image job completed successfully." : `The image job is ${status ? status.toLowerCase() : "processing"}.`,
+      message: state === "failed" ? "The image job failed. Check the image state and native task details before retrying." : state === "succeeded" ? "The image job completed successfully." : "The image job is still processing.",
       resourceId: imageId && imageId !== "-" ? `${imagePrefix}${imageId}` : undefined,
     };
   },

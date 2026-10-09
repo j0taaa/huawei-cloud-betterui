@@ -43,11 +43,14 @@ export function aadVerifiedAccountDomain(session: BetterUiSession): Promise<stri
       if (error instanceof HuaweiApiError) throw new HuaweiApiError("Unable to verify this account's IAM domain for Anti-DDoS. Sign in again.", error.status);
       throw new ManagementInputError("Unable to verify this account's IAM domain for Anti-DDoS. Sign in again.", 409);
     }
+    for (const container of [asRecord(response), asRecord(asRecord(response).data)]) {
+      if (["error", "error_code", "error_msg"].some((key) => Object.hasOwn(container, key))) throw new ManagementInputError("Unable to verify this account's IAM domain for Anti-DDoS. Sign in again.", 409);
+    }
     const token = asRecord(asRecord(response).token);
     if (token.project !== undefined) throw new ManagementInputError("The Anti-DDoS account token is project-scoped. Sign out and sign in again with an account token.", 409);
     const domainId = asString(asRecord(token.domain).id, "");
     const user = asRecord(token.user);
-    if (user.id !== session.userId || asRecord(user.domain).id !== domainId) throw new ManagementInputError("The Anti-DDoS account token identity could not be verified. Sign in again.", 409);
+    if (typeof session.userId !== "string" || !session.userId.trim() || user.id !== session.userId || asRecord(user.domain).id !== domainId) throw new ManagementInputError("The Anti-DDoS account token identity could not be verified. Sign in again.", 409);
     if (!domainId) throw new ManagementInputError("Unable to verify this account's IAM domain for Anti-DDoS. Sign in again.", 409);
     return domainId;
   })();

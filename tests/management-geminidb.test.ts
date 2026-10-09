@@ -417,7 +417,8 @@ test("job polling maps native job states and surfaces the job's instance ID", as
   assert.equal(succeeded.resourceId, "geminidb-new");
   const failed = await geminidbManagement.poll!(session, entry);
   assert.equal(failed.state, "failed");
-  assert.match(failed.message!, /Insufficient quota/);
+  assert.match(failed.message!, /cloud job failed/);
+  assert.ok(!failed.message!.includes("Insufficient quota"));
   const running = await geminidbManagement.poll!(session, entry);
   assert.equal(running.state, "submitted");
 });

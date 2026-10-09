@@ -4,6 +4,8 @@ import { aadManagement } from "@/lib/huawei/management/adapters/aad";
 import { ManagementInputError, validateManagementValues, type ManagementValues } from "@/lib/management-contract";
 import { HuaweiApiError } from "@/lib/huawei/http";
 import type { BetterUiSession } from "@/lib/auth-session";
+import { CloudLoadError } from "@/lib/huawei/errors";
+import { aadVerifiedAccountDomain } from "@/lib/huawei/services/aad-native";
 import { session } from "./fixtures/session";
 
 const accountToken = "account-token";
@@ -209,7 +211,7 @@ test("the account-domain proof is cached per session object only", async t => {
 
 test("CNAD management is rejected before any request when the session has no account token", async t => {
   const cloud = mockCloud(t);
-  await assert.rejects(aadManagement.inventory(session), (error: unknown) => error instanceof ManagementInputError && (error as ManagementInputError).status === 409 && /account token/.test(error.message));
+  await assert.rejects(aadManagement.inventory(session), (error: unknown) => error instanceof CloudLoadError && /account token/.test(error.message));
   // The IAM proof is never requested and no CNAD endpoint is reached; only the project-token AAD reads ran.
   assert.equal(cloud.iamCalls(), 0);
   assert.equal(cloud.aadCalls(), 2);
@@ -232,7 +234,7 @@ test("AAD endpoints authenticate with the project token and need no account proo
 
 test("IAM proof failures are sanitized with the HTTP status preserved", async t => {
   const rejected = mockCloud(t, { iam: () => new Response(JSON.stringify({ error_msg: "SECRET-IAM-DETAIL" }), { status: 404 }) });
-  await assert.rejects(aadManagement.inventory(rejected.s), (error: unknown) => {
+  await assert.rejects(aadVerifiedAccountDomain(rejected.s), (error: unknown) => {
     assert.ok(error instanceof HuaweiApiError);
     assert.equal((error as HuaweiApiError).status, 404);
     assert.match((error as Error).message, /IAM domain/);
@@ -240,7 +242,7 @@ test("IAM proof failures are sanitized with the HTTP status preserved", async t 
     return true;
   });
   const broken = mockCloud(t, { iam: () => { throw new TypeError("connect ECONNREFUSED SECRET-IAM-HOST"); } });
-  await assert.rejects(aadManagement.inventory(broken.s), (error: unknown) => {
+  await assert.rejects(aadVerifiedAccountDomain(broken.s), (error: unknown) => {
     assert.ok(error instanceof ManagementInputError);
     assert.equal((error as ManagementInputError).status, 409);
     assert.match((error as Error).message, /Sign in again/);
@@ -919,4 +921,16 @@ test("AAD unknown protocol states do not enter public inspection facts", async t
   const result = await aadManagement.execute(cloud.s, "inspect-domain", {}, domainResource);
   assert.doesNotMatch(JSON.stringify(result), /private-protocol-state/);
   assert.equal(result.facts?.find(fact => fact.label === "Protocols")?.value, "Unknown");
+});
+
+test("CNAD proof rejects missing signed-in user identity even when IAM omits the same ID", async t => {
+  mockCloud(t, { iam: () => ({ token: { domain: { id: accountDomainId }, user: { domain: { id: accountDomainId } } } }) });
+  for (const userId of [undefined, "", " "]) await assert.rejects(aadVerifiedAccountDomain({ ...accountSession(), userId }), /identity could not be verified/);
+});
+
+test("CNAD proof rejects business-error envelopes carrying an otherwise valid IAM token", async t => {
+  for (const envelope of [{ error_msg: "PRIVATE-DIAGNOSTIC" }, { data: { error_code: "PRIVATE-DIAGNOSTIC" } }]) {
+    mockCloud(t, { iam: () => ({ ...iamToken, ...envelope }) });
+    await assert.rejects(aadVerifiedAccountDomain(accountSession()), error => error instanceof Error && /IAM domain/.test(error.message) && !error.message.includes("PRIVATE-DIAGNOSTIC"));
+  }
 });

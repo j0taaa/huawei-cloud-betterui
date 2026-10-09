@@ -383,7 +383,8 @@ test("job polling maps native job states, keeps stored resource IDs, and refuses
   assert.equal(succeeded.resourceId, "og-new");
   const failed = await gaussdbManagement.poll!(session, createEntry);
   assert.equal(failed.state, "failed");
-  assert.match(failed.message!, /Insufficient quota/);
+  assert.match(failed.message!, /cloud job failed/);
+  assert.ok(!failed.message!.includes("Insufficient quota"));
   const running = await gaussdbManagement.poll!(session, createEntry);
   assert.equal(running.state, "submitted");
   const restartEntry: ManagementHistoryEntry = { id: randomUUID(), service: "gaussdb", operation: "Restart instance", startedAt: new Date().toISOString(), state: "submitted", jobId: "cloud-job", resourceId: "og-1" };

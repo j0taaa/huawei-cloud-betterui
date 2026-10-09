@@ -6,6 +6,7 @@ import { ManagementInputError, type ManagementChoice, type ManagementField, type
 import type { BetterUiSession } from "@/lib/auth-session";
 import { aadDomains, aadFetch, aadInstanceBlackwhite, aadInstanceRules, aadInstances, aadPackages, aadPolicies, aadProtectedIps, aadRowName, aadUnboundIps, aadVerifyEcho } from "@/lib/huawei/services/aad-native";
 import type { ManagementAdapter } from "../types";
+import { finishCloudLoad } from "@/lib/huawei/errors";
 
 // Anti-DDoS Advanced Protection management. CNAD /v1/cnad calls are global account-token calls
 // proved through IAM by the shared native helper, while AAD /v1/aad, /v2/aad, and
@@ -209,6 +210,14 @@ const limitFields = [
   { protocol: "other", key: "otherTrafficLimiting", body: "other_traffic_limiting", label: "Other protocols rate limit" },
 ] as const;
 
+const aadInventoryPlanes: Record<"package" | "policy" | "protected-ip" | "instance" | "domain", (s: BetterUiSession) => Promise<ManagementResource[]>> = {
+  package: async (s: BetterUiSession) => (await aadPackages(s)).map(row => ({ id: `package:${row.package_id}`, name: aadRowName.package(row), values: { region: asString(row.region_id, "") } })),
+  policy: async (s: BetterUiSession) => (await aadPolicies(s)).map(row => ({ id: `policy:${row.id}`, name: aadRowName.policy(row), values: { packageId: asString(row.package_id, ""), packageName: asString(row.package_name, "") } })),
+  "protected-ip": async (s: BetterUiSession) => (await aadProtectedIps(s)).map(row => ({ id: `protected-ip:${row.id}`, name: aadRowName.protectedIp(row), values: { ip: asString(row.ip, ""), packageId: asString(row.package_id, ""), policyName: row.policy_name, tag: asString(row.tag, "") } })),
+  instance: async (s: BetterUiSession) => (await aadInstances(s)).map(row => ({ id: `instance:${row.instance_id}`, name: aadRowName.instance(row), values: { enterpriseProjectId: asString(row.enterprise_project_id, "") } })),
+  domain: async (s: BetterUiSession) => (await aadDomains(s)).map(row => ({ id: `domain:${row.domain_id}`, name: aadRowName.domain(row), values: { enterpriseProjectId: asString(row.enterprise_project_id, "") } })),
+};
+
 export const aadManagement: ManagementAdapter = {
   title: "Anti-DDoS Advanced Protection",
   operations: [
@@ -248,14 +257,14 @@ export const aadManagement: ManagementAdapter = {
     { id: "delete-domain", label: "Delete protected domain", kind: "delete", resourcePrefixes: ["domain:"], description: "Delete the protected domain. Point its DNS elsewhere first.", fields: [], confirmation: true, impact: "High-defense protection for this domain stops immediately. DNS records still pointing at the high-defense CNAME stop serving traffic." },
   ],
   inventory: async s => {
-    const [packageRows, policyRows, ipRows, instanceRows, domainRows] = await Promise.all([aadPackages(s), aadPolicies(s), aadProtectedIps(s), aadInstances(s), aadDomains(s)]);
-    return [
-      ...packageRows.map(row => ({ id: `package:${row.package_id}`, name: aadRowName.package(row), values: { region: asString(row.region_id, "") } })),
-      ...policyRows.map(row => ({ id: `policy:${row.id}`, name: aadRowName.policy(row), values: { packageId: asString(row.package_id, ""), packageName: asString(row.package_name, "") } })),
-      ...ipRows.map(row => ({ id: `protected-ip:${row.id}`, name: aadRowName.protectedIp(row), values: { ip: asString(row.ip, ""), packageId: asString(row.package_id, ""), policyName: row.policy_name, tag: asString(row.tag, "") } })),
-      ...instanceRows.map(row => ({ id: `instance:${row.instance_id}`, name: aadRowName.instance(row), values: { enterpriseProjectId: asString(row.enterprise_project_id, "") } })),
-      ...domainRows.map(row => ({ id: `domain:${row.domain_id}`, name: aadRowName.domain(row), values: { enterpriseProjectId: asString(row.enterprise_project_id, "") } })),
-    ];
+    const planes = Object.entries(aadInventoryPlanes);
+    const results = await Promise.allSettled(planes.map(([, load]) => load(s)));
+    return finishCloudLoad(results, results.flatMap(result => result.status === "fulfilled" ? result.value : []), planes.map(([name]) => `Anti-DDoS ${name}`));
+  },
+  inventoryForResource: (s, id) => {
+    const prefix = id.split(":", 1)[0];
+    if (!Object.hasOwn(aadInventoryPlanes, prefix)) throw new ManagementInputError("Select a current Anti-DDoS resource.");
+    return aadInventoryPlanes[prefix as keyof typeof aadInventoryPlanes](s);
   },
   options: async (s, operation, resource): Promise<Record<string, ManagementChoice[]>> => {
     if (operation === "create-policy") return { packages: (await aadPackages(s)).map(row => ({ value: String(row.package_id), label: aadRowName.package(row) })) };

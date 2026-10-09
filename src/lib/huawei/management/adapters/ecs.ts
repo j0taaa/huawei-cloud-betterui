@@ -56,7 +56,7 @@ export const ecsManagement: ManagementAdapter = {
     const state = job.status === "SUCCESS" ? "succeeded" : job.status === "FAIL" ? "failed" : "submitted";
     const entities = asRecord(job.entities);
     const server = asRecord(asArray(entities.sub_jobs)[0]);
-    return { state, message: state === "failed" ? firstString([job.fail_reason, job.error_msg], "The cloud job failed.") : state === "succeeded" ? "The cloud job completed successfully." : "The cloud job is still processing.", resourceId: firstString([asRecord(server.entities).server_id, entities.server_id], "") || undefined };
+    return { state, message: state === "failed" ? "The cloud job failed. Check the resource state and native task details before retrying." : state === "succeeded" ? "The cloud job completed successfully." : "The cloud job is still processing.", resourceId: firstString([asRecord(server.entities).server_id, entities.server_id], "") || undefined };
   },
   invalidationKeys: (resource) => [cloudCacheKeys.listEcsInstances, cloudCacheKeys.listEvsDisks, cloudCacheKeys.listEips, cloudCacheKeys.summary, ...(resource ? [cloudCacheKeys.ecs(resource.id), cloudCacheKeys.ecsMonitoring(resource.id), cloudCacheKeys.ecsSnapshots(resource.id)] : [])],
   execute: async (session, operation, values, resource) => {

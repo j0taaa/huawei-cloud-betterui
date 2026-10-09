@@ -264,7 +264,8 @@ test("job polling maps native job states and surfaces created resource IDs", asy
   assert.equal(succeeded.resourceId, "rds-new");
   const failed = await rdsManagement.poll!(session, entry);
   assert.equal(failed.state, "failed");
-  assert.match(failed.message!, /Insufficient quota/);
+  assert.match(failed.message!, /cloud job failed/);
+  assert.ok(!failed.message!.includes("Insufficient quota"));
   const running = await rdsManagement.poll!(session, entry);
   assert.equal(running.state, "submitted");
 });

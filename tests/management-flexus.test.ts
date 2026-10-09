@@ -957,3 +957,8 @@ test("Flexus job completion validates both domain aliases and child project iden
     await assert.rejects(flexusManagement.poll!(session, historyEntry()), /account domain|different server|selected project/); t.mock.restoreAll();
   }
 });
+
+test("Flexus account proof rejects a missing signed-in user identity", async t => {
+  mock(t, (url) => url.pathname === "/v3/auth/tokens" ? { token: { domain: { id: domainId }, user: { domain: { id: domainId } } } } : undefined);
+  for (const userId of [undefined, "", " "]) await assert.rejects(listNativeFlexusLInstances({ ...session, userId }), /IAM domain/);
+});

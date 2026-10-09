@@ -325,3 +325,99 @@ test("Cost analysis runs only native read queries and saves no mutation history"
   const result = await runManagementOperation(account, "cost", { operation: "analyze-costs", resourceId: "account:domain-owned", values: { month: currentBillingMonth(), group: "REGION_CODE", type: "ORIGINAL_COST" } });
   assert.equal(result.ok, true); assert.equal(queries, 1); assert.deepEqual(await listManagementHistory(account, "cost"), before);
 });
+
+test("Flexus X remains manageable when the independent L account inventory is denied", async t => {
+  let writes = 0;
+  const server = { id: "x-partial", name: "Accessible X", status: "SHUTOFF", tenant_id: session.projectId, flavor: { name: "x1.2u.4g", vcpus: "2", ram: "4096" }, locked: false, "OS-EXT-STS:task_state": null, metadata: {} };
+  t.mock.method(globalThis, "fetch", async (input: string, init: RequestInit) => {
+    const url = new URL(input);
+    if (url.pathname === "/v3/auth/tokens") return Response.json({ token: { domain: { id: "domain-1" }, user: { id: session.userId, domain: { id: "domain-1" } } } });
+    if (url.hostname.startsWith("rms.")) return Response.json({ error: "PRIVATE-L-DIAGNOSTIC" }, { status: 403 });
+    if (init.method === "POST") { writes++; return Response.json({ job_id: "native-x-job" }); }
+    if (url.pathname.endsWith("/cloudservers/detail")) return Response.json({ servers: [server] });
+    return Response.json({ server });
+  });
+  const context = await getManagementContext(account, "flexus");
+  assert.equal(context.resources[0].id, "x:x-partial");
+  assert.match(context.warnings!.join(" "), /Flexus L.*403/);
+  assert.ok(!context.warnings!.join(" ").includes("PRIVATE-L-DIAGNOSTIC"));
+  const body = { requestId: randomUUID(), operation: "start", projectId: session.projectId, resourceId: "x:x-partial", confirmName: server.name, acknowledgedImpact: true, values: {} };
+  const outcome = await runManagementOperation(account, "flexus", body);
+  assert.equal(outcome.jobId, "native-x-job");
+  assert.equal(outcome.asynchronous, true);
+  await assert.rejects(runManagementOperation(account, "flexus", { ...body, requestId: randomUUID(), resourceId: "x:foreign" }), /not found/);
+  assert.equal(writes, 1);
+});
+
+test("AAD project domains remain manageable when the independent global CNAD planes are denied", async t => {
+  let writes = 0;
+  const domain = { domain_id: "accessible", domain_name: "accessible.example.com", enterprise_project_id: "0", real_server_type: 0, real_servers: ["192.0.2.20"], protocol: ["HTTP"], cname: "aad.example.com", waf_switch: true };
+  t.mock.method(globalThis, "fetch", async (input: string, init: RequestInit) => {
+    const url = new URL(input);
+    if (url.pathname === "/v3/auth/tokens") return Response.json({ token: { domain: { id: "domain-1" }, user: { id: session.userId, domain: { id: "domain-1" } } } });
+    if (url.pathname.startsWith("/v1/cnad/")) return Response.json({}, { status: 403 });
+    if (init.method) { writes++; return Response.json({}); }
+    if (url.pathname.endsWith("/protected-domains")) return Response.json({ items: [domain], count: 1 });
+    if (url.pathname.endsWith("/instances")) return Response.json({ items: [], count: 0 });
+    throw new Error(`Unexpected request ${url.pathname}`);
+  });
+  const context = await getManagementContext(account, "aad");
+  assert.equal(context.resources[0].id, "domain:accessible");
+  assert.match(context.warnings!.join(" "), /403/);
+  const inspect = await runManagementOperation(account, "aad", { operation: "inspect-domain", projectId: session.projectId, resourceId: "domain:accessible", values: {} });
+  assert.ok(inspect.facts!.some(fact => fact.value.includes("accessible.example.com")));
+  const body = { requestId: randomUUID(), operation: "domain-web-switch", projectId: session.projectId, resourceId: "domain:accessible", confirmName: domain.domain_name, acknowledgedImpact: true, values: { wafSwitch: true, ccSwitch: false } };
+  assert.equal((await runManagementOperation(account, "aad", body)).asynchronous, true);
+  await assert.rejects(runManagementOperation(account, "aad", { ...body, requestId: randomUUID(), resourceId: "domain:foreign" }), /not found/);
+  assert.equal(writes, 1);
+});
+
+test("affected detail caches reload after management mutations across native and composite identities", async () => {
+  const { withCloudResult } = await import("@/lib/huawei/result");
+  const cases = [
+    ["dcs", "cache-detail", "dcs-instance:cache-detail"],
+    ["dms-kafka", "kafka-detail", "dms-kafka-instance:kafka-detail"],
+    ["geminidb", "gemini-detail", "geminidb-instance:gemini-detail"],
+    ["cci", "namespace-detail", "cci-namespace:namespace-detail"],
+    ["evs", "disk-detail", "evs-disk-snapshots:disk-detail"],
+    ["flexus", "x:server-detail", "ecs-instance-v2:server-detail"],
+    ["flexus", "l:bundle-detail:server-detail", "ecs-monitoring-v3:server-detail"],
+  ];
+  const scoped = { ...session, userId: `cache-review-${randomUUID()}` };
+  const cookie = createSession(scoped);
+  try {
+    for (const [service, resourceId, key] of cases) {
+      const original = managementAdapters[service];
+      let current = "before";
+      let reads = 0;
+      managementAdapters[service] = { ...original, operations: [{ id: "update", label: "Review cache mutation", description: "Change", kind: "update", fields: [] }], options: undefined, inventoryForResource: undefined, inventory: async () => [{ id: resourceId, name: "Resource" }], execute: async () => { current = "after"; return { message: "Updated" }; } };
+      try {
+        const read = () => withSessionCookie(cookie, () => withCloudResult("", async () => { reads++; return current; }, key));
+        assert.equal((await read()).data, "before");
+        assert.equal((await read()).data, "before");
+        assert.equal(reads, 1);
+        await runManagementOperation(scoped, service, { requestId: randomUUID(), operation: "update", resourceId, values: {} });
+        assert.equal((await read()).data, "after", `${service} must invalidate ${key}`);
+        assert.equal(reads, 2);
+      } finally { managementAdapters[service] = original; }
+    }
+  } finally { deleteSession(cookie); }
+});
+
+test("native cloud-job failure diagnostics never enter HTTP responses or persisted history", async t => {
+  const { saveManagementHistory, readManagementHistory } = await import("@/lib/huawei/management/history");
+  const { GET } = await import("@/app/api/cloud/operations/[id]/route");
+  const diagnostic = "adminPass=PRIVATE-PASSWORD; connectionString=PRIVATE-CONNECTION";
+  t.mock.method(globalThis, "fetch", async () => Response.json({ status: "FAIL", fail_reason: diagnostic, error_msg: diagnostic, entities: { server_id: "native-private-test" } }));
+  const id = randomUUID();
+  await saveManagementHistory(session, { id, service: "ecs", projectId: session.projectId, operation: "Start", resourceId: "native-private-test", startedAt: new Date().toISOString(), state: "submitted", jobId: "native-private-job" });
+  const cookie = createSession(session);
+  try {
+    const response = await withSessionCookie(cookie, () => GET(new Request(`http://localhost/api/cloud/operations/${id}`), { params: Promise.resolve({ id }) }));
+    assert.equal(response.status, 200);
+    const text = await response.text();
+    assert.ok(!text.includes("PRIVATE-"));
+    assert.equal((await readManagementHistory(session, id))!.state, "failed");
+    assert.ok(!JSON.stringify(await readManagementHistory(session, id)).includes("PRIVATE-"));
+  } finally { deleteSession(cookie); }
+});

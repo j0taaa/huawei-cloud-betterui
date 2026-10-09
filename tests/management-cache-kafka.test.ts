@@ -105,7 +105,7 @@ test("DCS restart and delete protect ownership and use the native status contrac
 test("DCS restart propagates a per-instance cloud failure", async (t) => {
   const writes: Write[] = [];
   mockCloud(t, writes, () => Response.json({ results: [{ instance: "instance-1", result: "failed", error_msg: "Restart not allowed" }] }));
-  await assert.rejects(run(dcsManagement, "restart"), /Restart not allowed/);
+  await assert.rejects(run(dcsManagement, "restart"), /Huawei rejected/);
 });
 
 test("DCS capacity expansion uses the instance resize catalog and refuses shrinking", async (t) => {
@@ -201,7 +201,7 @@ test("Kafka restart and delete protect ownership and use the batch action contra
 test("Kafka restart propagates a per-instance cloud failure", async (t) => {
   const writes: Write[] = [];
   mockCloud(t, writes, () => Response.json({ results: [{ instance: "instance-1", result: "failed", error_msg: "Restart not allowed" }] }));
-  await assert.rejects(run(kafkaManagement, "restart"), /Restart not allowed/);
+  await assert.rejects(run(kafkaManagement, "restart"), /Huawei rejected/);
 });
 
 test("Kafka storage expansion refuses shrinking and returns the cloud job", async (t) => {

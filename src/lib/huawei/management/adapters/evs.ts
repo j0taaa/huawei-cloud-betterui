@@ -39,13 +39,13 @@ export const evsManagement: ManagementAdapter = {
     if (["delete-snapshot", "rollback"].includes(operation)) return { snapshots: (await listEvsSnapshotsForProject(s, resource.id)).filter(snapshot => snapshot.diskId === resource.id && snapshot.status.toLowerCase() === "available").map(snapshot => ({ value: snapshot.id, label: `${snapshot.name} · ${snapshot.createdAt}` })) };
     return {};
   },
-  invalidationKeys: r => [cloudCacheKeys.listEvsDisks, "evs-page-inventory", "evs-snapshot-inventory", cloudCacheKeys.listEcsInstances, cloudCacheKeys.summary, ...(r ? [cloudCacheKeys.evs(r.id)] : [])],
+  invalidationKeys: r => [cloudCacheKeys.listEvsDisks, "evs-page-inventory", "evs-snapshot-inventory", cloudCacheKeys.listEcsInstances, cloudCacheKeys.summary, ...(r ? [cloudCacheKeys.evs(r.id), `evs-disk-snapshots:${r.id}`] : [])],
   poll: async (s, entry) => {
     const service = ["Attach disk", "Detach data disk"].includes(entry.operation) ? "ecs" : "evs";
     const job = await huaweiFetch<Record<string, unknown>>(s, service, `/v1/${s.projectId}/jobs/${encodeURIComponent(entry.jobId!)}`);
     const state = job.status === "SUCCESS" ? "succeeded" : job.status === "FAIL" ? "failed" : "submitted";
     const entities = asRecord(job.entities);
-    return { state, message: state === "failed" ? firstString([job.fail_reason, job.error_msg], "Disk operation failed.") : state === "succeeded" ? "Disk operation completed." : "Disk operation is still processing.", resourceId: firstString([entities.volume_id], "") || undefined };
+    return { state, message: state === "failed" ? "Disk operation failed. Check the disk state and native task details before retrying." : state === "succeeded" ? "Disk operation completed." : "Disk operation is still processing.", resourceId: firstString([entities.volume_id], "") || undefined };
   },
   execute: async (s, operation, v, resource) => {
     if (operation === "create") {

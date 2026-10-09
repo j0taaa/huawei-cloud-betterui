@@ -288,10 +288,10 @@ export const geminidbManagement: ManagementAdapter = {
     const resourceId = firstString([asRecord(job.instance).id], "") || undefined;
     if (entry.resourceId && resourceId && resourceId !== entry.resourceId) throw new ManagementInputError("The GeminiDB job does not belong to the selected instance.");
     if (status === "completed") return { state: "succeeded", message: "The GeminiDB cloud job completed successfully.", resourceId };
-    if (status === "failed") return { state: "failed", message: firstString([job.fail_reason], "The GeminiDB cloud job failed. Review the instance status before retrying.") };
-    return { state: "submitted", message: `The GeminiDB cloud job is ${status || "still processing"}.` };
+    if (status === "failed") return { state: "failed", message: "The GeminiDB cloud job failed. Review the instance status before retrying." };
+    return { state: "submitted", message: "The GeminiDB cloud job is still processing." };
   },
-  invalidationKeys: () => [cloudCacheKeys.listGeminiDbInstances, cloudCacheKeys.summary],
+  invalidationKeys: (resource) => [cloudCacheKeys.listGeminiDbInstances, cloudCacheKeys.summary, ...(resource ? [`geminidb-instance:${resource.id}`] : [])],
   execute: async (session, operation, values, resource) => {
     const base = `/v3/${session.projectId}`;
     if (operation === "create") {

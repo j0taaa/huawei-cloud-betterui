@@ -101,7 +101,7 @@ function assertPassword(value: string, username: string) {
 function assertResults(response: Record<string, unknown>, id: string) {
   const results = asArray(response.results).map(asRecord);
   const own = results.find((result) => firstString([result.instance], "") === id);
-  if (!own || own.result !== "success") throw new Error(firstString([own?.error_msg, own?.message], "Huawei rejected the DMS Kafka operation."));
+  if (!own || own.result !== "success") throw new Error("Huawei rejected the DMS Kafka operation. Check the instance state and native task details before retrying.");
 }
 
 export const kafkaManagement: ManagementAdapter = {
@@ -118,7 +118,7 @@ export const kafkaManagement: ManagementAdapter = {
     if (["delete-user", "reset-user-password"].includes(operation)) return { users: (await users(session, resource)).map((item) => choice(firstString([item.user_name], ""))).filter((item) => !!item.value) };
     return {};
   },
-  invalidationKeys: () => [cloudCacheKeys.listDmsKafkaInstances, cloudCacheKeys.summary],
+  invalidationKeys: (resource) => [cloudCacheKeys.listDmsKafkaInstances, cloudCacheKeys.summary, ...(resource ? [`dms-kafka-instance:${resource.id}`] : [])],
   execute: async (session, operation, values, resource) => {
     if (operation === "create") {
       const offering = catalog(await products(session)).find((item) => item.value === values.offering);
