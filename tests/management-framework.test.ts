@@ -208,3 +208,37 @@ test("saved restart progress survives status refreshes without accepting old rea
     assert.equal((await response.json()).entry.state, "succeeded");
   } finally { await deleteSession(signed); }
 });
+
+test("CFW protection switches keep accepted requests pending without inventing native jobs", async t => {
+  const { GET } = await import("@/app/api/cloud/operations/[id]/route");
+  const requestId = randomUUID();
+  let mutations = 0;
+  const firewall = { fw_instance_id: "firewall-1", fw_instance_name: "Firewall", status: 2, charge_mode: 1 };
+  t.mock.method(globalThis, "fetch", async (input: string) => {
+    const url = new URL(input);
+    if (url.pathname.endsWith("/firewalls/list")) return Response.json({ data: { total: 1, records: [firewall] } });
+    if (url.pathname.endsWith("/firewall/exist")) return Response.json({ data: { total: 1, records: [{ ...firewall, protect_objects: [{ object_id: "internet-1", type: 0 }] }] } });
+    if (url.pathname.endsWith("/address-sets") || url.pathname.endsWith("/service-sets")) return Response.json({ data: { total: 0, records: [] } });
+    assert.equal(url.pathname, "/v1/project-1/eip/protect/all/firewall-1/operation");
+    mutations++;
+    return Response.json({ data: { id: "firewall-1", protection_status: 1 } });
+  });
+  const body = { operation: "bypass-eip", requestId, resourceId: "fw:firewall-1", projectId: session.projectId, confirmName: "Firewall", acknowledgedImpact: true, values: {} };
+  const result = await runManagementOperation(session, "cfw", body);
+  const saved = (await listManagementHistory(session, "cfw")).find(item => item.id === requestId)!;
+  assert.equal(result.asynchronous, true);
+  assert.equal(saved.state, "submitted");
+  assert.equal(saved.jobId, undefined);
+  assert.equal(saved.finishedAt, undefined);
+  assert.equal(saved.resourceId, "fw:firewall-1");
+  assert.match(saved.message!, /accepted and is in progress/);
+  assert.equal((await runManagementOperation(session, "cfw", body)).replayed, true);
+  assert.equal(mutations, 1);
+  const signed = await createSession(session);
+  try {
+    const response = await withSessionCookie(signed, () => GET(new Request(`http://localhost/api/cloud/operations/${requestId}`), { params: Promise.resolve({ id: requestId }) }));
+    const value = await response.json();
+    assert.equal(value.canRefresh, false);
+    assert.equal(value.entry.state, "submitted");
+  } finally { await deleteSession(signed); }
+});

@@ -119,7 +119,7 @@ test("CodeArts page requests and CFW offsets preserve their read-only POST paylo
         );
         return Response.json(
           field === "records"
-            ? { data: { records: rows } }
+            ? { data: { total: 101, records: rows.map(row => ({ fw_instance_id: row.id, fw_instance_name: row.id })) } }
             : { result: { applications: rows } },
         );
       },
