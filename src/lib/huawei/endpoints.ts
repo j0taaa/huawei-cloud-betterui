@@ -47,6 +47,7 @@ export type ServiceKey =
   | "lts"
   | "modelarts"
   | "oms"
+  | "projectman"
   | "nat"
   | "iotda"
   | "dli"
@@ -115,6 +116,7 @@ export const endpointEnv: Record<ServiceKey, string> = {
   lts: "HUAWEI_LTS_ENDPOINT",
   modelarts: "HUAWEI_MODELARTS_ENDPOINT",
   oms: "HUAWEI_OMS_ENDPOINT",
+  projectman: "HUAWEI_PROJECTMAN_ENDPOINT",
   nat: "HUAWEI_NAT_ENDPOINT",
   iotda: "HUAWEI_IOTDA_ENDPOINT",
   dli: "HUAWEI_DLI_ENDPOINT",
@@ -151,6 +153,7 @@ export function serviceEndpoint(service: ServiceKey, region: string) {
     codeartsdeploy: "codeartsdeploy",
     codeartspipeline: "codeartspipeline",
     codeartsrepo: "codeartsrepo",
+    projectman: "projectman-ext",
     dc: "dc",
     dataarts: "dataartsstudio",
     eg: "eg",

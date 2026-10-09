@@ -123,7 +123,7 @@ test("database service loaders use list endpoints and guarded action routes", ()
     ["drs", "GET", "/v5/${session.projectId}/jobs?limit=100"],
     ["gaussdb", "GET", "/v3/${session.projectId}/instances?limit=100"],
     ["dds", "GET", "/v3/${session.projectId}/instances?limit=100"],
-    ["taurusdb", "GET", "/v3/${session.projectId}/instances?limit=100"],
+    ["taurusdb", "GET", "/v3.1/${session.projectId}/instances?limit=100"],
     ["geminidb", "GET", "/v3/${session.projectId}/instances?limit=100"],
   ];
 

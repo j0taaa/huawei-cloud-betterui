@@ -178,6 +178,14 @@ const mock = createServer(async (req, res) => {
   else if (url.pathname.startsWith("/oms/")) body = { tasks: [], count: 0 };
   else if (url.pathname.startsWith("/dds/")) body = url.pathname.endsWith("/versions") ? { versions: ["4.0"] } : url.pathname.endsWith("/flavors") ? { flavors: [{ type: "replica", vcpus: "2", ram: "4", spec_code: "dds.replica", az_status: { "az-1": "normal" }, engine_versions: ["4.0"] }] } : url.pathname.endsWith("/storage-type") ? { storage_type: [{ name: "ULTRAHIGH", az_status: { "az-1": "normal" } }] } : { instances: [], total_count: 0 };
   else if (url.pathname.startsWith("/apig/")) body = url.pathname.endsWith("/available-zones") ? { available_zones: [{ id: "az-1", name: "Zone 1", specs: { BASIC: true, PROFESSIONAL: true } }] } : { instances: [], total: 0 };
+  else if (url.pathname.startsWith("/projectman/")) body = { projects: [{ project_id: "a".repeat(32), project_name: "CodeArts workspace" }], total: 1 };
+  else if (url.pathname.startsWith("/codeartsrepo/")) body = [];
+  else if (url.pathname.startsWith("/codeartsbuild/")) body = { result: { job_list: [] } };
+  else if (url.pathname.startsWith("/codeartspipeline/")) body = { pipelines: [], total: 0 };
+  else if (url.pathname.startsWith("/codeartsdeploy/")) body = { applications: [] };
+  else if (url.pathname.startsWith("/gaussdb/")) body = url.pathname.endsWith("/versions") ? { database_versions: [{ software_version: "506.2.0" }], total: 1 } : url.pathname.endsWith("/flavors") ? { flavors: [{ spec_code: "gaussdb.spec", vcpus: "4", ram: "32", group_type: "general", az_status: { "az-1": "normal" } }], total: 1 } : url.pathname.endsWith("/storage-type") ? { storage_type: [{ name: "ULTRAHIGH", support_compute_group_type: ["general"], az_status: { "az-1": "normal" } }] } : { instances: [], total_count: 0 };
+  else if (url.pathname.startsWith("/taurusdb/")) body = url.pathname.includes("/datastores/") ? { datastores: [{ version: "8.0" }] } : url.pathname.includes("/flavors/") ? { flavors: [{ spec_code: "taurus.spec", vcpus: "4", ram: 32, version_name: "8.0", instance_mode: "Cluster", az_status: { "az-1": "normal" } }] } : { instances: [], total_count: 0 };
+  else if (url.pathname.startsWith("/geminidb/")) body = url.pathname.endsWith("/versions") ? { versions: [url.pathname.includes("/mongodb/") ? "4.0" : "3.11"] } : url.pathname.endsWith("/flavors") ? { flavors: [{ engine_name: url.searchParams.get("engine_name"), engine_version: url.searchParams.get("engine_name") === "mongodb" ? "4.0" : "3.11", spec_code: "geminidb." + url.searchParams.get("engine_name"), vcpus: "4", ram: "16384", az_status: { "az-1": "normal" } }] } : { instances: [], total_count: 0 };
   else if (url.pathname.startsWith("/waf/")) body = { items: [], total: 0 };
   else if (url.pathname.startsWith("/cci/")) body = { items: [], metadata: {} };
   else if (url.pathname.startsWith("/css/")) body = url.pathname.endsWith("/es-flavors") ? { versions: [{ version: "7.10.2", type: "ess", flavors: [{ name: "ess.spec", flavor_id: "css-flavor", cpu: 2, ram: 8, diskrange: "40,800", availableAZ: "az-1" }] }] } : { clusters: [], total_count: 0 };
@@ -579,9 +587,15 @@ try {
     await (await request("/services/enterprise-projects")).text(),
     /Live enterprise project/,
   );
+  for (const service of ["codearts-repo", "codearts-build", "codearts-pipeline", "codearts-deploy"]) {
+    const inventory = await request(`/services/${service}`);
+    assert.equal(inventory.status, 200);
+    assert.doesNotMatch(await inventory.text(), /expected a JSON array|Unexpected mock path/);
+  }
+  assert.ok(requests.some(entry => entry.path === `/codeartsrepo/v4/projects/${"a".repeat(32)}/repositories`));
   const serviceSearch = await request("/services/databases");
   assert.match(await serviceSearch.text(), /dms-rabbitmq/);
-  for (const service of ["ecs", "aom", "enterprise-projects", "dms-rabbitmq", "dms-rocketmq", "network", "dns", "smn", "lts", "dew", "ces", "cts", "cdn", "eip", "elb", "cbr", "sfs", "swr", "obs", "as", "nat", "evs", "iam", "deh", "dcs", "dms-kafka", "iotda", "rds", "ims", "dli", "secmaster", "enterprise-router", "vpc-endpoint", "eventgrid", "apig", "oms", "dds", "cce", "css", "cci", "waf"]) {
+  for (const service of ["ecs", "aom", "enterprise-projects", "dms-rabbitmq", "dms-rocketmq", "network", "dns", "smn", "lts", "dew", "ces", "cts", "cdn", "eip", "elb", "cbr", "sfs", "swr", "obs", "as", "nat", "evs", "iam", "deh", "dcs", "dms-kafka", "iotda", "rds", "ims", "dli", "secmaster", "enterprise-router", "vpc-endpoint", "eventgrid", "apig", "oms", "dds", "cce", "css", "cci", "waf", "gaussdb", "taurusdb", "geminidb"]) {
     const managementPage = await request(`/services/${service}/manage`);
     assert.equal(managementPage.status, 200, `${service} management route`);
     assert.match(await managementPage.text(), /Loading management controls/);

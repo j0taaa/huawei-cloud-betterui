@@ -8,7 +8,7 @@ import {
   firstString,
   timestampMillis,
 } from "@/lib/huawei/parsers";
-import { loadAcrossProjects } from "@/lib/huawei/projects";
+import { loadAcrossCodeArtsProjects } from "@/lib/huawei/codearts-projects";
 
 export type CodeArtsBuildJob = {
   branch: string;
@@ -88,5 +88,5 @@ export async function listCodeArtsBuildJobsForProject(
 }
 
 export async function listCodeArtsBuildJobs(session: BetterUiSession) {
-  return loadAcrossProjects(session, listCodeArtsBuildJobsForProject);
+  return loadAcrossCodeArtsProjects(session, listCodeArtsBuildJobsForProject);
 }

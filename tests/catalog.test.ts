@@ -54,7 +54,7 @@ test("service search retains aliases, is case-insensitive, and returns catalog m
   );
 });
 
-test("all inventory keys identify an exported loader without relying on function.name", () => {
+test("all inventory keys retain an exported loader prefix and allow cache schema versions", () => {
   for (const [key, value] of Object.entries(cloudCacheKeys)) {
     if (key.startsWith("list")) {
       assert.equal(
@@ -62,7 +62,8 @@ test("all inventory keys identify an exported loader without relying on function
         "function",
         `Missing loader ${key}`,
       );
-      assert.equal(value, key);
+      assert.equal(typeof value, "string");
+      assert.equal((value as string).split("-")[0], key);
     }
   }
   assert.equal(cloudCacheKeys.ecs("id"), "ecs-instance-v2:id");

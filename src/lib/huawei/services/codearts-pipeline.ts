@@ -8,7 +8,7 @@ import {
   firstString,
   timestampMillis,
 } from "@/lib/huawei/parsers";
-import { loadAcrossProjects } from "@/lib/huawei/projects";
+import { loadAcrossCodeArtsProjects } from "@/lib/huawei/codearts-projects";
 
 export type CodeArtsPipelineItem = {
   creator: string;
@@ -109,5 +109,5 @@ export async function listCodeArtsPipelinesForProject(
 }
 
 export async function listCodeArtsPipelines(session: BetterUiSession) {
-  return loadAcrossProjects(session, listCodeArtsPipelinesForProject);
+  return loadAcrossCodeArtsProjects(session, listCodeArtsPipelinesForProject);
 }

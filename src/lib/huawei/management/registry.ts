@@ -39,6 +39,9 @@ import { cciManagement } from "./adapters/cci";
 import { cssManagement } from "./adapters/css";
 import { cceManagement } from "./adapters/cce";
 import { ddsManagement } from "./adapters/dds";
+import { gaussdbManagement } from "./adapters/gaussdb";
+import { taurusdbManagement } from "./adapters/taurusdb";
+import { geminidbManagement } from "./adapters/geminidb";
 import type { ManagementAdapter } from "./types";
 
 export const managementAdapters: Record<string, ManagementAdapter> = {
@@ -66,6 +69,9 @@ export const managementAdapters: Record<string, ManagementAdapter> = {
   css: cssManagement,
   cci: cciManagement,
   waf: wafManagement,
+  gaussdb: gaussdbManagement,
+  taurusdb: taurusdbManagement,
+  geminidb: geminidbManagement,
   ecs: ecsManagement,
   dew: dewManagement,
   cdn: cdnManagement,

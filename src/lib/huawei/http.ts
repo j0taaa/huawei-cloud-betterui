@@ -115,3 +115,20 @@ export async function huaweiList<T>(
     );
   }, pagination);
 }
+
+/** Some documented endpoints return a JSON array rather than an object envelope. */
+export async function huaweiArrayList<T>(
+  session: HuaweiProjectSession,
+  service: ServiceKey,
+  path: string,
+  pagination: Omit<Pagination, "items" | "inBody" | "total" | "next" | "hasMore">,
+): Promise<T[]> {
+  const result = await collectList<{ items: T[] }>(async cursor => {
+    const url = new URL(path, "https://huawei.invalid");
+    if (cursor !== undefined) url.searchParams.set(pagination.parameter, String(cursor));
+    const body = await huaweiFetch<unknown>(session, service, `${url.pathname}${url.search}`);
+    if (!Array.isArray(body)) throw new Error("Invalid list response: expected a JSON array.");
+    return { items: body as T[] };
+  }, { ...pagination, items: ["items"] });
+  return result.items;
+}

@@ -235,7 +235,7 @@ export async function listTaurusDbInstancesForProject(
   const body = await huaweiList<{ instances?: unknown[] }>(
     session,
     "taurusdb",
-    `/v3/${session.projectId}/instances?limit=100`,
+    `/v3.1/${session.projectId}/instances?limit=100`,
     {
       items: ["instances"],
       kind: "offset",
@@ -268,7 +268,7 @@ async function getTaurusDbInstanceForProject(
   const body = await huaweiFetch<{ instances?: unknown[] }>(
     session,
     "taurusdb",
-    `/v3/${session.projectId}/instances?${query.toString()}`,
+    `/v3.1/${session.projectId}/instances?${query.toString()}`,
   );
   const instance = asArray(body.instances)[0];
 

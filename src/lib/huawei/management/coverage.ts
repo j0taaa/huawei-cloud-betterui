@@ -26,6 +26,9 @@ const existingWorkflows: Record<string, string[]> = {
   "dms-kafka": ["Restart instance"],
 };
 const remainingAreas: Record<string, string[]> = {
+  gaussdb: ["Distributed, basic/ecology editions, multi-AZ provisioning, node expansion, and upgrades", "Database grants/deletion, parameters, SSL/public access, restores, and recycle bin", "Security/maintenance settings, audit/slow logs, metrics, quotas, pricing, and subscription orders"],
+  taurusdb: ["Multi-AZ provisioning, read replicas, proxies, node changes, and upgrades", "Database grants, parameter templates, SSL/public access, restore, and recycle bin", "Audit/slow logs, metrics, tags, quotas, pricing, and subscription orders"],
+  geminidb: ["Redis/Influx/DynamoDB/HBase provisioning, additional deployment modes, multi-AZ provisioning, and node changes", "SSL/public access, ports, restores, parameter templates, recycle bin, and cold storage", "Audit/slow logs, metrics, tags, quotas, pricing, and subscription orders"],
   waf: ["Dedicated/ELB access modes, IPv6 origins, multiple origins, DNS onboarding, and certificate lifecycle", "CC/custom/geo/robot rules, advanced policy modules, events, logs, and reports", "Subscription orders, quotas, pricing, account permissions, and cloud completion tracking"],
   cci: ["Services, ingress, autoscaling, pod logs/exec, and persistent storage lifecycle", "Registry credentials, Secret updates, volumes, environment injection, and advanced pod settings", "Additional networks, quotas, metrics, pricing, and cloud completion tracking"],
   css: ["Node-count changes, dedicated master/client nodes, snapshot storage setup, and restore", "Index and document workflows, engine upgrades, plugins, security configuration, and public access", "Subscription orders, tags, quotas, pricing, metrics, logs, and cloud completion tracking"],
