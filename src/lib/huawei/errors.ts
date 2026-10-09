@@ -1,5 +1,19 @@
+const cloudLoadErrorBrand = Symbol.for("betterui.CloudLoadError");
+
 /** Partial loads must never replace a complete, successful cache entry. */
 export class CloudLoadError<T = unknown> extends Error {
+  readonly [cloudLoadErrorBrand] = true;
+
+  // Next can bundle an adapter and the process-global cache in separate entries.
+  // Recognize their errors across bundle/realm boundaries, not by constructor identity.
+  static [Symbol.hasInstance](value: unknown): boolean {
+    return (
+      value !== null &&
+      typeof value === "object" &&
+      (value as Record<symbol, unknown>)[cloudLoadErrorBrand] === true
+    );
+  }
+
   constructor(
     message: string,
     readonly partialData?: T,
@@ -10,7 +24,7 @@ export class CloudLoadError<T = unknown> extends Error {
 }
 
 export function errorMessage(error: unknown) {
-  return error instanceof Error
+  return error instanceof Error || error instanceof CloudLoadError
     ? error.message
     : "Huawei Cloud API request failed.";
 }
@@ -54,8 +68,37 @@ export async function mapCloudLoad<T, U>(
   } catch (error) {
     if (!(error instanceof CloudLoadError) || error.partialData === undefined)
       throw error;
-    const partial = await transform(error.partialData as T);
+    let partial: U;
+    try {
+      partial = await transform(error.partialData as T);
+    } catch (transformError) {
+      if (transformError instanceof CloudLoadError) {
+        throw new CloudLoadError(
+          `${error.message}; ${transformError.message}`,
+          transformError.partialData,
+        );
+      }
+      throw transformError;
+    }
     throw new CloudLoadError(error.message, partial);
   }
   return transform(data);
+}
+
+/** Combine service loads without changing the shape of usable partial data. */
+export async function combineCloudLoads<
+  T extends Record<string, Promise<unknown>>,
+>(
+  loads: T,
+  fallback: { [K in keyof T]: Awaited<T[K]> },
+): Promise<{ [K in keyof T]: Awaited<T[K]> }> {
+  const keys = Object.keys(loads);
+  const results = await Promise.allSettled(Object.values(loads));
+  const data = Object.fromEntries(
+    keys.map((key, index) => [
+      key,
+      settledValue(results[index], fallback[key]),
+    ]),
+  ) as { [K in keyof T]: Awaited<T[K]> };
+  return finishCloudLoad(results, data, keys);
 }

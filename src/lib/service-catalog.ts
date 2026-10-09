@@ -165,6 +165,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "Server migration tasks, source mappings, target servers, and progress state.",
       href: "/services/sms",
+      logo: serviceLogos.SMS,
       status: "Available",
       icon: Server,
       aliases: [
@@ -182,6 +183,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "Read-only Flexus compute and database resource rollup from documented inventory APIs.",
       href: "/services/flexus",
+      logo: serviceLogos.FLEXUS,
       status: "Available",
       icon: ServerCog,
       aliases: [
@@ -200,6 +202,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "Source repositories, default branches, visibility, and clone URLs.",
       href: "/services/codearts-repo",
+      logo: serviceLogos.CODEARTS_REPO,
       status: "Available",
       icon: GitBranch,
       aliases: ["repo", "codearts repo", "repository", "git", "codehub"],
@@ -211,6 +214,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "Build tasks, latest execution status, triggers, branches, and repository linkage.",
       href: "/services/codearts-build",
+      logo: serviceLogos.CODEARTS_BUILD,
       status: "Available",
       icon: Hammer,
       aliases: ["build", "codearts build", "ci", "build task", "compile"],
@@ -222,6 +226,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "CI/CD pipelines, execution status, groups, sources, and latest run metadata.",
       href: "/services/codearts-pipeline",
+      logo: serviceLogos.CODEARTS_PIPELINE,
       status: "Available",
       icon: Workflow,
       aliases: ["pipeline", "codearts pipeline", "cicd", "workflow", "release"],
@@ -233,6 +238,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "Deployment applications, groups, owners, and lifecycle timestamps.",
       href: "/services/codearts-deploy",
+      logo: serviceLogos.CODEARTS_DEPLOY,
       status: "Available",
       icon: Rocket,
       aliases: [
@@ -249,6 +255,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "Application management inventory with components, creators, and enterprise project scope.",
       href: "/services/servicestage",
+      logo: serviceLogos.SERVICESTAGE,
       status: "Available",
       icon: Boxes,
       aliases: [
@@ -377,6 +384,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "Object migration tasks, source clouds, bucket targets, and transfer progress.",
       href: "/services/oms",
+      logo: serviceLogos.OMS,
       status: "Available",
       icon: Box,
       aliases: [
@@ -394,6 +402,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "Protected instances, production/DR server mapping, and replication pairs.",
       href: "/services/sdrs",
+      logo: serviceLogos.SDRS,
       status: "Available",
       icon: ArchiveRestore,
       aliases: [
@@ -411,6 +420,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "Unified migration-center rollup across server, object, and data migration assets.",
       href: "/services/mgc",
+      logo: serviceLogos.MGC,
       status: "Available",
       icon: Route,
       aliases: [
@@ -494,6 +504,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "Cloud hub routing for VPC, VPN, Direct Connect, and peering attachments.",
       href: "/services/enterprise-router",
+      logo: serviceLogos.ER,
       status: "Available",
       icon: Route,
       aliases: [
@@ -560,6 +571,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       shortName: "CDN",
       description: "Acceleration domains, CNAMEs, origins, and service areas.",
       href: "/services/cdn",
+      logo: serviceLogos.CDN,
       status: "Available",
       icon: CloudCog,
       aliases: ["content delivery", "acceleration", "origin", "cname", "edge"],
@@ -570,6 +582,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       shortName: "APIG",
       description: "Dedicated API gateways, VPC placement, and public access.",
       href: "/services/apig",
+      logo: serviceLogos.APIG,
       status: "Available",
       icon: CloudCog,
       aliases: ["api", "gateway", "dedicated gateway", "apigw"],
@@ -601,6 +614,28 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
     },
   ],
   Databases: [
+    {
+      name: "Distributed Message Service for RabbitMQ",
+      shortName: "DMS RabbitMQ",
+      description:
+        "RabbitMQ instances, connection endpoints, storage, and network placement.",
+      href: "/services/dms-rabbitmq",
+      status: "Available",
+      icon: MessageSquareMore,
+      aliases: ["rabbitmq", "amqp", "queue", "message broker"],
+      searchCategory: "Middleware",
+    },
+    {
+      name: "Distributed Message Service for RocketMQ",
+      shortName: "DMS RocketMQ",
+      description:
+        "RocketMQ instances, NameServer endpoints, broker capacity, and network placement.",
+      href: "/services/dms-rocketmq",
+      status: "Available",
+      icon: MessageSquareMore,
+      aliases: ["rocketmq", "reliability", "message queue", "message broker"],
+      searchCategory: "Middleware",
+    },
     {
       name: "Relational Database Service",
       shortName: "RDS",
@@ -651,6 +686,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "Managed Kafka instances, brokers, partitions, endpoints, and storage.",
       href: "/services/dms-kafka",
+      logo: serviceLogos.DMS_KAFKA,
       status: "Available",
       icon: MessageSquareMore,
       aliases: ["kafka", "broker", "topic", "message queue", "streaming"],
@@ -704,6 +740,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "AI development notebooks, workspaces, images, and compute resource pools.",
       href: "/services/modelarts",
+      logo: serviceLogos.MODELARTS,
       status: "Available",
       icon: BrainCircuit,
       aliases: [
@@ -722,6 +759,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "Serverless SQL, Spark, and Flink queues for lakehouse analytics.",
       href: "/services/dli",
+      logo: serviceLogos.DLI,
       status: "Available",
       icon: DatabaseZap,
       aliases: ["lakehouse", "sql queue", "spark", "flink", "queue", "cu"],
@@ -732,6 +770,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       shortName: "MRS",
       description: "Managed Hadoop, Spark, HBase, Hive, and big data clusters.",
       href: "/services/mrs",
+      logo: serviceLogos.MRS,
       status: "Available",
       icon: Layers3,
       aliases: ["hadoop", "spark", "hbase", "hive", "big data", "cluster"],
@@ -753,6 +792,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       shortName: "CSS",
       description: "Elasticsearch and OpenSearch-compatible search clusters.",
       href: "/services/css",
+      logo: serviceLogos.CSS,
       status: "Available",
       icon: Search,
       aliases: ["elasticsearch", "opensearch", "search", "index", "kibana"],
@@ -764,6 +804,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "Data migration clusters, node topology, runtime status, and access endpoints.",
       href: "/services/cdm",
+      logo: serviceLogos.CDM,
       status: "Available",
       icon: DatabaseZap,
       aliases: [
@@ -781,6 +822,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "Data governance instances, editions, workspaces, and lifecycle status.",
       href: "/services/dataarts",
+      logo: serviceLogos.DATAARTS,
       status: "Available",
       icon: FolderTree,
       aliases: [
@@ -840,6 +882,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "Bastion host instances, versions, access addresses, and upgrade posture.",
       href: "/services/cbh",
+      logo: serviceLogos.CBH,
       status: "Available",
       icon: KeyRound,
       aliases: ["bastion", "jump host", "privileged access", "cbh", "audit"],
@@ -895,6 +938,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "Security operations workspaces, views, and enterprise project boundaries.",
       href: "/services/secmaster",
+      logo: serviceLogos.SECMASTER,
       status: "Available",
       icon: ShieldCheck,
       aliases: [
@@ -912,6 +956,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "Cloud desktop tenant access, VPC placement, and security posture.",
       href: "/services/workspace",
+      logo: serviceLogos.WORKSPACE,
       status: "Available",
       icon: Monitor,
       aliases: [
@@ -928,7 +973,8 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
     {
       name: "Billing Center",
       shortName: "Billing",
-      description: "Monthly account expenditure, refunds, coupons, and billing breakdowns.",
+      description:
+        "Monthly account expenditure, refunds, coupons, and billing breakdowns.",
       href: "/services/billing/center",
       status: "Available",
       icon: Boxes,
@@ -938,7 +984,8 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
     {
       name: "Cost Center",
       shortName: "Cost",
-      description: "Original and amortized net costs by service, region, or enterprise project.",
+      description:
+        "Original and amortized net costs by service, region, or enterprise project.",
       href: "/services/cost",
       status: "Available",
       icon: Boxes,
@@ -958,9 +1005,11 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       shortName: "EPS",
       description:
         "Project-level resource grouping, accounting, and access control.",
-      status: "Catalog",
+      href: "/services/enterprise-projects",
+      status: "Available",
       icon: Boxes,
-      aliases: [],
+      aliases: ["eps", "enterprise project", "governance", "cost allocation"],
+      searchCategory: "Governance",
     },
   ],
   Monitoring: [
@@ -990,11 +1039,13 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
     {
       name: "Application Operations Management",
       shortName: "AOM",
-      description: "Application monitoring, alarms, topology, and operations.",
+      description:
+        "Prometheus instances, monitoring sources, retention, and enterprise-project ownership.",
       logo: serviceLogos.AOM,
-      status: "Catalog",
+      href: "/services/aom",
+      status: "Available",
       icon: Boxes,
-      aliases: [],
+      aliases: ["aom", "prometheus", "metrics", "retention", "observability"],
     },
     {
       name: "Cloud Trace Service",
@@ -1013,6 +1064,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "Notification topics, subscriptions, and message delivery policies.",
       href: "/services/smn",
+      logo: serviceLogos.SMN,
       status: "Available",
       icon: BellRing,
       aliases: ["notification", "topic", "subscription", "message", "pubsub"],
@@ -1024,6 +1076,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "Device registry status, product mapping, gateway relationship, and app space.",
       href: "/services/iotda",
+      logo: serviceLogos.IOTDA,
       status: "Available",
       icon: RadioTower,
       aliases: [
@@ -1042,6 +1095,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "Event subscriptions, channels, source bindings, targets, and fanout posture.",
       href: "/services/eventgrid",
+      logo: serviceLogos.EVENTGRID,
       status: "Available",
       icon: Cable,
       aliases: [
@@ -1059,6 +1113,7 @@ export const serviceCatalog: Record<ServiceCategory, ServiceCatalogItem[]> = {
       description:
         "Marketplace-facing purchased API rollup from APIG KooGallery subscription inventory.",
       href: "/services/koogallery",
+      logo: serviceLogos.KOOGALLERY,
       status: "Available",
       icon: Store,
       aliases: [

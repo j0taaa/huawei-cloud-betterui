@@ -1,22 +1,22 @@
+import { huaweiList } from "@/lib/huawei/http";
 import "server-only";
 
 import type { BetterUiSession, HuaweiProjectSession } from "@/lib/auth-session";
-import { huaweiList } from "@/lib/huawei/http";
-import { asArray, asRecord, asString, firstString } from "@/lib/huawei/parsers";
-import { loadAcrossProjects } from "@/lib/huawei/projects";
+import {
+  asArray,
+  asRecord,
+  asString,
+  firstString,
+  huaweiFetch,
+  loadAcrossProjects,
+  projectForId,
+} from "@/lib/huawei/core";
+import type { SmnTopic } from "@/lib/huawei/services/smn.types";
 
-export type SmnTopic = {
-  createdAt: string;
-  displayName: string;
-  enterpriseProjectId: string;
-  id: string;
+export type CreateSmnTopicInput = {
+  displayName?: string;
   name: string;
-  projectId: string;
-  projectName: string;
-  pushPolicy: string;
-  region: string;
-  topicUrn: string;
-  updatedAt: string;
+  projectId?: string;
 };
 
 export async function listSmnTopicsForProject(session: HuaweiProjectSession) {
@@ -63,3 +63,40 @@ export async function listSmnTopicsForProject(session: HuaweiProjectSession) {
 export async function listSmnTopics(session: BetterUiSession) {
   return loadAcrossProjects(session, listSmnTopicsForProject);
 }
+
+export async function createSmnTopic(
+  session: BetterUiSession,
+  input: CreateSmnTopicInput,
+) {
+  const project = projectForId(session, input.projectId);
+
+  return huaweiFetch<{ request_id?: string; topic_urn?: string }>(
+    project,
+    "smn",
+    `/v2/${project.projectId}/notifications/topics`,
+    {
+      body: JSON.stringify({
+        display_name: input.displayName ?? "",
+        name: input.name,
+      }),
+      method: "POST",
+    },
+  );
+}
+
+export async function deleteSmnTopic(
+  session: BetterUiSession,
+  topicUrn: string,
+  projectId?: string,
+) {
+  const project = projectForId(session, projectId);
+
+  return huaweiFetch<{ request_id?: string }>(
+    project,
+    "smn",
+    `/v2/${project.projectId}/notifications/topics/${encodeURIComponent(topicUrn)}`,
+    { method: "DELETE" },
+  );
+}
+
+export type * from "@/lib/huawei/services/smn.types";

@@ -44,7 +44,7 @@ export function backupWindow(value: unknown) {
 export function parseRelationalDbInstance(
   instance: unknown,
   session: HuaweiProjectSession,
-): GaussDbInstance {
+): Pick<GaussDbInstance, "availabilityZone" | "backupWindow" | "datastore" | "id" | "mode" | "name" | "port" | "privateIp" | "projectId" | "projectName" | "region" | "status" | "storage" | "type"> & { nodes: number } {
   const item = asRecord(instance);
   const datastore = asRecord(item.datastore);
   const volume = asRecord(item.volume);

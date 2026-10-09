@@ -7,6 +7,7 @@ import {
   ServiceInventoryPage,
   type InventoryColumn,
 } from "@/app/services/_components/service-inventory";
+import { ResourceIdentity } from "@/components/console-ui";
 import {
   listCodeArtsDeployApplications,
   type CodeArtsDeployApplication,
@@ -21,11 +22,7 @@ const columns: InventoryColumn<CodeArtsDeployApplication>[] = [
   {
     header: "Application",
     render: (application) => (
-      <div>
-        <p className="font-black">{application.name}</p>
-        <p className="mt-1 break-all text-xs text-[#98a2b3]">{application.id}</p>
-        {application.description ? <p className="mt-2 text-xs text-[#667085]">{application.description}</p> : null}
-      </div>
+      <ResourceIdentity description={application.description} id={application.id} name={application.name} />
     ),
   },
   { header: "Status", render: (application) => <InventoryStatus>{application.status}</InventoryStatus> },

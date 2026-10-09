@@ -1,14 +1,20 @@
-import Link from "next/link";
 import Image from "next/image";
 import {
-  ArrowLeft,
   ArrowRight,
   Boxes,
-  Search,
   type LucideIcon,
 } from "lucide-react";
 
+import { ConsoleSearchInput } from "@/components/console-search-input";
 import { ConsoleShell } from "@/components/console-shell";
+import {
+  ConsoleBackLink,
+  ConsoleCatalogCard,
+  ConsoleIconTile,
+  ConsoleMain,
+  ConsolePanel,
+  ConsolePill,
+} from "@/components/console-ui";
 import {
   serviceCatalog,
   type ServiceCategory,
@@ -30,21 +36,17 @@ export function ServiceCategoryPage({
 
   return (
     <ConsoleShell active={active}>
-      <main className="grid gap-6 p-4 lg:p-8">
-        <Link
-          className="inline-flex w-fit items-center gap-2 text-sm font-bold text-[#2563eb]"
-          href="/"
-        >
-          <ArrowLeft className="size-4" />
+      <ConsoleMain>
+        <ConsoleBackLink href="/">
           Back to dashboard
-        </Link>
+        </ConsoleBackLink>
 
-        <section className="rounded-xl border border-[#e4e9f2] bg-white p-6 shadow-[0_12px_36px_rgba(16,24,40,0.06)]">
+        <ConsolePanel className="p-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex items-center gap-4">
-              <div className="grid size-12 place-items-center rounded-xl bg-[#eef4ff] text-[#2563eb]">
+              <ConsoleIconTile>
                 <Icon className="size-6" />
-              </div>
+              </ConsoleIconTile>
               <div>
                 <h1 className="text-3xl font-black tracking-tight">{title}</h1>
                 <p className="mt-1 max-w-3xl text-sm font-medium text-[#667085]">
@@ -57,25 +59,20 @@ export function ServiceCategoryPage({
               {availableCount} available · {services.length} catalog services
             </div>
           </div>
-        </section>
+        </ConsolePanel>
 
-        <section className="rounded-xl border border-[#e4e9f2] bg-white shadow-[0_12px_36px_rgba(16,24,40,0.06)]">
-          <div className="flex flex-col gap-4 border-b border-[#e4e9f2] p-5 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-lg font-black">Services</h2>
-              <p className="mt-1 text-sm font-medium text-[#667085]">
-                Common Huawei Cloud services for this category.
-              </p>
-            </div>
-            <label className="flex h-10 min-w-72 items-center gap-2 rounded-lg border border-[#d9e0eb] bg-white px-3 text-sm font-medium text-[#667085]">
-              <Search className="size-4" />
-              <input
-                aria-label={`Search ${title} services`}
-                className="min-w-0 flex-1 bg-transparent outline-none"
-                placeholder="Search services"
-              />
-            </label>
-          </div>
+        <ConsolePanel
+          actions={(
+            <ConsoleSearchInput
+              className="min-w-72"
+              inputClassName="bg-white dark:bg-[#111827]"
+              label={`Search ${title} services`}
+              placeholder="Search services"
+            />
+          )}
+          description="Common Huawei Cloud services for this category."
+          title="Services"
+        >
 
           <div className="grid gap-3 p-5 md:grid-cols-2 2xl:grid-cols-3">
             {services.map((service) => {
@@ -108,15 +105,9 @@ export function ServiceCategoryPage({
                         </p>
                       </div>
                     </div>
-                    <span
-                      className={
-                        service.href
-                          ? "rounded-full bg-[#e9f8f1] px-2.5 py-1 text-xs font-black text-[#15803d]"
-                          : "rounded-full bg-[#f2f4f7] px-2.5 py-1 text-xs font-black text-[#667085]"
-                      }
-                    >
+                    <ConsolePill tone={service.href ? "good" : "neutral"}>
                       {service.status ?? "Catalog"}
-                    </span>
+                    </ConsolePill>
                   </div>
                   <div className="mt-5 flex items-center justify-between">
                     <span className="text-xs font-bold uppercase tracking-wide text-[#98a2b3]">
@@ -127,30 +118,18 @@ export function ServiceCategoryPage({
                 </>
               );
 
-              if (!service.href) {
-                return (
-                  <article
-                    className="rounded-xl border border-[#e4e9f2] bg-[#fbfcfe] p-4 opacity-85"
-                    key={service.shortName}
-                  >
-                    {content}
-                  </article>
-                );
-              }
-
               return (
-                <Link
-                  className="rounded-xl border border-[#e4e9f2] bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(16,24,40,0.08)]"
+                <ConsoleCatalogCard
                   href={service.href}
                   key={service.shortName}
                 >
                   {content}
-                </Link>
+                </ConsoleCatalogCard>
               );
             })}
           </div>
-        </section>
-      </main>
+        </ConsolePanel>
+      </ConsoleMain>
     </ConsoleShell>
   );
 }

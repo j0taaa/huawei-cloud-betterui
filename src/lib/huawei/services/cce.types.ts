@@ -1,0 +1,28 @@
+export type CceCluster = {
+  activeNodes: number;
+  addOnCount: number;
+  alias: string;
+  authenticationMode: string;
+  billingMode: string;
+  containerNetworkCidr: string;
+  containerNetworkMode: string;
+  createdAt: string;
+  description: string;
+  enterpriseProjectId: string;
+  flavor: string;
+  id: string;
+  name: string;
+  nodeCount: number;
+  securityGroupId: string;
+  status: string;
+  subnetId: string;
+  totalCpu: string;
+  totalMemory: string;
+  type: string;
+  updatedAt: string;
+  version: string;
+  vpcId: string;
+  projectId: string;
+  projectName: string;
+  region: string;
+};

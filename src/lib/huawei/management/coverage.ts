@@ -1,0 +1,65 @@
+import "server-only";
+import { serviceCatalog } from "@/lib/service-catalog";
+import { managementAdapters } from "./registry";
+
+// Existing service workspaces remain available alongside the new management adapters.
+const existingWorkflows: Record<string, string[]> = {
+  ecs: ["Start, stop, restart", "Snapshots", "Metrics"],
+  functiongraph: ["Create function", "Edit code and configuration", "Delete function", "Dependencies", "Triggers", "Invoke", "Logs and metrics"],
+  ims: ["Delete private image"],
+  cci: ["Delete namespace"],
+  obs: ["Upload and download objects", "Create folder", "Delete object", "Delete empty bucket"],
+  evs: ["Create disk", "Edit and expand disk", "Attach and detach", "Delete disk", "Snapshot lifecycle", "Backup", "Metrics, tags, and activity"],
+  sfs: ["Create and delete share", "Access rules"],
+  cbr: ["Edit vault", "Manual checkpoint"],
+  network: ["Edit and delete VPC, subnet, and security group"],
+  eip: ["Allocate and release EIP"],
+  nat: ["Create and delete gateway", "Create and delete SNAT rule"],
+  dns: ["Create and delete public zone"],
+  smn: ["Create and delete topic"],
+  rds: ["Reboot instance"],
+  gaussdb: ["Reboot instance"],
+  taurusdb: ["Reboot instance"],
+  geminidb: ["Restart instance"],
+  dds: ["Restart instance"],
+  dcs: ["Restart instance", "Flush data"],
+  "dms-kafka": ["Restart instance"],
+};
+const remainingAreas: Record<string, string[]> = {
+  ecs: ["Rebuild, reinstall and password recovery", "NICs, attached disks and security groups", "Quotas, pricing, billing, backups and observability"],
+  network: ["IPv6, route tables, DHCP and ACLs", "Peering, NICs, endpoints and flow logs", "Topology, import/export and bulk operations"],
+  eip: ["Shared and prepaid bandwidth", "IPv6 and network configuration", "Quotas, pricing and cloud completion tracking"],
+  elb: ["Certificate creation and complete TLS settings", "Routing policies, ACLs and advanced backend configuration", "Autoscaling, quotas, pricing, metrics and cloud completion tracking"],
+  obs: ["Object versions, multipart uploads, copies and archive restore", "Encryption, WORM, replication, notifications, logging and tags", "Quotas, costs, monitoring and object operation history"],
+  cbr: ["Backup restoration and replication", "Other vault resource types and advanced schedules", "Complete cloud job tracking, pricing and quotas"],
+  sfs: ["SFS Turbo and file-system versions", "Encryption, snapshots, quotas and billing", "Monitoring and cloud completion tracking"],
+  swr: ["Organization and repository permissions", "Replication, triggers and retention policies", "Enterprise edition and registry monitoring"],
+  dns: ["Private zones, PTR, resolvers and routing lines", "Record validation, import/export and monitoring"],
+  smn: ["Templates and subscriber administration", "Subscription confirmation resend and endpoint editing", "Metrics and integration configuration"],
+  lts: ["Log searching, collection and ingestion", "Indexes, alarms and advanced log configuration", "Monitoring and billing"],
+  dew: ["Asymmetric keys, imported material and cryptographic operations", "Secrets and credential management", "Permissions and complete key policy workflows"],
+  ces: ["Alarm policy editing, dashboards and resource groups", "Custom metrics, event monitoring and notifications"],
+  cts: ["Data-event tracker lifecycle", "OBS export configuration, agencies and notifications", "Extended audit search and export"],
+  cdn: ["TLS, cache rules, access control and complete origin settings", "Traffic analytics, logs and task completion tracking", "Pricing and quota workflows"],
+  aom: ["Cross-account monitoring", "Metric queries and dashboards", "Alarms and collection rules"],
+  "enterprise-projects": ["Resource migration", "Authorization and quotas"],
+  "dms-rabbitmq": ["Broker scaling", "Public access and encryption configuration", "Bindings and complete access policies", "Monitoring and recovery"],
+  "dms-rocketmq": ["Broker scaling", "Public access and encryption configuration", "Topic and consumer updates", "Messages, tracing, monitoring and recovery"],
+  functiongraph: ["Complete workflow and application lifecycle", "Policy and billing coverage", "Cloud job tracking"],
+  evs: ["Encryption and provisioning options", "Tag changes", "Complete pricing and quota checks", "Cloud job tracking"],
+  "billing/center": ["Invoices, orders, renewal and payment workflows"],
+  cost: ["Budgets, alerts and cost allocation workflows"],
+  flexus: ["Native Flexus provisioning and management"],
+  mgc: ["Migration orchestration and task management"],
+  koogallery: ["Marketplace purchases and subscription management"],
+};
+
+/** Include every catalog item, even entries without a route. No adapter implies console parity. */
+export function getServiceCoverage() {
+  return Object.entries(serviceCatalog).flatMap(([category, items]) => items.map((item) => {
+    const service = item.href?.replace(/^\/services\//, "") ?? item.shortName.toLowerCase().replace(/\s+/g, "-");
+    const adapter = Object.hasOwn(managementAdapters, service) ? managementAdapters[service] : undefined;
+    const workflows = [...new Set([...(existingWorkflows[service] ?? []), ...(adapter?.operations.map((operation) => operation.label) ?? [])])];
+    return { catalogId: item.shortName.toLowerCase().replace(/\s+/g, "-"), service, name: item.name, category, inventoryHref: item.href, managementHref: adapter ? `/services/${service}/manage` : undefined, workflows, status: !item.href ? "Catalog only" : workflows.length ? "Partial management" : "Inventory only", remaining: remainingAreas[service] ?? ["Complete resource lifecycle", "Configuration and policy workflows", "Observability and cloud task tracking"] };
+  }));
+}

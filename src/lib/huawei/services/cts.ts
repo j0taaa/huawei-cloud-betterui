@@ -10,6 +10,7 @@ export type CtsTracker = {
   filePrefix: string;
   id: string;
   isLtsEnabled: string;
+  isSupportValidate: boolean;
   ltsGroupId: string;
   name: string;
   projectId: string;
@@ -48,6 +49,7 @@ export async function listCtsTrackersForProject(session: HuaweiProjectSession) {
       bucketName: asString(obs.bucket_name, "-"),
       filePrefix: asString(obs.file_prefix_name, "-"),
       id: firstString([item.id, item.tracker_name]),
+      isSupportValidate: item.is_support_validate === true,
       isLtsEnabled: String(item.is_lts_enabled ?? lts.is_lts_enabled ?? "-"),
       ltsGroupId: firstString([item.group_id, lts.log_group_id], "-"),
       name: firstString([item.tracker_name, item.name]),

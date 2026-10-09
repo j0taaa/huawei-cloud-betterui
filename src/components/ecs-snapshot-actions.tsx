@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Camera, Loader2, Trash2 } from "lucide-react";
 
+import { ConsoleActionFeedback, ConsoleActionStack, ConsoleButton } from "@/components/console-ui";
+
 type SnapshotTarget = {
   diskId: string;
   label: string;
@@ -84,18 +86,17 @@ export function CreateSnapshotButton({
   }
 
   return (
-    <div className="grid gap-2">
-      <button
-        className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#2563eb] bg-[#2563eb] px-3 text-sm font-bold text-white shadow-sm hover:bg-[#1d4ed8] disabled:opacity-70"
+    <ConsoleActionStack>
+      <ConsoleButton
         disabled={pending || targets.length === 0}
         onClick={createSnapshot}
-        type="button"
+        size="md"
       >
         {pending ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" />}
         Create snapshot
-      </button>
-      {message ? <p className="text-sm font-bold text-[#2563eb]">{message}</p> : null}
-    </div>
+      </ConsoleButton>
+      {message ? <ConsoleActionFeedback>{message}</ConsoleActionFeedback> : null}
+    </ConsoleActionStack>
   );
 }
 
@@ -142,15 +143,16 @@ export function DeleteSnapshotButton({
 
   return (
     <div className="grid justify-items-start gap-1">
-      <button
-        className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#fecdd3] bg-white px-3 text-xs font-black text-[#b42318] hover:bg-[#fff1f2] disabled:opacity-70"
+      <ConsoleButton
+        className="text-xs font-black"
         disabled={pending}
         onClick={deleteSnapshot}
-        type="button"
+        size="sm"
+        variant="dangerOutline"
       >
         {pending ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
         Delete
-      </button>
+      </ConsoleButton>
       {message ? <p className="text-xs font-bold text-[#2563eb]">{message}</p> : null}
     </div>
   );

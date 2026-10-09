@@ -33,6 +33,19 @@ npm run start     # serve the completed build
 
 Individual checks are `npm run lint`, `npm run typecheck`, `npm test`, and `npm run build`. After building, `npm run test:production` starts temporary local app/API servers and verifies login, cache hits, paginated inventory, mutation invalidation, and error pages in the compiled app. Tests use mocked HTTP responses and temporary cache directories; they do not need cloud credentials or modify cloud resources.
 
+## Additional messaging, monitoring, and governance services
+
+- **DMS for RabbitMQ** (`/services/dms-rabbitmq`): instance inventory and details with version, brokers, storage, TLS, connection endpoints, and network placement.
+- **DMS for RocketMQ** (`/services/dms-rocketmq`): instance inventory and details with broker capacity, NameServer/gRPC endpoints, storage, TLS, and network placement.
+- **AOM** (`/services/aom`): Prometheus instance inventory across selected projects and all granted enterprise projects, including source type, status, version, and metric retention.
+- **Enterprise Project Management** (`/services/enterprise-projects`): account-wide project inventory, enabled/disabled state, commercial/test classification, descriptions, and timestamps.
+
+These additions are read-only. Messaging detail links retain the owning IAM project; cache keys include engine, instance, and project. Missing permissions remain visible as errors, including when another selected project succeeds. EPS requires the account token retained by current IAM logins and makes one account-wide paginated query, rather than repeating requests per regional project.
+
+Endpoint overrides are `HUAWEI_RABBITMQ_ENDPOINT`, `HUAWEI_ROCKETMQ_ENDPOINT`, `HUAWEI_AOM_ENDPOINT`, and `HUAWEI_EPS_ENDPOINT`. EPS defaults to `https://eps.myhuaweicloud.com`; override it for another Huawei site.
+
+API references: [RabbitMQ instances](https://support.huaweicloud.com/intl/en-us/api-rabbitmq/ListInstances.html), [RocketMQ instances](https://support.huaweicloud.com/intl/en-us/api-hrm/ListInstances.html), [AOM Prometheus instances](https://support.huaweicloud.com/intl/en-us/api-aom/ListPromInstance.html), and [enterprise projects](https://support.huaweicloud.com/intl/en-us/api-em/en-us_topic_0121230880.html).
+
 ## Code organization
 
 | Location                               | Responsibility                                                                               |
@@ -50,6 +63,10 @@ Individual checks are `npm run lint`, `npm run typecheck`, `npm test`, and `npm 
 | `src/app/services`                     | Server pages that render typed loader results                                                |
 | `src/app/api/cloud`                    | Validated mutation/download handlers                                                         |
 | `tests`                                | Behavioral tests for cache, API pagination/errors, OBS keys, IAM regions, and catalog routes |
+
+Implementations and public contracts live only under `src/lib/huawei/`. The old `src/lib/huawei-cloud/` paths are one-way compatibility exports. Service-owned `.types.ts` files contain contracts shared with client components; `huawei-cloud/types.ts` only re-exports those contracts.
+
+FunctionGraph uses separate modules for package editing (`src/lib/functiongraph/package.ts`), dependency manifests, transport, and CES authentication. Its configuration, trigger, and monitoring panels are separate client components. Code editing preserves every ZIP entry, including binary assets and files outside the 30-file text preview. ZIPs remain ZIPs after saving. Dependency edits preserve the complete archive as well. Invalid, unsupported, or oversized packages fail before submission; the editing limit is 7 MB of uncompressed data.
 
 Server adapters are marked `server-only`. Client components can use `import type` for their data types; they should not import loaders. Keep service-specific parsing in its adapter and share helpers only when multiple services use the same behavior. API versions differ by service, so keep their contracts explicit instead of forcing every resource into one generic model.
 

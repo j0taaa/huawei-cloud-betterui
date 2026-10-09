@@ -4,32 +4,16 @@ import { ArrowRightLeft } from "lucide-react";
 
 import {
   InventoryStatus,
+  inventoryStatusTone,
   type InventoryColumn,
   ServiceInventoryPage,
 } from "@/app/services/_components/service-inventory";
+import { CellStack, ResourceIdentity } from "@/components/console-ui";
 import { listDrsJobs, type DrsJob, withCloudResult } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
   title: "DRS | Huawei Cloud Better UI",
 };
-
-function statusTone(status: string) {
-  const normalized = status.toLowerCase();
-
-  if (["completed", "success", "running", "normal"].includes(normalized)) {
-    return "good";
-  }
-
-  if (["failed", "error", "abnormal"].includes(normalized)) {
-    return "bad";
-  }
-
-  if (["creating", "starting", "migrating", "syncing", "pausing"].includes(normalized)) {
-    return "warn";
-  }
-
-  return "neutral";
-}
 
 export default async function DrsPage() {
   const result = await withCloudResult<DrsJob[]>([], listDrsJobs, cloudCacheKeys.listDrsJobs);
@@ -46,32 +30,30 @@ export default async function DrsPage() {
     {
       header: "Job",
       render: (job) => (
-        <div>
-          <p className="font-black text-[#101828]">{job.name}</p>
-          <p className="mt-1 break-all text-xs text-[#98a2b3]">{job.id}</p>
-        </div>
+        <ResourceIdentity
+          className="text-[#101828]"
+          id={job.id}
+          idClassName="font-normal"
+          name={job.name}
+        />
       ),
     },
     {
       header: "State",
-      render: (job) => <InventoryStatus tone={statusTone(job.status)}>{job.status}</InventoryStatus>,
+      render: (job) => <InventoryStatus tone={inventoryStatusTone(job.status)}>{job.status}</InventoryStatus>,
     },
     {
       header: "Flow",
       render: (job) => (
-        <div>
-          <p className="font-black">{job.source} to {job.destination}</p>
-          <p className="mt-1 text-xs text-[#667085]">{job.direction}</p>
-        </div>
+        <CellStack subValue={job.direction}>{job.source} to {job.destination}</CellStack>
       ),
     },
     {
       header: "Scenario",
       render: (job) => (
-        <div>
-          <p>{job.jobType}</p>
-          <p className="mt-1 text-xs text-[#667085]">{job.engineType}</p>
-        </div>
+        <CellStack subValue={job.engineType}>
+          {job.jobType}
+        </CellStack>
       ),
     },
     { header: "Network", render: (job) => job.networkType },

@@ -4,9 +4,11 @@ import { RadioTower } from "lucide-react";
 
 import {
   InventoryStatus,
+  inventoryStatusTone,
   ServiceInventoryPage,
   type InventoryColumn,
 } from "@/app/services/_components/service-inventory";
+import { ResourceIdentity } from "@/components/console-ui";
 import {
   listIotdaDevices,
   type IotdaDevice,
@@ -17,25 +19,14 @@ export const metadata: Metadata = {
   title: "IoTDA | Huawei Cloud Better UI",
 };
 
-function statusTone(status: string): "bad" | "good" | "neutral" | "warn" {
-  const normalized = status.toLowerCase();
-  if (normalized === "online") return "good";
-  if (["abnormal", "frozen"].includes(normalized)) return "bad";
-  if (normalized === "inactive") return "warn";
-  return "neutral";
-}
-
 const columns: InventoryColumn<IotdaDevice>[] = [
   {
     header: "Device",
     render: (device) => (
-      <div>
-        <p className="font-black">{device.deviceName}</p>
-        <p className="mt-1 break-all text-xs text-[#98a2b3]">{device.deviceId}</p>
-      </div>
+      <ResourceIdentity id={device.deviceId} name={device.deviceName} />
     ),
   },
-  { header: "Status", render: (device) => <InventoryStatus tone={statusTone(device.status)}>{device.status}</InventoryStatus> },
+  { header: "Status", render: (device) => <InventoryStatus tone={inventoryStatusTone(device.status)}>{device.status}</InventoryStatus> },
   { header: "Node", render: (device) => `${device.nodeType} / ${device.nodeId}` },
   { header: "Product", render: (device) => device.productId },
   { header: "Gateway", render: (device) => device.gatewayId },

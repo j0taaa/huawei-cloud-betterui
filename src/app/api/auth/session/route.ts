@@ -21,8 +21,10 @@ export async function GET() {
       projectId: project.projectId,
       projectName: project.projectName,
       region: project.region,
+      tokenExpiresAt: project.expiresAt,
     })),
     region: session.region,
+    tokenExpiresAt: session.tokenExpiresAt,
     userId: session.userId,
     username: session.username,
   });

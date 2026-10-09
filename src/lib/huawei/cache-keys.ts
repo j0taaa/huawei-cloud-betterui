@@ -1,6 +1,21 @@
 /** Stable keys shared by readers and mutations; never derive these from function names. */
 export const cloudCacheKeys = {
   summary: "cloud-summary",
+  listAomPrometheusInstances: "listAomPrometheusInstances",
+  listEnterpriseProjects: "listEnterpriseProjects",
+  listDmsRabbitMqInstances: "listDmsRabbitMqInstances",
+  listDmsRocketMqInstances: "listDmsRocketMqInstances",
+  messagingInstance: (
+    engine: "rabbitmq" | "rocketmq",
+    id: string,
+    projectId?: string,
+  ) =>
+    JSON.stringify([
+      "messaging-instance-v1",
+      engine,
+      projectId ?? "default",
+      id,
+    ]),
   listAsGroups: "listAsGroups",
   listSwrRepositories: "listSwrRepositories",
   asGroup: (id: string) => `as-group-v1:${id}`,
@@ -81,7 +96,12 @@ export const cloudCacheKeys = {
   evs: (id: string) => `evs-disk:${id}`,
   rds: (id: string) => `rds-instance:${id}`,
   elb: (id: string) => `elb:${id}`,
+  dds: (id: string) => `dds-instance:${id}`,
+  gaussDb: (id: string) => `gaussdb-instance:${id}`,
+  taurusDb: (id: string) => `taurusdb-instance:${id}`,
+  functionGraphTriggers: "functiongraph-triggers",
   cce: (id: string) => `cce-cluster:${id}`,
+  functionGraphCode: (id: string) => `functiongraph-function-code-v4:${id}`,
   functionGraph: (id: string) => `functiongraph-function:${id}`,
   vpc: (id: string) => `vpc:${id}`,
   subnet: (id: string) => `subnet:${id}`,

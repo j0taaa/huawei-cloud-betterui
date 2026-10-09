@@ -14,6 +14,7 @@ import {
   StatusSummary,
   valueOrDash,
 } from "@/app/services/_components/networking-readonly";
+import { CellStack } from "@/components/console-ui";
 import { LocalDateTime } from "@/components/local-date-time";
 
 export const metadata: Metadata = {
@@ -76,12 +77,9 @@ function vpnTone(status: string) {
 
 function gatewayCell(connection: VpnConnectionItem) {
   return (
-    <div className="grid gap-1">
-      <span>{valueOrDash(connection.vgwId)}</span>
-      <span className="text-xs font-bold text-[#667085]">
-        {valueOrDash(connection.vgwIp)}
-      </span>
-    </div>
+    <CellStack subValue={valueOrDash(connection.vgwIp)}>
+      {valueOrDash(connection.vgwId)}
+    </CellStack>
   );
 }
 
@@ -94,10 +92,9 @@ function tunnelCell(connection: VpnConnectionItem) {
   }
 
   return (
-    <div className="grid gap-1">
-      <span>Local {local}</span>
-      <span className="text-xs font-bold text-[#667085]">Peer {peer}</span>
-    </div>
+    <CellStack subValue={`Peer ${peer}`}>
+      Local {local}
+    </CellStack>
   );
 }
 

@@ -1,36 +1,114 @@
 import { mapCloudLoad } from "@/lib/huawei/errors";
-import { CloudErrorPage, CloudErrorBanner } from "@/components/cloud-error";
-import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
-import Link from "next/link";
+import { CloudErrorPage } from "@/components/cloud-error";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Route } from "lucide-react";
+import { Route } from "lucide-react";
 
 import { RefreshButton } from "@/components/cloud-action-buttons";
 import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
+import {
+  ConsoleActionStack,
+  ConsoleMain,
+  ConsoleDescriptionPanel,
+  ConsoleResourceLink,
+  DataFreshnessText,
+  FactGrid,
+  ResourceDetailHero,
+} from "@/components/console-ui";
 import { ConsoleShell } from "@/components/console-shell";
-import { listSubnets, withCloudResult } from "@/lib/huawei-cloud";
 import { LocalDateTime } from "@/components/local-date-time";
+import { NetworkResourceActions } from "@/components/network-resource-actions";
+import { listSubnets, listVpcs, withCloudResult } from "@/lib/huawei-cloud";
 
-export default async function SubnetDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function SubnetDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
   const result = await withCloudResult(
     null,
-    (session) => mapCloudLoad(() => listSubnets(session), (items) => items.find((subnet) => subnet.id === id) ?? null),
-    cloudCacheKeys.subnet(id),
+    (session) => mapCloudLoad(() => listSubnets(session), items => items.find((subnet) => subnet.id === id) ?? null),
+    `subnet:${id}`,
   );
-  if (!result.data && result.error) return <CloudErrorPage active="Networking" backHref="/services/network" error={result.error} />;
+  if (!result.data && result.error) return <CloudErrorPage active="Networking" backHref="/services/network/subnets" error={result.error} />;
   const item = result.data;
+
   if (!item) notFound();
-  const facts = [["Name", item.name], ["ID", item.id], ["CIDR", item.cidr], ["Gateway", item.gateway], ["VPC ID", item.vpcId], ["Status", item.status]];
+
+  const vpcResult = await withCloudResult(
+    null,
+    (session) => mapCloudLoad(() => listVpcs(session), items => items.find(
+        (vpc) => vpc.id === item.vpcId && vpc.projectId === item.projectId,
+      ) ?? null),
+    `subnet-vpc:${id}`,
+  );
+
+  const facts = [
+    { label: "Name", value: item.name },
+    { label: "ID", value: item.id },
+    { label: "CIDR", value: item.cidr },
+    { label: "Gateway", value: item.gateway },
+    { label: "IPv6 CIDR", value: item.ipv6Cidr },
+    { label: "IPv6 Gateway", value: item.ipv6Gateway },
+    { label: "DHCP", value: item.dhcpEnabled },
+    { label: "DNS Servers", value: item.dnsServers.join(", ") || "-" },
+    { label: "Availability Zone", value: item.availabilityZone },
+    { label: "Status", value: item.status },
+    {
+      label: "VPC",
+      value: vpcResult.data ? (
+        <ConsoleResourceLink className="font-semibold" href={`/services/network/vpcs/${vpcResult.data.id}`}>
+          {vpcResult.data.name}
+        </ConsoleResourceLink>
+      ) : (
+        item.vpcId
+      ),
+    },
+    { label: "VPC ID", value: item.vpcId },
+    { label: "Neutron Network ID", value: item.neutronNetworkId },
+    { label: "Neutron Subnet ID", value: item.neutronSubnetId },
+    { label: "Project", value: item.projectName },
+    { label: "Project ID", value: item.projectId },
+    { label: "Region", value: item.region },
+    { label: "Created", value: <LocalDateTime value={item.createdAt} /> },
+    { label: "Updated", value: <LocalDateTime value={item.updatedAt} /> },
+  ];
+
   return (
     <ConsoleShell active="Networking">
-      <CloudRefreshIndicator show={result.isRefreshing} />
-      <CloudErrorBanner error={result.error} isCached={result.isCached} />
-      <main className="grid gap-6 p-4 lg:p-8">
-        <Link className="inline-flex w-fit items-center gap-2 text-sm font-bold text-[#2563eb]" href="/services/network"><ArrowLeft className="size-4" />Back to Networking</Link>
-        <section className="rounded-xl border border-[#e4e9f2] bg-white p-6 shadow-[0_12px_36px_rgba(16,24,40,0.06)]"><div className="flex items-center justify-between gap-4"><div className="flex items-center gap-4"><div className="grid size-12 place-items-center rounded-xl bg-[#eef4ff] text-[#2563eb]"><Route className="size-6" /></div><div><p className="text-sm font-black uppercase tracking-[0.14em] text-[#667085]">Subnet</p><h1 className="mt-1 text-3xl font-black tracking-tight">{item.name}</h1><p className="mt-1 text-xs font-bold text-[#98a2b3]">Showing {result.isCached ? "cached" : "fresh"} data from <LocalDateTime value={result.updatedAt} />.</p></div></div><RefreshButton /></div></section>
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{facts.map(([label, value]) => <article className="rounded-xl border border-[#e4e9f2] bg-white p-5 shadow-[0_12px_36px_rgba(16,24,40,0.06)]" key={label}><p className="text-sm font-bold text-[#667085]">{label}</p><p className="mt-2 break-words text-lg font-black">{value}</p></article>)}</section>
-      </main>
+      <CloudRefreshIndicator show={result.isRefreshing || vpcResult.isRefreshing} />
+      <ConsoleMain>
+        <ResourceDetailHero
+          actions={
+            <ConsoleActionStack gap="md">
+              <div className="flex justify-start lg:justify-end">
+                <RefreshButton />
+              </div>
+              <NetworkResourceActions
+                id={item.id}
+                kind="subnets"
+                name={item.name}
+                projectId={item.projectId}
+                vpcId={item.vpcId}
+              />
+            </ConsoleActionStack>
+          }
+          backHref="/services/network"
+          backLabel="Back to Networking"
+          description={
+            <DataFreshnessText isCached={result.isCached} updatedAt={result.updatedAt} />
+          }
+          eyebrow="Subnet"
+          icon={Route}
+          title={item.name}
+        />
+
+        {item.description ? (
+          <ConsoleDescriptionPanel>{item.description}</ConsoleDescriptionPanel>
+        ) : null}
+
+        <FactGrid items={facts} />
+      </ConsoleMain>
     </ConsoleShell>
   );
 }

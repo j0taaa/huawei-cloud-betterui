@@ -4,23 +4,16 @@ import { Route } from "lucide-react";
 
 import {
   InventoryStatus,
+  inventoryStatusTone,
   type InventoryColumn,
   ServiceInventoryPage,
 } from "@/app/services/_components/service-inventory";
+import { CellStack, ResourceIdentity } from "@/components/console-ui";
 import { listMgcMigrationItems, type MgcMigrationItem, withCloudResult } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
   title: "MgC | Huawei Cloud Better UI",
 };
-
-function statusTone(status: string) {
-  const normalized = status.toLowerCase();
-
-  if (["success", "succeeded", "migrate_success", "normal", "200"].includes(normalized)) return "good";
-  if (["failed", "error", "migrate_fail", "300", "303"].includes(normalized)) return "bad";
-  if (["running", "syncing", "migrating", "creating", "100"].includes(normalized)) return "warn";
-  return "neutral";
-}
 
 export default async function MgcPage() {
   const result = await withCloudResult<MgcMigrationItem[]>([], listMgcMigrationItems, cloudCacheKeys.listMgcMigrationItems);
@@ -33,21 +26,15 @@ export default async function MgcPage() {
     {
       header: "Migration asset",
       render: (item) => (
-        <div>
-          <p className="font-black text-[#101828]">{item.name}</p>
-          <p className="mt-1 break-all text-xs text-[#98a2b3]">{item.id}</p>
-        </div>
+        <ResourceIdentity id={item.id} name={item.name} />
       ),
     },
     { header: "Service", render: (item) => item.service },
-    { header: "Status", render: (item) => <InventoryStatus tone={statusTone(item.status)}>{item.status}</InventoryStatus> },
+    { header: "Status", render: (item) => <InventoryStatus tone={inventoryStatusTone(item.status)}>{item.status}</InventoryStatus> },
     {
       header: "Flow",
       render: (item) => (
-        <div>
-          <p className="font-black">{item.source} to {item.target}</p>
-          <p className="mt-1 text-xs text-[#667085]">{item.signal}</p>
-        </div>
+        <CellStack subValue={item.signal}>{item.source} to {item.target}</CellStack>
       ),
     },
     { header: "Size / scope", render: (item) => item.sizeOrScope },

@@ -1,26 +1,55 @@
-import { CloudErrorPage, CloudErrorBanner } from "@/components/cloud-error";
-import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
+import { CloudErrorPage } from "@/components/cloud-error";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   Activity,
-  ArrowLeft,
+  AlertTriangle,
   CalendarDays,
+  Clock3,
   Copy,
+  Cpu,
   Eye,
   Globe2,
   HardDrive,
   ImageIcon,
+  KeyRound,
   MapPin,
   MoreHorizontal,
   Network,
+  ReceiptText,
   Server,
   ShieldCheck,
-  Tag,
 } from "lucide-react";
 
 import { RefreshButton } from "@/components/cloud-action-buttons";
 import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
+import {
+  ConsoleBackLink,
+  ConsoleActionGroup,
+  ConsoleCallout,
+  ConsoleCatalogCard,
+  ConsoleFloatingMenuPanel,
+  ConsoleMenuLink,
+  ConsoleInsetPanel,
+  ConsoleMutedText,
+  ConsolePanel,
+  ConsolePanelActionBar,
+  ConsolePanelGrid,
+  ConsolePill,
+  ConsoleResponsiveGrid,
+  ConsoleStatCardGrid,
+  ConsoleSurface,
+  DataFreshnessText,
+  DetailItem,
+  DetailSection,
+  EmptyStatePanel,
+  KeyValueGrid,
+  ResourceIdentity,
+  SimpleTable,
+  SignalCard,
+  StatusBadge,
+  TableEmptyText,
+} from "@/components/console-ui";
 import { ConsoleShell } from "@/components/console-shell";
 import { EcsInstanceActions } from "@/components/ecs-instance-actions";
 import { EcsMonitoringChart } from "@/components/ecs-monitoring-chart";
@@ -28,6 +57,7 @@ import {
   CreateSnapshotButton,
   DeleteSnapshotButton,
 } from "@/components/ecs-snapshot-actions";
+import { MonthlyResourceCostCard } from "@/components/monthly-resource-cost-card";
 import {
   getEcsInstance,
   getEcsMonitoring,
@@ -65,86 +95,6 @@ function isEcsTab(value: string | undefined): value is EcsTab {
   return tabs.some((tab) => tab.id === value);
 }
 
-function DetailRow({
-  href,
-  icon,
-  label,
-  value,
-  subValue,
-}: {
-  href?: string;
-  icon: React.ReactNode;
-  label: string;
-  subValue?: React.ReactNode;
-  value: React.ReactNode;
-}) {
-  const valueContent = href ? (
-    <Link className="text-[#2563eb] hover:underline" href={href}>
-      {value}
-    </Link>
-  ) : (
-    value
-  );
-
-  return (
-    <div className="flex gap-3">
-      <div className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-[#eef4ff] text-[#2563eb]">
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <p className="text-xs font-black text-[#667085]">{label}</p>
-        <p className="mt-1 flex items-center gap-2 break-words text-sm font-black text-[#101828]">
-          {valueContent}
-          {value !== "-" ? <Copy className="size-3.5 text-[#667085]" /> : null}
-        </p>
-        {subValue ? (
-          <p className="mt-1 break-words text-xs font-semibold text-[#667085]">
-            {subValue}
-          </p>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function SectionCard({
-  children,
-  icon,
-  title,
-}: {
-  children: React.ReactNode;
-  icon: React.ReactNode;
-  title: string;
-}) {
-  return (
-    <section className="rounded-2xl border border-[#e4e9f2] bg-white p-6 shadow-[0_18px_48px_rgba(16,24,40,0.07)]">
-      <div className="mb-5 flex items-center gap-2">
-        <div className="grid size-7 place-items-center rounded-lg bg-[#f4f7fb] text-[#101828]">
-          {icon}
-        </div>
-        <h2 className="text-lg font-black tracking-tight">{title}</h2>
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function SecurityRule({
-  cidr,
-  name,
-}: {
-  cidr: string;
-  name: string;
-}) {
-  return (
-    <div className="grid grid-cols-[1fr_auto_auto] gap-4 rounded-lg bg-[#f7f9fc] px-4 py-3 text-sm font-bold text-[#344054]">
-      <span>{name}</span>
-      <span>IPv4</span>
-      <span>{cidr}</span>
-    </div>
-  );
-}
-
 function SecurityOverview({ instance }: { instance: EcsInstance }) {
   const primaryGroup = instance.securityGroups[0];
   const groupHref = primaryGroup
@@ -152,19 +102,27 @@ function SecurityOverview({ instance }: { instance: EcsInstance }) {
     : "/services/network";
 
   return (
-    <SectionCard icon={<ShieldCheck className="size-4" />} title="Security">
-      <DetailRow
+    <DetailSection icon={<ShieldCheck className="size-4" />} title="Security">
+      <DetailItem
         href={primaryGroup ? groupHref : undefined}
         icon={<ShieldCheck className="size-4" />}
         label="Security Groups"
         subValue={primaryGroup?.id !== primaryGroup?.name ? primaryGroup?.id : undefined}
         value={primaryGroup?.name ?? "No security group found"}
       />
-      <div className="mt-4 grid gap-2">
-        <SecurityRule cidr="Any" name="Allow ICMP" />
-        <SecurityRule cidr="0.0.0.0/0" name="Allow SSH (22)" />
-        <SecurityRule cidr="0.0.0.0/0" name="Allow RDP (3389)" />
-      </div>
+      {instance.securityGroups.length > 1 ? (
+        <div className="mt-4 grid gap-2">
+          {instance.securityGroups.slice(1).map((group) => (
+            <Link
+              className="rounded-lg bg-[#f7f9fc] px-4 py-3 text-sm font-bold text-[#344054] hover:text-[#2563eb]"
+              href={`/services/network/security-groups/${group.id}`}
+              key={group.id}
+            >
+              {group.name}
+            </Link>
+          ))}
+        </div>
+      ) : null}
       <Link
         className="mt-4 inline-flex items-center gap-2 text-sm font-black text-[#2563eb]"
         href={groupHref}
@@ -172,7 +130,7 @@ function SecurityOverview({ instance }: { instance: EcsInstance }) {
         <Eye className="size-4" />
         View all rules
       </Link>
-    </SectionCard>
+    </DetailSection>
   );
 }
 
@@ -211,37 +169,15 @@ function EcsMoreMenu({ instance }: { instance: EcsInstance }) {
       >
         <MoreHorizontal className="size-5" />
       </summary>
-      <div className="absolute right-0 top-13 z-30 w-56 overflow-hidden rounded-xl border border-[#d9e0eb] bg-white py-2 shadow-[0_18px_48px_rgba(16,24,40,0.16)]">
+      <ConsoleFloatingMenuPanel className="absolute right-0 top-13 z-30 grid w-56 gap-1">
         {items.map((item) => (
-          <Link
-            className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-[#344054] hover:bg-[#f4f7fb] hover:text-[#2563eb]"
-            href={item.href}
-            key={item.label}
-          >
+          <ConsoleMenuLink href={item.href} key={item.label}>
             {item.icon}
             {item.label}
-          </Link>
+          </ConsoleMenuLink>
         ))}
-      </div>
+      </ConsoleFloatingMenuPanel>
     </details>
-  );
-}
-
-function ServerIllustration() {
-  return (
-    <div className="relative h-full min-h-44 overflow-hidden rounded-xl bg-gradient-to-br from-[#f7fbff] via-[#eef5ff] to-[#f8fbff]">
-      <div className="absolute left-8 top-12 h-8 w-16 rounded-full bg-[#dceaff] blur-sm" />
-      <div className="absolute right-8 top-8 h-8 w-16 rounded-full bg-[#e5efff] blur-sm" />
-      <div className="absolute inset-x-0 bottom-8 mx-auto h-16 w-40 rotate-45 rounded-2xl bg-[#dbe8ff] opacity-70" />
-      <div className="absolute left-1/2 top-12 w-28 -translate-x-1/2 rounded-2xl bg-white/70 p-2 shadow-[0_18px_60px_rgba(37,99,235,0.22)]">
-        {["top", "middle", "bottom"].map((layer) => (
-          <div
-            className="mb-2 h-9 rounded-xl bg-gradient-to-r from-[#6aa6ff] via-[#3b82f6] to-[#2563eb] last:mb-0"
-            key={layer}
-          />
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -252,57 +188,81 @@ function OverviewDetails({ instance }: { instance: EcsInstance }) {
   const systemDiskId = systemDisk?.id ?? instance.attachedDiskIds?.[0];
 
   return (
-    <section className="rounded-2xl border border-[#e4e9f2] bg-white p-6 shadow-[0_18px_48px_rgba(16,24,40,0.07)]">
+    <ConsoleSurface className="p-6 shadow-[0_18px_48px_rgba(16,24,40,0.07)]">
       <div className="grid gap-8 xl:grid-cols-[1.1fr_1fr_1.2fr_0.9fr]">
         <div className="grid gap-6 border-[#e4e9f2] xl:border-r xl:pr-8">
-          <DetailRow
+          <DetailItem
             icon={<Server className="size-4" />}
             label="Status"
+            subValue={
+              instance.taskState !== "-"
+                ? `Task: ${instance.taskState}`
+                : instance.vmState !== "-"
+                  ? `VM: ${instance.vmState}`
+                  : undefined
+            }
             value={displayStatus(instance.status)}
           />
-          <DetailRow
-            icon={<HardDrive className="size-4" />}
+          <DetailItem
+            icon={<Cpu className="size-4" />}
             label="Flavor"
+            subValue={instance.flavorId !== instance.flavor ? instance.flavorId : undefined}
             value={instance.flavor}
           />
-          <DetailRow
+          <DetailItem
             icon={<MapPin className="size-4" />}
             label="Availability Zone"
             value={instance.availabilityZone}
           />
-          <DetailRow
+          <DetailItem
             icon={<CalendarDays className="size-4" />}
             label="Created"
             value={<LocalDateTime value={instance.createdAt} />}
           />
+          <DetailItem
+            icon={<Clock3 className="size-4" />}
+            label="Updated"
+            value={
+              instance.updatedAt !== "-" ? (
+                <LocalDateTime value={instance.updatedAt} />
+              ) : (
+                "-"
+              )
+            }
+          />
         </div>
 
         <div className="grid gap-6 border-[#e4e9f2] xl:border-r xl:pr-8">
-          <DetailRow
+          <DetailItem
             icon={<Network className="size-4" />}
             label="Private IP"
             value={instance.privateIp}
           />
-          <DetailRow
+          <DetailItem
             icon={<Globe2 className="size-4" />}
             label="Public IP"
             value={instance.publicIp}
           />
-          <DetailRow
-            icon={<Globe2 className="size-4" />}
-            label="Domain Name"
-            value="-"
+          <DetailItem
+            icon={<Network className="size-4" />}
+            label="NICs"
+            value={`${instance.addresses.length} addresses`}
+          />
+          <DetailItem
+            icon={<ShieldCheck className="size-4" />}
+            label="Security Groups"
+            value={`${instance.securityGroups.length} groups`}
           />
         </div>
 
         <div className="grid gap-6 border-[#e4e9f2] xl:border-r xl:pr-8">
-          <DetailRow
+          <DetailItem
             icon={<ImageIcon className="size-4" />}
             label="Image"
             subValue={imageId !== imageName ? imageId : undefined}
             value={imageName}
           />
-          <DetailRow
+          <DetailItem
             href={systemDiskId ? `/services/evs/${systemDiskId}` : undefined}
             icon={<HardDrive className="size-4" />}
             label="System Disk"
@@ -315,83 +275,79 @@ function OverviewDetails({ instance }: { instance: EcsInstance }) {
             }
             value={systemDisk?.name ?? systemDiskId ?? "EVS system disk"}
           />
+          <DetailItem
+            icon={<KeyRound className="size-4" />}
+            label="Key Pair"
+            value={instance.keyName}
+          />
+          <DetailItem
+            icon={<ReceiptText className="size-4" />}
+            label="Charging Mode"
+            value={instance.chargingMode}
+          />
         </div>
 
-        <ServerIllustration />
+        <div className="grid content-start gap-3">
+          <SignalCard
+            icon={<Activity className="size-4" />}
+            label="Power State"
+            tone={instance.status === "ACTIVE" ? "good" : "neutral"}
+            value={instance.powerState}
+          />
+          <SignalCard
+            icon={<Globe2 className="size-4" />}
+            label="External Access"
+            tone={instance.publicIp !== "-" ? "warn" : "neutral"}
+            value={instance.publicIp !== "-" ? "EIP attached" : "Private only"}
+          />
+        </div>
       </div>
-    </section>
+    </ConsoleSurface>
   );
 }
 
 function MonitoringDashboard({ monitoring }: { monitoring: EcsMonitoring | null }) {
   if (!monitoring) {
     return (
-      <SectionCard icon={<Activity className="size-4" />} title="Monitoring">
-        <p className="text-sm font-semibold text-[#667085]">
+      <DetailSection icon={<Activity className="size-4" />} title="Monitoring">
+        <ConsoleMutedText weight="semibold">
           Monitoring data is unavailable because the ECS instance could not be found.
-        </p>
-      </SectionCard>
+        </ConsoleMutedText>
+      </DetailSection>
     );
   }
 
   return (
-    <section className="grid gap-5">
-      <section className="grid gap-5 xl:grid-cols-2">
-        {monitoring.metrics.map((metric) => (
-            <article
-              className="rounded-2xl border border-[#e4e9f2] bg-white p-6 shadow-[0_18px_48px_rgba(16,24,40,0.07)]"
-              key={metric.metricName}
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-black tracking-tight">{metric.label}</h2>
-                  <p className="mt-1 text-sm font-semibold text-[#667085]">
-                    Region {monitoring.region} · project {monitoring.projectId}
-                  </p>
-                </div>
-                <span className="rounded-full bg-[#eef4ff] px-3 py-1 text-xs font-black text-[#2563eb]">
+    <ConsolePanelGrid className="gap-5">
+      {monitoring.metrics.map((metric) => (
+            <ConsoleSurface
+              actions={
+                <ConsolePill className="px-3" tone="info">
                   {metric.namespace} · {metric.metricName}
-                </span>
-              </div>
+                </ConsolePill>
+              }
+              className="shadow-[0_18px_48px_rgba(16,24,40,0.07)]"
+              description={`Region ${monitoring.region} · project ${monitoring.projectId}`}
+              key={metric.metricName}
+              title={metric.label}
+            >
 
               {metric.datapoints.length ? (
                 <EcsMonitoringChart datapoints={metric.datapoints} unit={metric.unit} />
               ) : (
-                <div className="mt-6 rounded-xl border border-dashed border-[#d9e0eb] bg-[#fbfcfe] p-8 text-center">
-                  <p className="text-sm font-black text-[#344054]">
-                    No Cloud Eye datapoints returned for this metric.
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-[#667085]">
+                <div className="p-6">
+                  <ConsoleInsetPanel
+                    className="p-8 text-center"
+                    dashed
+                    title="No Cloud Eye datapoints returned for this metric."
+                  >
                     The instance may not have agent metrics enabled yet, or this account may not have CES metric permissions.
-                  </p>
+                  </ConsoleInsetPanel>
                 </div>
               )}
-            </article>
+            </ConsoleSurface>
           ))}
-      </section>
-    </section>
-  );
-}
-
-function EmptyTabState({
-  children,
-  icon,
-  title,
-}: {
-  children: React.ReactNode;
-  icon: React.ReactNode;
-  title: string;
-}) {
-  return (
-    <section className="rounded-2xl border border-dashed border-[#c8d3e3] bg-white p-10 text-center shadow-[0_18px_48px_rgba(16,24,40,0.05)]">
-      <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-[#eef4ff] text-[#2563eb]">
-        {icon}
-      </div>
-      <h2 className="mt-4 text-lg font-black tracking-tight">{title}</h2>
-      <p className="mx-auto mt-2 max-w-2xl text-sm font-semibold text-[#667085]">
-        {children}
-      </p>
-    </section>
+    </ConsolePanelGrid>
   );
 }
 
@@ -405,95 +361,106 @@ function DisksTab({ instance }: { instance: EcsInstance }) {
 
   if (!diskIds.length) {
     return (
-      <EmptyTabState icon={<HardDrive className="size-5" />} title="No disks found">
+      <EmptyStatePanel title="No disks found">
         Huawei did not return attached EVS disk ids for this ECS instance.
-      </EmptyTabState>
+      </EmptyStatePanel>
     );
   }
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-[#e4e9f2] bg-white shadow-[0_18px_48px_rgba(16,24,40,0.07)]">
-      <div className="border-b border-[#eef2f7] p-5">
-        <h2 className="text-lg font-black tracking-tight">Disks</h2>
-        <p className="mt-1 text-sm font-semibold text-[#667085]">
-          Attached EVS disks for this ECS instance.
-        </p>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="bg-[#f7f9fc] text-xs font-black uppercase text-[#667085]">
-            <tr>
-              <th className="px-5 py-3">Name</th>
-              <th className="px-5 py-3">Role</th>
-              <th className="px-5 py-3">Size</th>
-              <th className="px-5 py-3">Type</th>
-              <th className="px-5 py-3">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#eef2f7]">
-            {diskIds.map((diskId) => {
-              const isSystemDisk = diskId === instance.systemDisk?.id;
+    <ConsolePanel
+      description="Attached EVS disks for this ECS instance."
+      title="Disks"
+    >
+      <SimpleTable
+        columns={[
+          { header: "Name" },
+          { header: "Role" },
+          { header: "Size" },
+          { header: "Type" },
+          { header: "Status" },
+        ]}
+        emptyState={<TableEmptyText>No disks found.</TableEmptyText>}
+        minWidthClassName="min-w-[760px]"
+        rows={diskIds.map((diskId) => {
+          const isSystemDisk = diskId === instance.systemDisk?.id;
 
-              return (
-                <tr className="hover:bg-[#fbfcfe]" key={diskId}>
-                  <td className="px-5 py-4">
-                    <Link className="font-black text-[#2563eb]" href={`/services/evs/${diskId}`}>
-                      {isSystemDisk ? instance.systemDisk?.name : diskId}
-                    </Link>
-                    <p className="mt-1 text-xs font-semibold text-[#98a2b3]">{diskId}</p>
-                  </td>
-                  <td className="px-5 py-4 font-semibold">
-                    {isSystemDisk ? "System disk" : "Data disk"}
-                  </td>
-                  <td className="px-5 py-4 font-semibold">
-                    {isSystemDisk ? instance.systemDisk?.size : "Open disk details"}
-                  </td>
-                  <td className="px-5 py-4 font-semibold">
-                    {isSystemDisk ? instance.systemDisk?.type : "-"}
-                  </td>
-                  <td className="px-5 py-4 font-semibold">
-                    {isSystemDisk ? instance.systemDisk?.status : "Attached"}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </section>
+          return {
+            cells: [
+              <ResourceIdentity
+                href={`/services/evs/${diskId}`}
+                id={diskId}
+                key="name"
+                name={isSystemDisk ? instance.systemDisk?.name : diskId}
+              />,
+              isSystemDisk ? "System disk" : "Data disk",
+              isSystemDisk ? instance.systemDisk?.size : "Open disk details",
+              isSystemDisk ? instance.systemDisk?.type : "-",
+              <StatusBadge
+                key="status"
+                status={isSystemDisk ? instance.systemDisk?.status : "Attached"}
+              />,
+            ],
+            key: diskId,
+          };
+        })}
+      />
+    </ConsolePanel>
   );
 }
 
 function NicsTab({ instance }: { instance: EcsInstance }) {
+  if (!instance.addresses.length) {
+    return (
+      <EmptyStatePanel title="No NIC details">
+        Huawei did not return address or NIC metadata for this ECS instance.
+      </EmptyStatePanel>
+    );
+  }
+
   return (
-    <section className="grid gap-5 xl:grid-cols-[1fr_0.8fr]">
-      <SectionCard icon={<Network className="size-4" />} title="Network interfaces">
-        <div className="grid gap-x-10 gap-y-6 md:grid-cols-2">
-          <DetailRow icon={<Network className="size-4" />} label="Primary private IP" value={instance.privateIp} />
-          <DetailRow icon={<Globe2 className="size-4" />} label="Public IP / EIP" value={instance.publicIp} />
-          <DetailRow icon={<MapPin className="size-4" />} label="Availability Zone" value={instance.availabilityZone} />
-          <DetailRow icon={<Server className="size-4" />} label="Interface" value="Primary NIC" />
-        </div>
-      </SectionCard>
-      <SectionCard icon={<ShieldCheck className="size-4" />} title="Attached security groups">
+    <ConsoleResponsiveGrid className="gap-5" variant="xl-1-0.8">
+      <ConsolePanel icon={Network} title="Network interfaces">
+        <SimpleTable
+          columns={[
+            { header: "Network" },
+            { header: "IP address" },
+            { header: "Type" },
+            { header: "Version" },
+            { header: "MAC" },
+          ]}
+          emptyState={<TableEmptyText>No NIC details returned.</TableEmptyText>}
+          minWidthClassName="min-w-[680px]"
+          rows={instance.addresses.map((address) => ({
+            cells: [
+              address.network,
+              address.ip,
+              address.type,
+              address.version,
+              address.macAddress,
+            ],
+            key: `${address.network}-${address.ip}-${address.macAddress}`,
+          }))}
+        />
+      </ConsolePanel>
+      <ConsolePanel icon={ShieldCheck} title="Attached security groups">
         {instance.securityGroups.length ? (
-          <div className="grid gap-3">
+          <div className="grid gap-3 p-5">
             {instance.securityGroups.map((group) => (
-              <Link
-                className="rounded-xl border border-[#e4e9f2] bg-[#fbfcfe] p-4 transition hover:border-[#2563eb] hover:bg-[#eef4ff]"
+              <ConsoleCatalogCard
                 href={`/services/network/security-groups/${group.id}`}
                 key={group.id}
               >
                 <p className="font-black text-[#2563eb]">{group.name}</p>
                 <p className="mt-1 text-xs font-semibold text-[#667085]">{group.id}</p>
-              </Link>
+              </ConsoleCatalogCard>
             ))}
           </div>
         ) : (
-          <p className="text-sm font-semibold text-[#667085]">No security groups returned for this NIC.</p>
+          <ConsoleMutedText className="p-5" weight="semibold">No security groups returned for this NIC.</ConsoleMutedText>
         )}
-      </SectionCard>
-    </section>
+      </ConsolePanel>
+    </ConsoleResponsiveGrid>
   );
 }
 
@@ -533,9 +500,9 @@ function SnapshotsTab({
             targets={snapshotTargets}
           />
         </div>
-        <EmptyTabState icon={<HardDrive className="size-5" />} title="Snapshots unavailable">
+        <EmptyStatePanel title="Snapshots unavailable">
           Snapshot data could not be loaded for this ECS instance.
-        </EmptyTabState>
+        </EmptyStatePanel>
       </section>
     );
   }
@@ -550,110 +517,157 @@ function SnapshotsTab({
             targets={snapshotTargets}
           />
         </div>
-        <EmptyTabState icon={<HardDrive className="size-5" />} title="No snapshots found">
+        <EmptyStatePanel title="No snapshots found">
           No EVS snapshots were found for this ECS instance&apos;s attached disks.
-        </EmptyTabState>
+        </EmptyStatePanel>
       </section>
     );
   }
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-[#e4e9f2] bg-white shadow-[0_18px_48px_rgba(16,24,40,0.07)]">
-      <div className="flex flex-col gap-4 border-b border-[#eef2f7] p-5 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h2 className="text-lg font-black tracking-tight">Snapshots</h2>
-          <p className="mt-1 text-sm font-semibold text-[#667085]">
-            EVS snapshots for disks attached to this ECS instance.
-          </p>
-        </div>
-        <CreateSnapshotButton
-          ecsId={instance.id}
-          projectId={instance.projectId}
-          targets={snapshotTargets}
-        />
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[980px] text-left text-sm">
-          <thead className="bg-[#f7f9fc] text-xs font-black uppercase text-[#667085]">
-            <tr>
-              <th className="px-5 py-3">Name</th>
-              <th className="px-5 py-3">Status</th>
-              <th className="px-5 py-3">Source disk</th>
-              <th className="px-5 py-3">Size</th>
-              <th className="px-5 py-3">Created</th>
-              <th className="px-5 py-3">Description</th>
-              <th className="px-5 py-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#eef2f7]">
-            {snapshots.map((snapshot) => (
-              <tr className="hover:bg-[#fbfcfe]" key={snapshot.id}>
-                <td className="px-5 py-4">
-                  <p className="font-black text-[#101828]">{snapshot.name}</p>
-                  <p className="mt-1 text-xs font-semibold text-[#98a2b3]">{snapshot.id}</p>
-                </td>
-                <td className="px-5 py-4 font-semibold">{snapshot.status}</td>
-                <td className="px-5 py-4">
-                  <Link className="font-bold text-[#2563eb] hover:underline" href={`/services/evs/${snapshot.diskId}`}>
-                    {snapshot.diskId}
-                  </Link>
-                </td>
-                <td className="px-5 py-4 font-semibold">{snapshot.size}</td>
-                <td className="px-5 py-4 font-semibold">
-                  <LocalDateTime value={snapshot.createdAt} />
-                </td>
-                <td className="px-5 py-4 font-semibold text-[#667085]">
-                  {snapshot.description || "-"}
-                </td>
-                <td className="px-5 py-4">
-                  <DeleteSnapshotButton
-                    ecsId={instance.id}
-                    projectId={snapshot.projectId}
-                    snapshotId={snapshot.id}
-                    snapshotName={snapshot.name}
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <ConsolePanel
+      description="EVS snapshots for disks attached to this ECS instance."
+      title="Snapshots"
+    >
+      <ConsolePanelActionBar
+        actions={
+          <CreateSnapshotButton
+            ecsId={instance.id}
+            projectId={instance.projectId}
+            targets={snapshotTargets}
+          />
+        }
+      />
+      <SimpleTable
+        columns={[
+          { header: "Name" },
+          { header: "Status" },
+          { header: "Source disk" },
+          { header: "Size" },
+          { header: "Created" },
+          { header: "Description" },
+          { header: "Actions" },
+        ]}
+        emptyState={<TableEmptyText>No snapshots found.</TableEmptyText>}
+        minWidthClassName="min-w-[980px]"
+        rows={snapshots.map((snapshot) => ({
+          cells: [
+            <ResourceIdentity id={snapshot.id} key="name" name={snapshot.name} />,
+            <StatusBadge key="status" status={snapshot.status} />,
+            <ResourceIdentity
+              href={`/services/evs/${snapshot.diskId}`}
+              key="disk"
+              name={snapshot.diskId}
+            />,
+            snapshot.size,
+            <LocalDateTime key="created" value={snapshot.createdAt} />,
+            snapshot.description || "-",
+            (
+              <DeleteSnapshotButton
+                ecsId={instance.id}
+                key="actions"
+                projectId={snapshot.projectId}
+                snapshotId={snapshot.id}
+                snapshotName={snapshot.name}
+              />
+            ),
+          ],
+          key: snapshot.id,
+        }))}
+      />
+    </ConsolePanel>
   );
 }
 
-function TagsTab() {
+function TagsTab({ instance }: { instance: EcsInstance }) {
+  const rows = instance.tags.length ? instance.tags : instance.metadata;
+
+  if (rows.length) {
+    return (
+      <ConsolePanel
+        description={
+          instance.tags.length
+            ? "Resource tags returned by ECS."
+            : "ECS metadata returned in the server detail payload."
+        }
+        title={instance.tags.length ? "Tags" : "Metadata"}
+      >
+        <KeyValueGrid
+          emptyState="No tags or metadata returned."
+          items={rows}
+        />
+      </ConsolePanel>
+    );
+  }
+
   return (
-    <EmptyTabState icon={<Tag className="size-5" />} title="No tags">
+    <EmptyStatePanel title="No tags">
       Huawei did not return tags for this ECS instance in the current ECS detail payload.
-    </EmptyTabState>
+    </EmptyStatePanel>
   );
 }
 
 function OverviewTab({ instance }: { instance: EcsInstance }) {
   return (
     <>
+      <EcsOverviewSignals instance={instance} />
       <OverviewDetails instance={instance} />
-      <section className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
-        <SectionCard icon={<Network className="size-4" />} title="Network">
+      <ConsoleResponsiveGrid className="gap-5" variant="xl-1.15-0.85">
+        <DetailSection icon={<Network className="size-4" />} title="Network">
           <div className="grid gap-x-10 gap-y-6 md:grid-cols-2">
-            <DetailRow icon={<Network className="size-4" />} label="VPC" value="vpc-default" />
-            <DetailRow icon={<Globe2 className="size-4" />} label="Bandwidth" value="Pay-per-use" />
-            <DetailRow icon={<Network className="size-4" />} label="Subnet" value="subnet-default" />
-            <DetailRow icon={<Globe2 className="size-4" />} label="EIP" value={instance.publicIp} />
-            <DetailRow icon={<Network className="size-4" />} label="Network Interface" value="Primary NIC" />
-            <DetailRow
+            <DetailItem icon={<Network className="size-4" />} label="Networks" value={Array.from(new Set(instance.addresses.map((address) => address.network))).join(", ") || "-"} />
+            <DetailItem icon={<Globe2 className="size-4" />} label="Public exposure" value={instance.publicIp !== "-" ? "EIP attached" : "No public IP"} />
+            <DetailItem icon={<Globe2 className="size-4" />} label="EIP" value={instance.publicIp} />
+            <DetailItem icon={<Network className="size-4" />} label="Address count" value={instance.addresses.length} />
+            <DetailItem
               icon={<Globe2 className="size-4" />}
               label="Primary IP"
-              subValue={`${instance.publicIp} (Public)`}
+              subValue={instance.publicIp !== "-" ? `${instance.publicIp} (Public)` : undefined}
               value={`${instance.privateIp} (Private)`}
             />
+            <DetailItem icon={<MapPin className="size-4" />} label="Region" value={instance.region} />
           </div>
-        </SectionCard>
+        </DetailSection>
         <SecurityOverview instance={instance} />
-      </section>
-      <TagsTab />
+      </ConsoleResponsiveGrid>
+      <TagsTab instance={instance} />
     </>
+  );
+}
+
+function EcsOverviewSignals({ instance }: { instance: EcsInstance }) {
+  const isHealthy = instance.status === "ACTIVE";
+  const hasTask = instance.taskState !== "-";
+
+  return (
+    <ConsoleStatCardGrid columns={5}>
+      <MonthlyResourceCostCard
+        region={instance.region}
+        resourceId={instance.id}
+      />
+      <SignalCard
+        icon={<Server className="size-4" />}
+        label="Lifecycle"
+        tone={isHealthy ? "good" : hasTask ? "warn" : "neutral"}
+        value={hasTask ? instance.taskState : displayStatus(instance.status)}
+      />
+      <SignalCard
+        icon={<Cpu className="size-4" />}
+        label="Specification"
+        value={instance.flavor}
+      />
+      <SignalCard
+        icon={<Network className="size-4" />}
+        label="NIC Addresses"
+        value={instance.addresses.length}
+      />
+      <SignalCard
+        icon={<AlertTriangle className="size-4" />}
+        label="Internet Path"
+        tone={instance.publicIp !== "-" ? "warn" : "neutral"}
+        value={instance.publicIp !== "-" ? instance.publicIp : "Private only"}
+      />
+    </ConsoleStatCardGrid>
   );
 }
 
@@ -676,9 +690,7 @@ function EcsTabContent({
     return (
       <>
         {monitoringError ? (
-          <section className="rounded-xl border border-[#fecdd3] bg-[#fff1f2] p-4 text-sm font-bold text-[#b42318]">
-            {monitoringError}
-          </section>
+          <ConsoleCallout>{monitoringError}</ConsoleCallout>
         ) : null}
         <MonitoringDashboard monitoring={monitoring} />
       </>
@@ -697,9 +709,7 @@ function EcsTabContent({
     return (
       <>
         {snapshotsError ? (
-          <section className="rounded-xl border border-[#fecdd3] bg-[#fff1f2] p-4 text-sm font-bold text-[#b42318]">
-            {snapshotsError}
-          </section>
+          <ConsoleCallout>{snapshotsError}</ConsoleCallout>
         ) : null}
         <SnapshotsTab instance={instance} snapshots={snapshots} />
       </>
@@ -707,7 +717,7 @@ function EcsTabContent({
   }
 
   if (activeTab === "tags") {
-    return <TagsTab />;
+    return <TagsTab instance={instance} />;
   }
 
   return <OverviewTab instance={instance} />;
@@ -726,7 +736,7 @@ export default async function EcsInstancePage({
   const result = await withCloudResult(
     null,
     (session) => getEcsInstance(session, id),
-    cloudCacheKeys.ecs(id),
+    `ecs-instance-v2:${id}`,
   );
   if (!result.data && result.error) return <CloudErrorPage active="Compute" backHref="/services/ecs" error={result.error} />;
   const monitoringResult =
@@ -734,7 +744,7 @@ export default async function EcsInstancePage({
       ? await withCloudResult(
           null,
           (session) => getEcsMonitoring(session, id),
-          cloudCacheKeys.ecsMonitoring(id),
+          `ecs-monitoring-v3:${id}`,
         )
       : null;
   const snapshotsResult =
@@ -742,7 +752,7 @@ export default async function EcsInstancePage({
       ? await withCloudResult(
           null,
           (session) => getEcsSnapshots(session, id),
-          cloudCacheKeys.ecsSnapshots(id),
+          `ecs-snapshots:${id}`,
         )
       : null;
   const instance = result.data;
@@ -750,6 +760,8 @@ export default async function EcsInstancePage({
   if (!instance) {
     notFound();
   }
+
+  const isHealthy = instance.status === "ACTIVE";
 
   return (
     <ConsoleShell active="Compute">
@@ -761,14 +773,9 @@ export default async function EcsInstancePage({
         }
       />
       <main className="grid gap-5 bg-[#f4f7fb] p-4 lg:p-8">
-        <CloudErrorBanner error={result.error} isCached={result.isCached} />
-        <Link
-          className="inline-flex w-fit items-center gap-2 text-sm font-black text-[#2563eb]"
-          href="/services/ecs"
-        >
-          <ArrowLeft className="size-4" />
+        <ConsoleBackLink className="font-black" href="/services/ecs">
           Back to ECS
-        </Link>
+        </ConsoleBackLink>
 
         <section className="relative overflow-visible rounded-2xl border border-[#e4e9f2] bg-white shadow-[0_18px_48px_rgba(16,24,40,0.07)]">
           <div className="flex flex-col gap-6 p-6 md:flex-row md:items-start md:justify-between">
@@ -782,7 +789,13 @@ export default async function EcsInstancePage({
                     {instance.name}
                   </h1>
                   <span className="inline-flex items-center gap-2 text-sm font-bold text-[#344054]">
-                    <span className="size-2.5 rounded-full bg-[#20c997] shadow-[0_0_0_4px_rgba(32,201,151,0.14)]" />
+                    <span
+                      className={`size-2.5 rounded-full ${
+                        isHealthy
+                          ? "bg-[#20c997] shadow-[0_0_0_4px_rgba(32,201,151,0.14)]"
+                          : "bg-[#98a2b3] shadow-[0_0_0_4px_rgba(152,162,179,0.16)]"
+                      }`}
+                    />
                     {displayStatus(instance.status)}
                   </span>
                 </div>
@@ -791,12 +804,11 @@ export default async function EcsInstancePage({
                   <Copy className="size-3.5 text-[#667085]" />
                 </p>
                 <p className="mt-1 text-xs font-bold text-[#98a2b3]">
-                  Showing {result.isCached ? "cached" : "fresh"} data from{" "}
-                  <LocalDateTime value={result.updatedAt} />.
+                  <DataFreshnessText isCached={result.isCached} updatedAt={result.updatedAt} />
                 </p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <ConsoleActionGroup>
               <EcsInstanceActions
                 id={instance.id}
                 projectId={instance.projectId}
@@ -805,7 +817,7 @@ export default async function EcsInstancePage({
               />
               <RefreshButton />
               <EcsMoreMenu instance={instance} />
-            </div>
+            </ConsoleActionGroup>
           </div>
 
           <nav className="flex gap-6 overflow-x-auto border-t border-[#eef2f7] px-6">

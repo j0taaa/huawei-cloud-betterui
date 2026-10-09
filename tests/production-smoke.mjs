@@ -12,6 +12,9 @@ const requests = [];
 let generation = 1;
 let failRds = false;
 let failCosts = false;
+let showRdsDetails = false;
+let failRdsBackups = false;
+let failAom = true;
 const billingMonth = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Asia/Shanghai",
   year: "numeric",
@@ -66,7 +69,69 @@ const mock = createServer(async (req, res) => {
       })),
     };
   } else if (url.pathname.startsWith("/evs/")) body = { cloudvolumes: [] };
-  else if (url.pathname.startsWith("/vpc/"))
+  else if (
+    url.pathname.startsWith("/rabbitmq/") ||
+    url.pathname.startsWith("/rocketmq/")
+  ) {
+    const engine = url.pathname.startsWith("/rabbitmq/")
+      ? "rabbitmq"
+      : "rocketmq";
+    const instance = {
+      instance_id: `${engine}-1`,
+      name: `Live ${engine} broker`,
+      status: "RUNNING",
+      engine_version: "5.0",
+      broker_num: 3,
+      storage_space: 100,
+      used_storage_space: 0,
+      connect_address: "10.0.0.10",
+      namesrv_address: "10.0.0.20:9876",
+      grpc_address: "10.0.0.20:8081",
+      vpc_id: "vpc-1",
+      ssl_enable: true,
+    };
+    if (url.pathname.endsWith("/denied")) {
+      status = 403;
+      body = { error_msg: "broker permission denied" };
+    } else if (url.pathname.endsWith("/instances")) {
+      assert.equal(url.searchParams.get("engine"), engine);
+      assert.equal(req.headers["x-auth-token"], "mock-project-token");
+      body = { instances: [instance], instance_num: 1 };
+    } else body = instance;
+  } else if (url.pathname.startsWith("/aom/")) {
+    if (req.method !== "GET") {
+      let raw = ""; for await (const chunk of req) raw += chunk;
+      const mutation = raw ? JSON.parse(raw) : {};
+      requests.at(-1).body = mutation;
+      if (req.method === "POST") { assert.equal(req.headers.region, "sa-brazil-1"); assert.equal(mutation.project_id, projectId); }
+      else assert.equal(req.headers["enterprise-project-id"], "0");
+      body = { prometheus: [{ prom_id: "created-prom" }] };
+    } else {
+      assert.equal(req.headers["enterprise-project-id"], "all_granted_eps");
+    status = failAom ? 403 : 200;
+    body = failAom
+      ? { error_msg: "AOM permission denied" }
+      : {
+          prometheus: [
+            {
+              prom_id: "prom-1",
+              prom_name: "Live Prometheus",
+              prom_type: "CCE",
+              prom_status: "NORMAL",
+              prom_limits: { compactor_blocks_retention_period: "30" },
+            },
+          ],
+        };
+    }
+  } else if (url.pathname.startsWith("/eps/")) {
+    assert.equal(req.headers["x-auth-token"], "mock-account-token");
+    body = {
+      enterprise_projects: [
+        { id: "0", name: "Live enterprise project", status: 1, type: "prod" },
+      ],
+      total_count: 1,
+    };
+  } else if (url.pathname.startsWith("/vpc/"))
     body = url.pathname.includes("security-groups")
       ? { security_groups: [], page_info: {} }
       : url.pathname.includes("subnets")
@@ -74,12 +139,39 @@ const mock = createServer(async (req, res) => {
         : { vpcs: [], page_info: {} };
   else if (url.pathname.startsWith("/elb/"))
     body = { loadbalancers: [], page_info: {} };
+  else if (url.pathname.startsWith("/obs/")) body = `<ListAllMyBucketsResult><Buckets><Bucket><Name>live-bucket</Name><Location>sa-brazil-1</Location></Bucket></Buckets></ListAllMyBucketsResult>`;
+  else if (url.pathname.startsWith("/eip/")) body = { publicips: [] };
+  else if (url.pathname.startsWith("/cbr/")) body = { vaults: [], backups: [], policies: [], count: 0 };
+  else if (url.pathname.startsWith("/sfs/")) body = { shares: [] };
+  else if (url.pathname === "/swr/v2/manage/namespaces") body = { namespaces: [{ name: "prod" }] };
+  else if (url.pathname.endsWith("/OS-CREDENTIAL/securitytokens")) body = { credential: { access: "test-access", secret: "test-secret", securitytoken: "test-token" } };
+  else if (url.pathname.startsWith("/dns/")) body = { zones: [], metadata: { total_count: 0 } };
+  else if (url.pathname.startsWith("/smn/")) body = { topics: [], total_count: 0 };
+  else if (url.pathname.startsWith("/lts/")) body = { log_groups: [] };
+  else if (url.pathname.startsWith("/dew/")) body = { key_details: [] };
+  else if (url.pathname.startsWith("/ces/")) body = url.pathname.endsWith("metrics") ? { metrics: [] } : { alarms: [], count: 0 };
+  else if (url.pathname.startsWith("/cts/")) body = { trackers: [] };
+  else if (url.pathname.startsWith("/cdn/")) body = { domains: [], total: 0 };
   else if (url.pathname.startsWith("/cce/")) body = { items: [] };
   else if (url.pathname.startsWith("/rds/")) {
-    status = failRds ? 403 : 200;
-    body = failRds
-      ? { error: { message: "mock permission denied" } }
-      : { instances: [] };
+    if (showRdsDetails) {
+      const backups = url.pathname.includes("/backups");
+      status = backups && failRdsBackups ? 403 : 200;
+      body = backups
+        ? failRdsBackups
+          ? { error_msg: "backup permission denied" }
+          : { backups: [{ id: "backup-1", name: "Review backup" }] }
+        : {
+            instances: [
+              { id: "review-db", name: "Review database", nodes: [] },
+            ],
+          };
+    } else {
+      status = failRds ? 403 : 200;
+      body = failRds
+        ? { error: { message: "mock permission denied" } }
+        : { instances: [] };
+    }
   } else if (
     url.pathname === `/as/autoscaling-api/v1/${projectId}/scaling_group`
   ) {
@@ -208,12 +300,12 @@ const mock = createServer(async (req, res) => {
     body = { error: { message: `Unexpected mock path ${url.pathname}` } };
   }
   res.writeHead(status, { "Content-Type": "application/json" });
-  res.end(JSON.stringify(body));
+  res.end(typeof body === "string" ? body : JSON.stringify(body));
 });
 await new Promise((resolve) => mock.listen(0, "127.0.0.1", resolve));
 const mockPort = mock.address().port;
 const mockUrl = `http://127.0.0.1:${mockPort}`;
-const env = { ...process.env, NEXT_TELEMETRY_DISABLED: "1" };
+const env = { ...process.env, NEXT_TELEMETRY_DISABLED: "1", BETTERUI_SMOKE_OBS_URL: mockUrl, NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --import ${path.resolve("tests/fixtures/production-obs.mjs")}` };
 const endpoints = await readFile("src/lib/huawei/endpoints.ts", "utf8");
 for (const match of endpoints.matchAll(/(\w+): "(HUAWEI_[A-Z_]+_ENDPOINT)"/g))
   env[match[2]] = `${mockUrl}/${match[1]}`;
@@ -247,7 +339,15 @@ const request = (route, init = {}) =>
   });
 const scoped = `${JSON.stringify({ accountName, projectId, projects: [{ projectId, region: "sa-brazil-1" }], region: "sa-brazil-1", userId: "mock-user", username: "mock-user" })}`;
 const keys = [
+  "listDmsRabbitMqInstances",
+  "listDmsRocketMqInstances",
+  "listAomPrometheusInstances",
+  "listEnterpriseProjects",
+  ...["rabbitmq", "rocketmq"].map((engine) =>
+    JSON.stringify(["messaging-instance-v1", engine, projectId, `${engine}-1`]),
+  ),
   "cloud-summary",
+  "rds-instance:review-db",
   "listEcsInstances",
   "ecs-instance-v2:server-0",
   "ecs-monitoring-v3:server-0",
@@ -295,11 +395,29 @@ try {
   const detail = await request("/services/ecs/server-0");
   assert.equal(detail.status, 200);
   assert.match(await detail.text(), /generation-1-1-0/);
+  for (const [body, status] of [
+    [{ action: "delete", projectId }, 400],
+    [{ action: "start", projectId }, 409],
+    [{ action: "stop", projectId: "another-project" }, 400],
+  ]) {
+    const rejected = await request("/api/cloud/ecs/server-0/action", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    assert.equal(rejected.status, status);
+  }
+  assert.equal(
+    requests.filter(
+      (req) => req.path.startsWith("/ecs/") && req.path.endsWith("/action"),
+    ).length,
+    0,
+  );
   generation = 2;
   const action = await request("/api/cloud/ecs/server-0/action", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "start", projectId }),
+    body: JSON.stringify({ action: "stop", projectId }),
   });
   assert.equal(action.status, 200);
   assert.equal((await action.json()).jobId, "mock-job");
@@ -381,8 +499,83 @@ try {
   const invalidCost = await request("/services/cost?month=2099-01");
   assert.equal(invalidCost.status, 200);
   assert.match(await invalidCost.text(), /latest 18 months/);
+  showRdsDetails = true;
+  failRdsBackups = true;
+  const partialRds = await request("/services/rds/review-db");
+  assert.equal(partialRds.status, 200);
+  const partialHtml = await partialRds.text();
+  assert.match(partialHtml, /Review database/);
+  assert.match(partialHtml, /backup permission denied/);
+  assert.doesNotMatch(partialHtml, /Unable to load resource/);
+  failRdsBackups = false;
+  const completeRds = await (await request("/services/rds/review-db")).text();
+  assert.match(completeRds, /Review backup/);
+  assert.doesNotMatch(completeRds, /backup permission denied/);
+  for (const engine of ["rabbitmq", "rocketmq"]) {
+    const inventory = await request(`/services/dms-${engine}`);
+    assert.equal(inventory.status, 200);
+    const html = await inventory.text();
+    assert.match(html, new RegExp(`Live ${engine} broker`));
+    assert.ok(html.includes(`projectId=${projectId}`));
+    const detail = await request(
+      `/services/dms-${engine}/${engine}-1?projectId=${projectId}`,
+    );
+    assert.equal(detail.status, 200);
+    assert.match(await detail.text(), /Connection endpoints/);
+    assert.match(
+      await (
+        await request(`/services/dms-${engine}/denied?projectId=${projectId}`)
+      ).text(),
+      /broker permission denied/,
+    );
+    assert.match(
+      await (
+        await request(`/services/dms-${engine}/${engine}-1?projectId=unknown`)
+      ).text(),
+      /not part of this session/,
+    );
+  }
+  const aomDenied = await (await request("/services/aom")).text();
+  assert.match(aomDenied, /AOM permission denied/);
+  assert.doesNotMatch(aomDenied, /No Prometheus instances/);
+  failAom = false;
+  const aomHtml = await (await request("/services/aom")).text();
+  assert.match(aomHtml, /Live Prometheus/);
+  assert.match(aomHtml, /30 days/);
+  assert.doesNotMatch(aomHtml, /AOM permission denied/);
+  assert.match(
+    await (await request("/services/enterprise-projects")).text(),
+    /Live enterprise project/,
+  );
+  const serviceSearch = await request("/services/databases");
+  assert.match(await serviceSearch.text(), /dms-rabbitmq/);
+  for (const service of ["ecs", "aom", "enterprise-projects", "dms-rabbitmq", "dms-rocketmq", "network", "dns", "smn", "lts", "dew", "ces", "cts", "cdn", "eip", "elb", "cbr", "sfs", "swr", "obs"]) {
+    const managementPage = await request(`/services/${service}/manage`);
+    assert.equal(managementPage.status, 200, `${service} management route`);
+    assert.match(await managementPage.text(), /Loading management controls/);
+  }
+  const context = await request(`/api/cloud/management/aom?projectId=${projectId}&operation=update&resourceId=prom-1`);
+  assert.equal(context.status, 200, await context.clone().text());
+  assert.equal((await context.json()).resources[0].name, "Live Prometheus");
+  const requestId = randomUUID();
+  const mutation = { requestId, operation: "create", projectId, acknowledgedImpact: true, values: { name: "Browser-Monitor", type: "REMOTE_WRITE", enterpriseProjectId: "0" } };
+  const create = await request("/api/cloud/management/aom", { method: "POST", headers: { "Content-Type": "application/json", Origin: appUrl }, body: JSON.stringify(mutation) });
+  assert.equal(create.status, 200, await create.clone().text());
+  assert.equal((await create.json()).resourceId, "created-prom");
+  const replay = await request("/api/cloud/management/aom", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(mutation) });
+  assert.equal((await replay.json()).replayed, true);
+  assert.equal(requests.filter((entry) => entry.method === "POST" && entry.path.startsWith("/aom/")).length, 1);
+  assert.match(await (await request("/tasks")).text(), /Create Prometheus instance/);
+  assert.equal((await request("/services/coverage")).status, 200);
+  if (process.env.BETTERUI_BROWSER_HOOK) {
+    const browser = await fetch(process.env.BETTERUI_BROWSER_HOOK, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ appUrl, cookie, projectId }), signal: AbortSignal.timeout(120000) });
+    assert.equal(browser.status, 200, await browser.text());
+  }
   console.log(
-    "PASS: production HTTP login/subproject region, 101-resource pagination, persisted cache hit, ECS action invalidation of list/detail/summary, cloud error views, live SWR/AS/Billing/Cost pages, account authentication, cost-query cache isolation, and permission failures. All cloud requests used local mocks.",
+    "PASS: production HTTP login/subproject region, 101-resource pagination, persisted cache hit, ECS action invalidation of list/detail/summary, cloud error views, live SWR/AS/Billing/Cost pages, account authentication, cost-query cache isolation, permission failures, and cross-bundle partial detail errors. All cloud requests used local mocks.",
+  );
+  console.log(
+    "PASS: RabbitMQ/RocketMQ inventory and project-scoped details, denied/unknown-project errors, AOM permission recovery and retention, and account-wide EPS inventory.",
   );
 } catch (error) {
   console.error(error);

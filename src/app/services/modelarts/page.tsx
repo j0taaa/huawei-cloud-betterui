@@ -4,9 +4,11 @@ import { BrainCircuit } from "lucide-react";
 
 import {
   InventoryStatus,
+  inventoryStatusTone,
   type InventoryColumn,
   ServiceInventoryPage,
 } from "@/app/services/_components/service-inventory";
+import { CellStack, ResourceIdentity } from "@/components/console-ui";
 import {
   listModelArtsNotebooks,
   type ModelArtsNotebook,
@@ -16,14 +18,6 @@ import {
 export const metadata: Metadata = {
   title: "ModelArts | Huawei Cloud Better UI",
 };
-
-function statusTone(status: string) {
-  const normalized = status.toLowerCase();
-  if (["running", "active", "inservice"].includes(normalized)) return "good";
-  if (["error", "failed", "create_failed", "start_failed"].includes(normalized)) return "bad";
-  if (["creating", "starting", "stopping", "snapshooting", "snapshotting"].includes(normalized)) return "warn";
-  return "neutral";
-}
 
 export default async function ModelArtsPage() {
   const result = await withCloudResult<ModelArtsNotebook[]>([], listModelArtsNotebooks, cloudCacheKeys.listModelArtsNotebooks);
@@ -38,23 +32,17 @@ export default async function ModelArtsPage() {
     {
       header: "Notebook",
       render: (notebook) => (
-        <div>
-          <p className="font-black text-[#101828]">{notebook.name}</p>
-          <p className="mt-1 break-all text-xs text-[#98a2b3]">{notebook.id}</p>
-        </div>
+        <ResourceIdentity id={notebook.id} name={notebook.name} />
       ),
     },
     {
       header: "Runtime state",
-      render: (notebook) => <InventoryStatus tone={statusTone(notebook.status)}>{notebook.status}</InventoryStatus>,
+      render: (notebook) => <InventoryStatus tone={inventoryStatusTone(notebook.status)}>{notebook.status}</InventoryStatus>,
     },
     {
       header: "Compute",
       render: (notebook) => (
-        <div>
-          <p className="font-black">{notebook.flavor}</p>
-          <p className="mt-1 text-xs text-[#667085]">Pool {notebook.pool}</p>
-        </div>
+        <CellStack subValue={`Pool ${notebook.pool}`}>{notebook.flavor}</CellStack>
       ),
     },
     { header: "Image", render: (notebook) => notebook.image },

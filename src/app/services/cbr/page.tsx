@@ -1,36 +1,53 @@
 import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
-import Link from "next/link";
 import {
   ArchiveRestore,
-  ArrowLeft,
+  Bell,
+  Database,
   DatabaseBackup,
+  FileClock,
   LockKeyhole,
+  Server,
   ShieldCheck,
+  Tag,
 } from "lucide-react";
 
 import {
   DisabledCloudButton,
   RefreshButton,
 } from "@/components/cloud-action-buttons";
+import { CbrVaultActions } from "@/components/cbr-vault-actions";
 import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
+import {
+  ConsoleMain,
+  CellStack,
+  CompactInfoCardGrid,
+  ConsoleCallout,
+  ConsoleEmptyPanelBody,
+  ConsoleFramedTable,
+  ConsoleMutedText,
+  ConsolePageHeader,
+  ConsolePanel,
+  ConsolePill,
+  ConsoleSectionHeader,
+  ConsoleSplitLayout,
+  ConsoleSubPanel,
+  ConsoleSurface,
+  DataFreshnessText,
+  InfoPill,
+  MetricCard,
+  MetricGrid,
+  ResourceIdentity,
+  StatusBadge,
+  UsageMeter,
+} from "@/components/console-ui";
 import { ConsoleShell } from "@/components/console-shell";
 import { LocalDateTime } from "@/components/local-date-time";
-import {
-  withCloudResult,
-  listCbrVaults,
-  type CbrVault,
-} from "@/lib/huawei-cloud";
+import { listCbrVaults, withCloudResult, type CbrVault } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
   title: "CBR | Huawei Cloud Better UI",
 };
-
-function numberFromSize(value: string) {
-  const match = value.match(/[\d.]+/);
-
-  return match ? Number(match[0]) : 0;
-}
 
 function objectTypeLabel(value: string) {
   const labels: Record<string, string> = {
@@ -46,207 +63,344 @@ function objectTypeLabel(value: string) {
   return labels[value] ?? (value || "-");
 }
 
-function statusTone(status: string) {
-  const normalized = status.toLowerCase();
+function resourceTypeLabel(value: string) {
+  const labels: Record<string, string> = {
+    "OS::Cinder::Volume": "EVS disk",
+    "OS::Ironic::BareMetalServer": "BMS",
+    "OS::Nova::Server": "ECS",
+    "OS::Sfs::Turbo": "SFS Turbo",
+    "OS::Workspace::DesktopV2": "Workspace",
+  };
 
-  if (normalized === "available") {
-    return "bg-[#e9f8f1] text-[#15803d]";
+  return labels[value] ?? (value || "-");
+}
+
+function boolLabel(value: boolean) {
+  return value ? "Enabled" : "Disabled";
+}
+
+function formatGb(value: number) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return "-";
   }
 
-  if (normalized === "error" || normalized === "frozen") {
-    return "bg-[#fff1f2] text-[#b42318]";
-  }
-
-  if (normalized === "lock") {
-    return "bg-[#fff7ed] text-[#c2410c]";
-  }
-
-  return "bg-[#eef4ff] text-[#2563eb]";
+  return `${value.toLocaleString()} GB`;
 }
 
 function VaultStatus({ status }: { status: string }) {
-  return (
-    <span
-      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-black ${statusTone(status)}`}
-    >
-      {status || "UNKNOWN"}
-    </span>
-  );
+  return <StatusBadge status={status || "UNKNOWN"} />;
 }
 
-function VaultRow({ vault }: { vault: CbrVault }) {
-  const allocated = numberFromSize(vault.allocated);
-  const size = numberFromSize(vault.size);
+function VaultCard({ vault }: { vault: CbrVault }) {
   const usage =
-    size > 0 ? Math.min(100, Math.round((allocated / size) * 100)) : 0;
+    vault.sizeGb > 0
+      ? Math.min(100, Math.round((vault.allocatedGb / vault.sizeGb) * 100))
+      : 0;
 
   return (
-    <tr>
-      <td className="px-5 py-4 align-top">
-        <p className="font-black">{vault.name}</p>
-        <p className="mt-1 text-xs font-semibold text-[#98a2b3]">{vault.id}</p>
-        <p className="mt-2 text-xs font-bold text-[#667085]">
-          Provider {vault.providerId}
-        </p>
-      </td>
-      <td className="px-5 py-4 align-top">
-        <VaultStatus status={vault.status} />
-        <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[#667085]">
-          <LockKeyhole className="size-3.5" />
-          Auto-bind {vault.autoBind}
-        </p>
-      </td>
-      <td className="px-5 py-4 align-top">
-        <p className="font-black">{objectTypeLabel(vault.objectType)}</p>
-        <p className="mt-1 text-xs font-semibold text-[#667085]">
-          {vault.resources} associated resources
-        </p>
-      </td>
-      <td className="px-5 py-4 align-top">
-        <div className="h-2 w-44 overflow-hidden rounded-full bg-[#eef2f7]">
-          <div
-            className="h-full rounded-full bg-[#2563eb]"
-            style={{ width: `${usage}%` }}
+    <ConsoleSurface
+      actions={
+        <>
+          <CbrVaultActions
+            vault={{
+              allocatedGb: vault.allocatedGb,
+              autoExpand: vault.autoExpand,
+              chargingMode: vault.chargingMode,
+              id: vault.id,
+              name: vault.name,
+              projectId: vault.projectId,
+              sizeGb: vault.sizeGb,
+              smnNotify: vault.smnNotify,
+              status: vault.status,
+              threshold: vault.threshold,
+            }}
+          />
+          <DisabledCloudButton title="Manual backup creation is intentionally not enabled until checkpoint options are modeled for each resource type.">
+            <DatabaseBackup className="size-4" />
+            Backup
+          </DisabledCloudButton>
+        </>
+      }
+      description={
+        <>
+          <span className="block break-all text-xs font-semibold text-[#98a2b3]">
+            {vault.id}
+          </span>
+          <span className="mt-2 block text-sm font-semibold text-[#667085] dark:text-[#98a2b3]">
+            {vault.description || "No vault description returned."}
+          </span>
+        </>
+      }
+      status={
+        <div className="flex flex-wrap items-center gap-2">
+            <VaultStatus status={vault.status} />
+            {vault.locked ? (
+              <ConsolePill icon={<LockKeyhole className="size-3.5" />} tone="warn">
+                Locked
+              </ConsolePill>
+            ) : null}
+        </div>
+      }
+      title={vault.name}
+    >
+
+      <ConsoleSplitLayout className="gap-5 p-5" order="sidebar-main">
+        <div className="grid gap-4 content-start">
+          <div>
+            <div className="mb-2 flex items-center justify-between text-sm font-black">
+              <span>Capacity</span>
+              <span>{usage}% allocated</span>
+            </div>
+            <UsageMeter percent={usage}>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <p className="font-bold text-[#667085]">
+                  Allocated
+                  <span className="block font-black text-[#101828]">
+                    {formatGb(vault.allocatedGb)}
+                  </span>
+                </p>
+                <p className="font-bold text-[#667085]">
+                  Vault size
+                  <span className="block font-black text-[#101828]">
+                    {formatGb(vault.sizeGb)}
+                  </span>
+                </p>
+              </div>
+            </UsageMeter>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+            <InfoPill
+              icon={<Server className="size-4" />}
+              label="Protection"
+              value={objectTypeLabel(vault.objectType)}
+            />
+            <InfoPill
+              icon={<Database className="size-4" />}
+              label="Billing"
+              value={vault.chargingMode}
+            />
+            <InfoPill
+              icon={<Bell className="size-4" />}
+              label="SMN"
+              value={`${boolLabel(vault.smnNotify)} / ${vault.threshold ?? "-"}%`}
+            />
+            <InfoPill
+              icon={<LockKeyhole className="size-4" />}
+              label="Auto settings"
+              value={`Bind ${boolLabel(vault.autoBind)} / Expand ${boolLabel(vault.autoExpand)}`}
+            />
+          </div>
+
+          <ConsoleSubPanel contentClassName="grid gap-1 p-3 text-xs font-semibold text-[#667085] dark:text-[#98a2b3]" title="Vault metadata">
+            <p>Project: {vault.projectName || vault.projectId}</p>
+            <p>Region: {vault.region}</p>
+            <p>Enterprise project: {vault.enterpriseProjectId}</p>
+            <p>Consistency: {vault.consistentLevel}</p>
+            <p>Spec: {vault.specCode}</p>
+            <p>
+              Created: <LocalDateTime value={vault.createdAt} />
+            </p>
+          </ConsoleSubPanel>
+        </div>
+
+        <div className="grid gap-5">
+          <section>
+            <ConsoleSectionHeader
+              actions={`${vault.resources.length} resources`}
+              title="Associated resources"
+            />
+            <ConsoleFramedTable
+              columns={[
+                { header: "Resource" },
+                { header: "Type" },
+                { header: "Protect status" },
+                { header: "Size" },
+                { header: "Extra" },
+              ]}
+              emptyState={
+                <ConsoleMutedText weight="semibold">
+                  No resources are associated with this vault.
+                </ConsoleMutedText>
+              }
+              minWidthClassName="min-w-[720px]"
+              rows={vault.resources.map((resource) => ({
+                cells: [
+                  <ResourceIdentity
+                    id={resource.id}
+                    key="resource"
+                    name={resource.name}
+                  />,
+                  resourceTypeLabel(resource.type),
+                  <VaultStatus key="status" status={resource.protectStatus} />,
+                  formatGb(resource.sizeGb),
+                  resource.extraInfo.length
+                    ? resource.extraInfo
+                        .slice(0, 2)
+                        .map((item) => `${item.key}: ${item.value}`)
+                        .join(", ")
+                    : "-",
+                ],
+                key: resource.id,
+              }))}
+            />
+          </section>
+
+          <section>
+            <ConsoleSectionHeader
+              actions={`${vault.backupCount} backups`}
+              title="Recent backups"
+            />
+            <ConsoleFramedTable
+              columns={[
+                { header: "Backup" },
+                { header: "Status" },
+                { header: "Resource" },
+                { header: "Mode" },
+                { header: "Protected" },
+              ]}
+              emptyState={
+                <ConsoleMutedText weight="semibold">
+                  No backups were returned for this vault.
+                </ConsoleMutedText>
+              }
+              minWidthClassName="min-w-[760px]"
+              rows={vault.backups.map((backup) => ({
+                cells: [
+                  <ResourceIdentity
+                    id={backup.id}
+                    key="backup"
+                    name={backup.name}
+                  />,
+                  <VaultStatus key="status" status={backup.status} />,
+                  (
+                    <CellStack
+                      key="resource"
+                      subValue={`${resourceTypeLabel(backup.resourceType)} · ${formatGb(backup.resourceSizeGb)}`}
+                    >
+                      {backup.resourceName}
+                    </CellStack>
+                  ),
+                  `${backup.incremental ? "Incremental" : "Full"} · ${
+                    backup.autoTriggered ? "Auto" : "Manual"
+                  }`,
+                  <LocalDateTime key="protected" value={backup.protectedAt || backup.createdAt} />,
+                ],
+                key: backup.id,
+              }))}
+            />
+          </section>
+
+          <CompactInfoCardGrid
+            items={[
+              {
+                body: vault.policies.length
+                  ? vault.policies.map((policy) => policy.name).join(", ")
+                  : "No policy returned.",
+                icon: FileClock,
+                title: "Policies",
+              },
+              {
+                body: vault.tags.length
+                  ? vault.tags.map((tag) => `${tag.key}=${tag.value}`).join(", ")
+                  : "No tags returned.",
+                icon: Tag,
+                title: "Tags",
+              },
+            ]}
           />
         </div>
-        <p className="mt-2 font-black">{vault.allocated} allocated</p>
-        <p className="mt-1 text-xs font-semibold text-[#667085]">
-          {vault.size} vault size
-        </p>
-      </td>
-      <td className="px-5 py-4 align-top font-bold">
-        <p>{vault.projectName || vault.projectId}</p>
-        <p className="mt-1 text-xs font-semibold text-[#667085]">
-          {vault.region}
-        </p>
-      </td>
-      <td className="px-5 py-4 align-top font-bold">
-        <LocalDateTime value={vault.createdAt} />
-      </td>
-    </tr>
+      </ConsoleSplitLayout>
+    </ConsoleSurface>
   );
 }
 
 export default async function CbrPage() {
-  const result = await withCloudResult<CbrVault[]>(
-    [],
-    listCbrVaults,
-    cloudCacheKeys.listCbrVaults,
-  );
+  const result = await withCloudResult<CbrVault[]>([], listCbrVaults, cloudCacheKeys.listCbrVaults);
   const vaults = result.data;
   const available = vaults.filter(
     (vault) => vault.status.toLowerCase() === "available",
   ).length;
-  const resources = vaults.reduce((total, vault) => total + vault.resources, 0);
-  const objectTypes = new Set(
-    vaults.map((vault) => vault.objectType).filter(Boolean),
+  const resources = vaults.reduce(
+    (total, vault) => total + vault.resources.length,
+    0,
   );
+  const backups = vaults.reduce((total, vault) => total + vault.backupCount, 0);
+  const allocatedGb = vaults.reduce((total, vault) => total + vault.allocatedGb, 0);
+  const sizeGb = vaults.reduce((total, vault) => total + vault.sizeGb, 0);
+  const objectTypes = new Set(vaults.map((vault) => vault.objectType).filter(Boolean));
 
   return (
     <ConsoleShell active="Storage">
       <CloudRefreshIndicator show={result.isRefreshing} />
-      <main className="grid gap-6 p-4 lg:p-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <Link
-              className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-[#2563eb]"
-              href="/services/storage"
-            >
-              <ArrowLeft className="size-4" />
-              Back to Storage
-            </Link>
-            <div className="flex items-center gap-3">
-              <div className="grid size-12 place-items-center rounded-xl bg-[#eef4ff] text-[#2563eb]">
-                <ArchiveRestore className="size-6" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-black tracking-tight">
-                  Cloud Backup and Recovery
-                </h1>
-                <p className="mt-1 text-sm font-medium text-[#667085]">
-                  Backup vault capacity, protected object types, and associated
-                  resources.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-3">
+      <ConsoleMain>
+        <ConsolePageHeader
+          actions={
+            <>
             <DisabledCloudButton title="Vault creation is disabled in this read-only view.">
               <DatabaseBackup className="size-4" />
               Create vault
             </DisabledCloudButton>
             <RefreshButton />
-          </div>
-        </div>
+            </>
+          }
+          backHref="/services/storage"
+          backLabel="Back to Storage"
+          description="Vault capacity, policies, protected resources, recent backups, and safe vault settings."
+          icon={ArchiveRestore}
+          title="Cloud Backup and Recovery"
+        />
 
         {result.error ? (
-          <section className="rounded-xl border border-[#fecdd3] bg-[#fff1f2] p-4 text-sm font-bold text-[#b42318]">
-            {result.error}
-          </section>
+          <ConsoleCallout>{result.error}</ConsoleCallout>
         ) : null}
 
-        <section className="grid gap-3 md:grid-cols-4">
+        <MetricGrid className="gap-3">
           {[
             ["Vaults", vaults.length],
             ["Available", available],
             ["Protected resources", resources],
+            ["Backups", backups],
             ["Object types", objectTypes.size],
+            ["Allocated", formatGb(allocatedGb)],
+            ["Total capacity", formatGb(sizeGb)],
           ].map(([label, value]) => (
-            <div
-              className="rounded-xl border border-[#e4e9f2] bg-white p-4 shadow-[0_12px_36px_rgba(16,24,40,0.04)]"
+            <MetricCard
               key={label}
-            >
-              <p className="text-xs font-black uppercase text-[#667085]">
-                {label}
-              </p>
-              <p className="mt-2 text-2xl font-black">{value}</p>
-            </div>
+              label={label}
+              value={value}
+              variant="compact"
+            />
           ))}
-        </section>
+        </MetricGrid>
 
-        <section className="overflow-hidden rounded-xl border border-[#e4e9f2] bg-white shadow-[0_12px_36px_rgba(16,24,40,0.06)]">
-          <div className="border-b border-[#e4e9f2] p-5">
+        <div>
+          <div className="mb-3">
             <h2 className="text-lg font-black">Vault inventory</h2>
             <p className="mt-1 text-sm font-medium text-[#667085]">
-              {vaults.length} vaults · Showing{" "}
-              {result.isCached ? "cached" : "fresh"} data from{" "}
-              <LocalDateTime value={result.updatedAt} />.
+              <DataFreshnessText
+                isCached={result.isCached}
+                prefix={`${vaults.length} vaults`}
+                updatedAt={result.updatedAt}
+              />
             </p>
           </div>
           {vaults.length ? (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1020px] text-left text-sm">
-                <thead className="bg-[#f7f9fc] text-xs font-black uppercase text-[#667085]">
-                  <tr>
-                    <th className="px-5 py-3">Vault</th>
-                    <th className="px-5 py-3">Status</th>
-                    <th className="px-5 py-3">Protection scope</th>
-                    <th className="px-5 py-3">Capacity</th>
-                    <th className="px-5 py-3">Project / region</th>
-                    <th className="px-5 py-3">Created</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#eef2f7]">
-                  {vaults.map((vault) => (
-                    <VaultRow key={vault.id} vault={vault} />
-                  ))}
-                </tbody>
-              </table>
+            <div className="grid gap-5">
+              {vaults.map((vault) => (
+                <VaultCard key={vault.id} vault={vault} />
+              ))}
             </div>
           ) : (
-            <div className="grid place-items-center px-6 py-16 text-center">
-              <div>
-                <ShieldCheck className="mx-auto size-10 text-[#98a2b3]" />
-                <p className="mt-4 text-lg font-black">No CBR vaults found</p>
-                <p className="mt-2 text-sm font-semibold text-[#667085]">
-                  No backup vaults were returned for this account, or this IAM
-                  user cannot list CBR vaults.
-                </p>
-              </div>
-            </div>
+            <ConsolePanel className="border-dashed">
+              <ConsoleEmptyPanelBody icon={ShieldCheck} title="No CBR vaults found">
+                No backup vaults were returned for this account, or this IAM
+                user cannot list CBR vaults.
+              </ConsoleEmptyPanelBody>
+            </ConsolePanel>
           )}
-        </section>
-      </main>
+        </div>
+      </ConsoleMain>
     </ConsoleShell>
   );
 }

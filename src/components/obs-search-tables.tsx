@@ -1,204 +1,163 @@
 "use client";
 
 import Link from "next/link";
-import { Download, FileText, FolderOpen, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Download, FileText, FolderOpen } from "lucide-react";
 
+import { ConsoleLinkButton, ConsoleMonoText, ConsoleMutedText } from "@/components/console-ui";
+import { DataTable, type DataTableColumn } from "@/components/data-table";
 import { LocalDateTime } from "@/components/local-date-time";
+import { DeleteObsBucketButton, DeleteObsObjectButton } from "@/components/obs-object-actions";
 import type { ObsBucket, ObsObject } from "@/lib/huawei-cloud";
 
-function includesQuery(values: string[], query: string) {
-  const normalizedQuery = query.trim().toLowerCase();
-
-  if (!normalizedQuery) {
-    return true;
-  }
-
-  return values.some((value) => value.toLowerCase().includes(normalizedQuery));
-}
-
 export function ObsBucketSearchTable({ buckets }: { buckets: ObsBucket[] }) {
-  const [query, setQuery] = useState("");
-  const filteredBuckets = useMemo(
-    () =>
-      buckets.filter((bucket) =>
-        includesQuery(
-          [bucket.name, bucket.location, bucket.type, bucket.storageClass, bucket.createdAt],
-          query,
-        ),
+  const columns: DataTableColumn<ObsBucket>[] = [
+    {
+      cell: (bucket) => (
+        <Link
+          className="inline-flex items-center gap-2 font-black text-[#2563eb] hover:underline"
+          href={`/services/obs/${encodeURIComponent(bucket.name)}`}
+        >
+          <FolderOpen className="size-4" />
+          {bucket.name}
+        </Link>
       ),
-    [buckets, query],
-  );
+      header: "Bucket",
+    },
+    {
+      cell: (bucket) => bucket.location,
+      header: "Location",
+    },
+    {
+      cell: (bucket) => bucket.type,
+      header: "Type",
+    },
+    {
+      cell: (bucket) => bucket.storageClass,
+      header: "Storage class",
+    },
+    {
+      cell: (bucket) => <LocalDateTime value={bucket.createdAt} />,
+      header: "Created",
+    },
+    {
+      cell: (bucket) => <DeleteObsBucketButton bucket={bucket.name} small />,
+      header: "Actions",
+    },
+  ];
 
   if (!buckets.length) {
     return null;
   }
 
   return (
-    <>
-      <div className="border-b border-[#e4e9f2] bg-[#fbfcfe] p-4">
-        <label className="relative block max-w-xl">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#667085]" />
-          <input
-            aria-label="Search OBS buckets"
-            className="h-10 w-full rounded-lg border border-[#d9e0eb] bg-white pl-10 pr-3 text-sm font-semibold outline-none focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10"
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search buckets by name, region, type..."
-            type="search"
-            value={query}
-          />
-        </label>
-        <p className="mt-2 text-xs font-bold text-[#667085]">
-          Showing {filteredBuckets.length} of {buckets.length} buckets
-        </p>
-      </div>
-      {filteredBuckets.length ? (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[860px] text-left text-sm">
-            <thead className="bg-[#f7f9fc] text-xs font-black uppercase text-[#667085]">
-              <tr>
-                <th className="px-5 py-3">Bucket</th>
-                <th className="px-5 py-3">Location</th>
-                <th className="px-5 py-3">Type</th>
-                <th className="px-5 py-3">Storage class</th>
-                <th className="px-5 py-3">Created</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#eef2f7]">
-              {filteredBuckets.map((bucket) => (
-                <tr className="hover:bg-[#fbfcfe]" key={bucket.name}>
-                  <td className="px-5 py-4">
-                    <Link
-                      className="inline-flex items-center gap-2 font-black text-[#2563eb] hover:underline"
-                      href={`/services/obs/${encodeURIComponent(bucket.name)}`}
-                    >
-                      <FolderOpen className="size-4" />
-                      {bucket.name}
-                    </Link>
-                  </td>
-                  <td className="px-5 py-4 font-semibold">{bucket.location}</td>
-                  <td className="px-5 py-4 font-semibold">{bucket.type}</td>
-                  <td className="px-5 py-4 font-semibold">{bucket.storageClass}</td>
-                  <td className="px-5 py-4 font-semibold">
-                    <LocalDateTime value={bucket.createdAt} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <DataTable
+      columns={columns}
+      emptyState={
+        <div>
+          <p className="text-lg font-black">No matching buckets</p>
+          <ConsoleMutedText className="mt-2" weight="semibold">
+            Try another bucket name, region, type, or storage class.
+          </ConsoleMutedText>
         </div>
-      ) : (
-        <div className="grid place-items-center px-6 py-14 text-center">
-          <div>
-            <p className="text-lg font-black">No matching buckets</p>
-            <p className="mt-2 text-sm font-semibold text-[#667085]">
-              Try another bucket name, region, type, or storage class.
-            </p>
-          </div>
-        </div>
-      )}
-    </>
+      }
+      getRowKey={(bucket) => bucket.name}
+      getSearchText={(bucket) =>
+        [bucket.name, bucket.location, bucket.type, bucket.storageClass, bucket.createdAt].join(" ")
+      }
+      items={buckets}
+      searchPlaceholder="Search buckets by name, region, type..."
+      tableMinWidthClassName="min-w-[980px]"
+    />
   );
 }
 
 export function ObsObjectSearchTable({
   bucketName,
   objects,
+  prefix = "",
 }: {
   bucketName: string;
   objects: ObsObject[];
+  prefix?: string;
 }) {
-  const [query, setQuery] = useState("");
-  const filteredObjects = useMemo(
-    () =>
-      objects.filter((object) =>
-        includesQuery(
-          [object.key, object.size, object.storageClass, object.etag, object.lastModified, object.owner],
-          query,
-        ),
+  const columns: DataTableColumn<ObsObject>[] = [
+    {
+      cell: (object) => (
+        <Link
+          className="flex items-center gap-2 font-black text-[#2563eb] hover:underline"
+          href={`/services/obs/${encodeURIComponent(bucketName)}/objects?key=${encodeURIComponent(object.key)}`}
+        >
+          <FileText className="size-4 text-[#2563eb]" />
+          <span className="break-all">{object.key}</span>
+        </Link>
       ),
-    [objects, query],
-  );
+      header: "Object key",
+    },
+    {
+      cell: (object) => object.size,
+      header: "Size",
+    },
+    {
+      cell: (object) => object.storageClass,
+      header: "Storage class",
+    },
+    {
+      cell: (object) => (
+        <ConsoleMonoText>{object.etag}</ConsoleMonoText>
+      ),
+      header: "ETag",
+    },
+    {
+      cell: (object) => <LocalDateTime value={object.lastModified} />,
+      header: "Last modified",
+    },
+    {
+      cell: (object) => (
+        <>
+          <ConsoleLinkButton
+            href={`/api/cloud/obs/objects?bucket=${encodeURIComponent(bucketName)}&key=${encodeURIComponent(object.key)}`}
+            size="sm"
+            variant="neutral"
+          >
+            <Download className="size-3.5" />
+            Download
+          </ConsoleLinkButton>
+          <div className="mt-2">
+            <DeleteObsObjectButton
+              bucket={bucketName}
+              objectKey={object.key}
+              redirectTo={`/services/obs/${encodeURIComponent(bucketName)}${prefix ? `?prefix=${encodeURIComponent(prefix)}` : ""}`}
+              small
+            />
+          </div>
+        </>
+      ),
+      header: "Actions",
+    },
+  ];
 
   if (!objects.length) {
     return null;
   }
 
   return (
-    <>
-      <div className="border-b border-[#e4e9f2] bg-[#fbfcfe] p-4">
-        <label className="relative block max-w-xl">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#667085]" />
-          <input
-            aria-label="Search OBS objects"
-            className="h-10 w-full rounded-lg border border-[#d9e0eb] bg-white pl-10 pr-3 text-sm font-semibold outline-none focus:border-[#2563eb] focus:ring-4 focus:ring-[#2563eb]/10"
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search objects by key, size, ETag..."
-            type="search"
-            value={query}
-          />
-        </label>
-        <p className="mt-2 text-xs font-bold text-[#667085]">
-          Showing {filteredObjects.length} of {objects.length} objects
-        </p>
-      </div>
-      {filteredObjects.length ? (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] text-left text-sm">
-            <thead className="bg-[#f7f9fc] text-xs font-black uppercase text-[#667085]">
-              <tr>
-                <th className="px-5 py-3">Object key</th>
-                <th className="px-5 py-3">Size</th>
-                <th className="px-5 py-3">Storage class</th>
-                <th className="px-5 py-3">ETag</th>
-                <th className="px-5 py-3">Last modified</th>
-                <th className="px-5 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#eef2f7]">
-              {filteredObjects.map((object) => (
-                <tr className="hover:bg-[#fbfcfe]" key={object.key}>
-                  <td className="px-5 py-4">
-                    <Link
-                      className="flex items-center gap-2 font-black text-[#2563eb] hover:underline"
-                      href={`/services/obs/${encodeURIComponent(bucketName)}/objects?key=${encodeURIComponent(object.key)}`}
-                    >
-                      <FileText className="size-4 text-[#2563eb]" />
-                      <span className="break-all">{object.key}</span>
-                    </Link>
-                  </td>
-                  <td className="px-5 py-4 font-semibold">{object.size}</td>
-                  <td className="px-5 py-4 font-semibold">{object.storageClass}</td>
-                  <td className="px-5 py-4 font-mono text-xs font-semibold text-[#667085]">
-                    {object.etag}
-                  </td>
-                  <td className="px-5 py-4 font-semibold">
-                    <LocalDateTime value={object.lastModified} />
-                  </td>
-                  <td className="px-5 py-4">
-                    <a
-                      className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#d9e0eb] bg-white px-3 text-xs font-black text-[#344054] hover:bg-[#f8fafc]"
-                      href={`/api/cloud/obs/objects?bucket=${encodeURIComponent(bucketName)}&key=${encodeURIComponent(object.key)}`}
-                    >
-                      <Download className="size-3.5" />
-                      Download
-                    </a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <DataTable
+      columns={columns}
+      emptyState={
+        <div>
+          <p className="text-lg font-black">No matching objects</p>
+          <ConsoleMutedText className="mt-2" weight="semibold">
+            Try another key, storage class, ETag, or date.
+          </ConsoleMutedText>
         </div>
-      ) : (
-        <div className="grid place-items-center px-6 py-14 text-center">
-          <div>
-            <p className="text-lg font-black">No matching objects</p>
-            <p className="mt-2 text-sm font-semibold text-[#667085]">
-              Try another key, storage class, ETag, or date.
-            </p>
-          </div>
-        </div>
-      )}
-    </>
+      }
+      getRowKey={(object) => object.key}
+      getSearchText={(object) =>
+        [object.key, object.size, object.storageClass, object.etag, object.lastModified, object.owner].join(" ")
+      }
+      items={objects}
+      searchPlaceholder="Search objects by key, size, ETag..."
+      tableMinWidthClassName="min-w-[980px]"
+    />
   );
 }

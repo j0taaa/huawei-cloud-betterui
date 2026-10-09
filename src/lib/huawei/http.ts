@@ -7,6 +7,14 @@ import type { ServiceKey } from "@/lib/huawei/endpoints";
 import { serviceEndpoint } from "@/lib/huawei/endpoints";
 import { asRecord, firstString } from "@/lib/huawei/parsers";
 
+// Preserve HTTP status so mutation callers can distinguish rejection from an uncertain outcome.
+const apiErrorBrand = Symbol.for("betterui.huawei-api-error");
+export class HuaweiApiError extends Error {
+  readonly [apiErrorBrand] = true;
+  static [Symbol.hasInstance](value: unknown): boolean { return value !== null && typeof value === "object" && (value as Record<symbol, unknown>)[apiErrorBrand] === true; }
+  constructor(message: string, public readonly status: number) { super(message); }
+}
+
 export async function parseError(response: Response) {
   const body = (await response.json().catch(() => null)) as unknown;
   const record = asRecord(body);
@@ -45,11 +53,11 @@ export async function huaweiFetch<T>(
   );
 
   if (!response.ok) {
-    throw new Error(await parseError(response));
+    throw new HuaweiApiError(await parseError(response), response.status);
   }
 
-  if (response.status === 204) return {} as T;
-  return (await response.json()) as T;
+  const payload = await response.text();
+  return (payload.trim() ? JSON.parse(payload) : {}) as T;
 }
 
 export async function huaweiAccountFetch<T>(
@@ -71,11 +79,11 @@ export async function huaweiAccountFetch<T>(
   );
 
   if (!response.ok) {
-    throw new Error(await parseError(response));
+    throw new HuaweiApiError(await parseError(response), response.status);
   }
 
-  if (response.status === 204) return {} as T;
-  return (await response.json()) as T;
+  const payload = await response.text();
+  return (payload.trim() ? JSON.parse(payload) : {}) as T;
 }
 
 /** Pagination is configured by the adapter; transport never guesses a service's protocol. */

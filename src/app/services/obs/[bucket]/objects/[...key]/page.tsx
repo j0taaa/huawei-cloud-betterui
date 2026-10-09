@@ -1,14 +1,20 @@
-import { Field, Preview } from "@/components/obs-object-detail";
+import { ObsObjectDetails, Preview } from "@/components/obs-object-detail";
 import { CloudErrorPage } from "@/components/cloud-error";
-import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Download, FileText } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 
 import { RefreshButton } from "@/components/cloud-action-buttons";
 import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
+import {
+  ConsoleCallout,
+  ConsoleDetailHeader,
+  ConsoleLinkButton,
+  ConsoleMain,
+  ConsoleSplitLayout,
+  DataFreshnessText,
+} from "@/components/console-ui";
 import { ConsoleShell } from "@/components/console-shell";
-import { LocalDateTime } from "@/components/local-date-time";
+import { DeleteObsObjectButton } from "@/components/obs-object-actions";
 import { getObsObjectDetail, type ObsObjectDetail, withCloudResult } from "@/lib/huawei-cloud";
 
 export default async function ObsObjectPage({
@@ -21,7 +27,7 @@ export default async function ObsObjectPage({
   const result = await withCloudResult<ObsObjectDetail | null>(
     null,
     (session) => getObsObjectDetail(session, bucket, objectKey),
-    cloudCacheKeys.obsObject(bucket, objectKey),
+    `obs-object:${bucket}:${objectKey}`,
   );
   if (!result.data && result.error) return <CloudErrorPage active="Storage" backHref="/services/obs" error={result.error} />;
   const object = result.data;
@@ -35,64 +41,42 @@ export default async function ObsObjectPage({
   return (
     <ConsoleShell active="Storage">
       <CloudRefreshIndicator show={result.isRefreshing} />
-      <main className="grid gap-6 p-4 lg:p-8">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <Link
-              className="mb-4 inline-flex w-fit items-center gap-2 text-sm font-bold text-[#2563eb]"
-              href={`/services/obs/${encodeURIComponent(object.bucket)}`}
-            >
-              <ArrowLeft className="size-4" />
-              Back to bucket
-            </Link>
-            <div className="flex items-start gap-4">
-              <div className="grid size-12 shrink-0 place-items-center rounded-xl bg-[#e9f8f1] text-[#16a34a]">
-                <FileText className="size-6" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-black uppercase tracking-[0.14em] text-[#667085]">OBS object</p>
-                <h1 className="mt-1 break-all text-3xl font-black tracking-tight">{object.key}</h1>
-                <p className="mt-1 text-xs font-bold text-[#98a2b3]">
-                  Showing {result.isCached ? "cached" : "fresh"} data from <LocalDateTime value={result.updatedAt} />.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <a
-              className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#2563eb] bg-[#2563eb] px-3 text-sm font-bold text-white shadow-sm hover:bg-[#1d4ed8]"
-              href={downloadUrl}
-            >
-              <Download className="size-4" />
-              Download
-            </a>
-            <RefreshButton />
-          </div>
-        </div>
+      <ConsoleMain>
+        <ConsoleDetailHeader
+          actions={
+            <>
+              <ConsoleLinkButton href={downloadUrl} size="md">
+                <Download className="size-4" />
+                Download
+              </ConsoleLinkButton>
+              <DeleteObsObjectButton
+                bucket={object.bucket}
+                objectKey={object.key}
+                redirectTo={`/services/obs/${encodeURIComponent(object.bucket)}`}
+              />
+              <RefreshButton />
+            </>
+          }
+          backHref={`/services/obs/${encodeURIComponent(object.bucket)}`}
+          backLabel="Back to bucket"
+          description={<DataFreshnessText isCached={result.isCached} updatedAt={result.updatedAt} />}
+          eyebrow="OBS object"
+          icon={FileText}
+          iconClassName="bg-[#e9f8f1] text-[#16a34a]"
+          title={object.key}
+          titleClassName="break-all"
+        />
 
         {result.error ? (
-          <section className="rounded-xl border border-[#fecdd3] bg-[#fff1f2] p-4 text-sm font-bold text-[#b42318]">
-            {result.error}
-          </section>
+          <ConsoleCallout>{result.error}</ConsoleCallout>
         ) : null}
 
-        <section className="grid gap-6 xl:grid-cols-[380px_1fr]">
-          <aside className="rounded-2xl border border-[#d9e0eb] bg-white p-5 shadow-[0_18px_48px_rgba(16,24,40,0.08)]">
-            <h2 className="text-lg font-black">Details</h2>
-            <dl className="mt-3">
-              <Field label="Bucket" value={object.bucket} />
-              <Field label="Size" value={object.size} />
-              <Field label="Content type" value={object.contentType} />
-              <Field label="Storage class" value={object.storageClass} />
-              <Field label="ETag" value={object.etag} />
-              <Field label="Owner" value={object.owner} />
-              <Field label="Modified" value={<LocalDateTime value={object.lastModified} />} />
-            </dl>
-          </aside>
+        <ConsoleSplitLayout order="sidebar-main" sidebarWidth="380">
+          <ObsObjectDetails object={object} />
 
           <Preview object={object} />
-        </section>
-      </main>
+        </ConsoleSplitLayout>
+      </ConsoleMain>
     </ConsoleShell>
   );
 }

@@ -7,6 +7,7 @@ import {
   ServiceInventoryPage,
   type InventoryColumn,
 } from "@/app/services/_components/service-inventory";
+import { ResourceIdentity } from "@/components/console-ui";
 import {
   listCodeArtsRepositories,
   type CodeArtsRepository,
@@ -21,10 +22,7 @@ const columns: InventoryColumn<CodeArtsRepository>[] = [
   {
     header: "Repository",
     render: (repo) => (
-      <div>
-        <p className="font-black">{repo.name}</p>
-        <p className="mt-1 break-all text-xs text-[#98a2b3]">{repo.id}</p>
-      </div>
+      <ResourceIdentity id={repo.id} name={repo.name} />
     ),
   },
   { header: "Default branch", render: (repo) => repo.defaultBranch },

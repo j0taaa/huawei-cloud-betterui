@@ -4,23 +4,16 @@ import { FolderTree } from "lucide-react";
 
 import {
   InventoryStatus,
+  inventoryStatusTone,
   type InventoryColumn,
   ServiceInventoryPage,
 } from "@/app/services/_components/service-inventory";
+import { CellStack, ResourceIdentity } from "@/components/console-ui";
 import { listDataArtsInstances, type DataArtsInstance, withCloudResult } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
   title: "DataArts | Huawei Cloud Better UI",
 };
-
-function statusTone(status: string) {
-  const normalized = status.toLowerCase();
-
-  if (["running", "normal", "available", "active"].includes(normalized)) return "good";
-  if (["failed", "error", "abnormal"].includes(normalized)) return "bad";
-  if (["creating", "upgrading", "starting"].includes(normalized)) return "warn";
-  return "neutral";
-}
 
 export default async function DataArtsPage() {
   const result = await withCloudResult<DataArtsInstance[]>([], listDataArtsInstances, cloudCacheKeys.listDataArtsInstances);
@@ -33,20 +26,21 @@ export default async function DataArtsPage() {
     {
       header: "Instance",
       render: (instance) => (
-        <div>
-          <p className="font-black text-[#101828]">{instance.name}</p>
-          <p className="mt-1 break-all text-xs text-[#98a2b3]">{instance.id}</p>
-        </div>
+        <ResourceIdentity
+          className="text-[#101828]"
+          id={instance.id}
+          idClassName="font-normal"
+          name={instance.name}
+        />
       ),
     },
-    { header: "Status", render: (instance) => <InventoryStatus tone={statusTone(instance.status)}>{instance.status}</InventoryStatus> },
+    { header: "Status", render: (instance) => <InventoryStatus tone={inventoryStatusTone(instance.status)}>{instance.status}</InventoryStatus> },
     {
       header: "Edition",
       render: (instance) => (
-        <div>
-          <p>{instance.edition}</p>
-          <p className="mt-1 text-xs text-[#667085]">{instance.version}</p>
-        </div>
+        <CellStack subValue={instance.version}>
+          {instance.edition}
+        </CellStack>
       ),
     },
     { header: "Workspaces", render: (instance) => instance.workspaceCount },

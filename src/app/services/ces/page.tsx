@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Activity } from "lucide-react";
 
 import { InventoryStatus, ServiceInventoryPage } from "@/app/services/_components/service-inventory";
+import { CellStack, ResourceIdentity } from "@/components/console-ui";
 import { listCesAlarmRules, type CesAlarmRule, withCloudResult } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
@@ -55,28 +56,21 @@ export default async function CesPage() {
         {
           header: "Alarm",
           render: (alarm) => (
-            <div>
-              <p className="font-black">{alarm.name}</p>
-              <p className="mt-1 break-all text-xs text-[#98a2b3]">{alarm.id}</p>
-            </div>
+            <ResourceIdentity id={alarm.id} name={alarm.name} />
           ),
         },
         {
           header: "State",
           render: (alarm) => (
-            <div className="grid gap-2">
+            <CellStack subValue={alarm.enabled === false ? "Disabled" : "Enabled"}>
               <InventoryStatus tone={alarmTone(alarm)}>{alarm.status}</InventoryStatus>
-              <span className="text-xs text-[#667085]">{alarm.enabled === false ? "Disabled" : "Enabled"}</span>
-            </div>
+            </CellStack>
           ),
         },
         {
           header: "Signal",
           render: (alarm) => (
-            <div>
-              <p className="font-black">{alarm.namespace}</p>
-              <p className="mt-1 text-xs text-[#667085]">{alarm.metricName}</p>
-            </div>
+            <CellStack subValue={alarm.metricName}>{alarm.namespace}</CellStack>
           ),
         },
         { header: "Condition", render: (alarm) => alarm.condition },

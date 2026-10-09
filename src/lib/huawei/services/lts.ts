@@ -2,7 +2,7 @@ import "server-only";
 
 import type { BetterUiSession, HuaweiProjectSession } from "@/lib/auth-session";
 import { huaweiFetch } from "@/lib/huawei/http";
-import { asArray, asRecord, asString, firstString } from "@/lib/huawei/parsers";
+import { asArray, asRecord, firstString } from "@/lib/huawei/parsers";
 import { loadAcrossProjects } from "@/lib/huawei/projects";
 
 export type LtsLogGroup = {
@@ -29,7 +29,7 @@ export async function listLtsLogGroupsForProject(
     const item = asRecord(group);
 
     return {
-      alias: asString(item.alias, ""),
+      alias: firstString([item.log_group_name_alias, item.alias], ""),
       createdAt: firstString([
         item.creation_time,
         item.created_at,
@@ -41,7 +41,7 @@ export async function listLtsLogGroupsForProject(
       projectName: session.projectName,
       region: session.region,
       tags: asArray(item.tag).length || asArray(item.tags).length,
-      ttlDays: firstString([item.ttl_in_days, item.ttl], "-"),
+      ttlDays: firstString([item.ttl_in_days === undefined ? undefined : String(item.ttl_in_days), item.ttl === undefined ? undefined : String(item.ttl)], "-"),
     };
   });
 }

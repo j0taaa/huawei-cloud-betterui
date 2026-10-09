@@ -34,6 +34,11 @@ export async function loadAcrossProjects<T>(
 }
 
 export function projectForId(session: BetterUiSession, projectId?: string) {
+  if (projectId !== undefined) {
+    const project = sessionProjects(session).find((project) => project.projectId === projectId);
+    if (!project) throw new Error("The selected project is not part of this session.");
+    return project;
+  }
   return (
     sessionProjects(session).find(
       (project) => project.projectId === projectId,

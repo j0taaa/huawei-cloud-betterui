@@ -1,6 +1,10 @@
 import "server-only";
 
 export type ServiceKey =
+  | "aom"
+  | "eps"
+  | "rabbitmq"
+  | "rocketmq"
   | "apig"
   | "as"
   | "bss"
@@ -65,6 +69,10 @@ export type ServiceKey =
   | "vpc";
 
 export const endpointEnv: Record<ServiceKey, string> = {
+  aom: "HUAWEI_AOM_ENDPOINT",
+  eps: "HUAWEI_EPS_ENDPOINT",
+  rabbitmq: "HUAWEI_RABBITMQ_ENDPOINT",
+  rocketmq: "HUAWEI_ROCKETMQ_ENDPOINT",
   apig: "HUAWEI_APIG_ENDPOINT",
   as: "HUAWEI_AS_ENDPOINT",
   bss: "HUAWEI_BSS_ENDPOINT",
@@ -131,11 +139,14 @@ export const endpointEnv: Record<ServiceKey, string> = {
 
 export function serviceEndpoint(service: ServiceKey, region: string) {
   const globalServiceEndpoint: Partial<Record<ServiceKey, string>> = {
+    eps: "https://eps.myhuaweicloud.com",
     bss: "https://bss-intl.myhuaweicloud.com",
     cdn: "https://cdn.myhuaweicloud.com",
     dns: "https://dns.myhuaweicloud.com",
   };
   const regionalServiceHost: Partial<Record<ServiceKey, string>> = {
+    rabbitmq: "dms",
+    rocketmq: "dms",
     codeartsbuild: "cloudbuild-ext",
     codeartsdeploy: "codeartsdeploy",
     codeartspipeline: "codeartspipeline",
@@ -154,6 +165,7 @@ export function serviceEndpoint(service: ServiceKey, region: string) {
 
   return (
     process.env[endpointEnv[service]] ??
+    (service === "bss" ? process.env.HUAWEI_CLOUD_BSS_ENDPOINT : undefined) ??
     globalServiceEndpoint[service] ??
     `https://${defaultService}.${region}.myhuaweicloud.com`
   ).replace(/\/+$/, "");

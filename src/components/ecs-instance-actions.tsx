@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2, Play, RefreshCw, Square } from "lucide-react";
 
+import { ConsoleActionButton, ConsoleActionFeedback, ConsoleActionStack } from "@/components/console-ui";
+
 type EcsAction = "restart" | "start" | "stop";
 
 const actionMeta = {
@@ -74,7 +76,7 @@ export function EcsInstanceActions({
   }
 
   return (
-    <div className="grid gap-2">
+    <ConsoleActionStack>
       <div className="flex flex-wrap gap-2">
         {actions.map((action) => {
           const Icon = actionMeta[action].icon;
@@ -82,18 +84,12 @@ export function EcsInstanceActions({
           const isHeroPrimary = variant === "hero" && action === actions[0];
 
           return (
-            <button
-              className={`flex items-center gap-2 rounded-lg border text-sm font-bold shadow-sm disabled:opacity-70 ${
-                variant === "hero" ? "h-11 px-4" : "h-10 px-3"
-              } ${
-                isHeroPrimary
-                  ? "border-[#2563eb] bg-[#2563eb] text-white shadow-[0_12px_28px_rgba(37,99,235,0.28)] hover:bg-[#1d4ed8]"
-                  : "border-[#d9e0eb] bg-white hover:bg-[#f8fafc]"
-              }`}
+            <ConsoleActionButton
               disabled={!!pending}
               key={action}
               onClick={() => runAction(action)}
-              type="button"
+              prominence={isHeroPrimary ? "hero" : "default"}
+              tone={isHeroPrimary ? "primary" : "neutral"}
             >
               {isPending ? (
                 <Loader2 className="size-4 animate-spin" />
@@ -101,13 +97,11 @@ export function EcsInstanceActions({
                 <Icon className="size-4" />
               )}
               {actionMeta[action].label}
-            </button>
+            </ConsoleActionButton>
           );
         })}
       </div>
-      {message ? (
-        <p className="text-sm font-bold text-[#2563eb]">{message}</p>
-      ) : null}
-    </div>
+      {message ? <ConsoleActionFeedback>{message}</ConsoleActionFeedback> : null}
+    </ConsoleActionStack>
   );
 }

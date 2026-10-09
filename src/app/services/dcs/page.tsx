@@ -1,255 +1,104 @@
 import { cloudCacheKeys } from "@/lib/huawei/cache-keys";
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ArrowLeft, DatabaseZap, Gauge, KeyRound, Plus } from "lucide-react";
+import { DatabaseZap, Gauge, KeyRound, Plus } from "lucide-react";
 
 import {
   DisabledCloudButton,
   RefreshButton,
 } from "@/components/cloud-action-buttons";
 import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
-import { ConsoleShell } from "@/components/console-shell";
-import { LocalDateTime } from "@/components/local-date-time";
 import {
-  withCloudResult,
-  listDcsRedisInstances,
-  type DcsRedisInstance,
-} from "@/lib/huawei-cloud";
+  ConsoleMain,
+  ConsoleCallout,
+  ConsolePageHeader,
+  ConsolePanel,
+  DataFreshnessText,
+  MetricCard,
+  MetricGrid,
+} from "@/components/console-ui";
+import { DcsInstancesTable } from "@/components/dcs-instances-table";
+import { ConsoleShell } from "@/components/console-shell";
+import type { BetterUiSession } from "@/lib/auth-session";
+import * as huaweiCloud from "@/lib/huawei-cloud";
+import { withCloudResult } from "@/lib/huawei-cloud";
+import type { DcsRedisInstanceDetails } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
   title: "DCS Redis | Huawei Cloud Better UI",
 };
 
-function statusTone(status = "") {
-  const normalized = status.toLowerCase();
+type ListDcsRedisInstances = (
+  session: BetterUiSession,
+) => Promise<DcsRedisInstanceDetails[]>;
 
-  if (["running", "normal", "available"].includes(normalized)) {
-    return "bg-[#e9f8f1] text-[#15803d]";
-  }
-
-  if (["faulty", "error", "frozen"].includes(normalized)) {
-    return "bg-[#fff1f2] text-[#b42318]";
-  }
-
-  if (
-    ["creating", "restarting", "extending", "upgrading"].includes(normalized)
-  ) {
-    return "bg-[#fff7ed] text-[#c2410c]";
-  }
-
-  return "bg-[#eef4ff] text-[#2563eb]";
-}
-
-function numberFromText(value?: string) {
-  const match = value?.match(/[\d.]+/);
-
-  return match ? Number(match[0]) * (/GB/i.test(value ?? "") ? 1024 : 1) : 0;
-}
-
-function MemoryGauge({ instance }: { instance: DcsRedisInstance }) {
-  const used = numberFromText(instance.usedMemory);
-  const max = numberFromText(instance.capacity);
-  const percent = max > 0 ? Math.min(100, Math.round((used / max) * 100)) : 0;
-
-  return (
-    <div className="min-w-44">
-      <div className="h-2 overflow-hidden rounded-full bg-[#eef2f7]">
-        <div
-          className={`h-full rounded-full ${percent >= 85 ? "bg-[#d7000f]" : "bg-[#16a34a]"}`}
-          style={{ width: `${percent}%` }}
-        />
-      </div>
-      <p className="mt-2 font-black">{instance.usedMemory || "-"} used</p>
-      <p className="mt-1 text-xs font-semibold text-[#667085]">
-        {instance.capacity || "-"} available
-      </p>
-    </div>
-  );
-}
+const listDcsRedisInstances =
+  (
+    huaweiCloud as typeof huaweiCloud & {
+      listDcsRedisInstances?: ListDcsRedisInstances;
+    }
+  ).listDcsRedisInstances ??
+  (async () => {
+    throw new Error(
+      "listDcsRedisInstances is not exported from @/lib/huawei-cloud yet.",
+    );
+  });
 
 export default async function DcsRedisPage() {
-  const result = await withCloudResult<DcsRedisInstance[]>(
+  const result = await withCloudResult<DcsRedisInstanceDetails[]>(
     [],
-    listDcsRedisInstances,
-    cloudCacheKeys.listDcsRedisInstances,
+    listDcsRedisInstances, cloudCacheKeys.listDcsRedisInstances,
   );
   const instances = result.data;
   const healthy = instances.filter((item) =>
-    ["running", "normal", "available"].includes(
-      (item.status ?? "").toLowerCase(),
-    ),
+    ["running", "normal", "available"].includes((item.status ?? "").toLowerCase()),
   ).length;
-  const nodes = instances.reduce(
-    (total, item) => total + (item.nodeCount ?? 0),
-    0,
-  );
-  const versions = new Set(
-    instances.map((item) => item.engineVersion).filter(Boolean),
-  );
+  const nodes = instances.reduce((total, item) => total + (item.nodeCount ?? 0), 0);
+  const versions = new Set(instances.map((item) => item.engineVersion).filter(Boolean));
 
   return (
     <ConsoleShell active="Databases">
       <CloudRefreshIndicator show={result.isRefreshing} />
-      <main className="grid gap-6 p-4 lg:p-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <Link
-              className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-[#2563eb]"
-              href="/services/databases"
-            >
-              <ArrowLeft className="size-4" />
-              Back to Databases
-            </Link>
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="grid size-12 place-items-center rounded-xl bg-[#e9f8f1] text-[#15803d]">
-                <DatabaseZap className="size-6" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-black tracking-tight">
-                  DCS Redis
-                </h1>
-                <p className="mt-1 max-w-3xl text-sm font-medium text-[#667085]">
-                  Redis instance state, memory pressure, topology, endpoint, and
-                  network placement.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-3">
+      <ConsoleMain>
+        <ConsolePageHeader
+          actions={
+            <>
             <DisabledCloudButton title="Redis instance creation is disabled in this read-only view.">
               <Plus className="size-4" />
               Create instance
             </DisabledCloudButton>
             <RefreshButton />
-          </div>
-        </div>
+            </>
+          }
+          backHref="/services/databases"
+          backLabel="Back to Databases"
+          description="Redis instance state, memory pressure, topology, endpoint, and network placement."
+          icon={DatabaseZap}
+          iconClassName="bg-[#e9f8f1] text-[#15803d]"
+          title="DCS Redis"
+        />
 
-        {result.error ? (
-          <section className="rounded-xl border border-[#fecdd3] bg-[#fff1f2] p-4 text-sm font-bold text-[#b42318]">
-            {result.error}
-          </section>
-        ) : null}
+        {result.error ? <ConsoleCallout>{result.error}</ConsoleCallout> : null}
 
-        <section className="grid gap-3 md:grid-cols-4">
-          {[
-            ["Instances", instances.length],
-            ["Healthy", healthy],
-            ["Nodes", nodes],
-            ["Redis versions", versions.size],
-          ].map(([label, value]) => (
-            <div
-              className="rounded-xl border border-[#e4e9f2] bg-white p-4 shadow-[0_12px_36px_rgba(16,24,40,0.04)]"
-              key={label}
-            >
-              <p className="text-xs font-black uppercase text-[#667085]">
-                {label}
-              </p>
-              <p className="mt-2 text-2xl font-black">{value}</p>
-            </div>
-          ))}
-        </section>
+        <MetricGrid className="gap-3">
+          <MetricCard icon={DatabaseZap} iconClassName="bg-[#e9f8f1] text-[#15803d]" label="Instances" value={instances.length} variant="compact" />
+          <MetricCard icon={Gauge} iconClassName="bg-[#f0fdf4] text-[#166534]" label="Healthy" value={healthy} variant="compact" />
+          <MetricCard icon={DatabaseZap} iconClassName="bg-[#eef4ff] text-[#2563eb]" label="Nodes" value={nodes} variant="compact" />
+          <MetricCard icon={KeyRound} iconClassName="bg-[#fff7ed] text-[#c2410c]" label="Redis versions" value={versions.size} variant="compact" />
+        </MetricGrid>
 
-        <section className="overflow-hidden rounded-xl border border-[#e4e9f2] bg-white shadow-[0_12px_36px_rgba(16,24,40,0.06)]">
-          <div className="border-b border-[#e4e9f2] p-5">
-            <h2 className="text-lg font-black">Cache instances</h2>
-            <p className="mt-1 text-sm font-medium text-[#667085]">
-              {instances.length} Redis instances · Showing{" "}
-              {result.isCached ? "cached" : "fresh"} data from{" "}
-              <LocalDateTime value={result.updatedAt} />.
-            </p>
-          </div>
-          {instances.length ? (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1120px] text-left text-sm">
-                <thead className="bg-[#f7f9fc] text-xs font-black uppercase text-[#667085]">
-                  <tr>
-                    <th className="px-5 py-3">Instance</th>
-                    <th className="px-5 py-3">State</th>
-                    <th className="px-5 py-3">Memory</th>
-                    <th className="px-5 py-3">Topology</th>
-                    <th className="px-5 py-3">Endpoint</th>
-                    <th className="px-5 py-3">Network</th>
-                    <th className="px-5 py-3">Created</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#eef2f7]">
-                  {instances.map((instance) => (
-                    <tr className="hover:bg-[#fbfcfe]" key={instance.id}>
-                      <td className="px-5 py-4 align-top">
-                        <p className="font-black">{instance.name}</p>
-                        <p className="mt-1 break-all text-xs font-semibold text-[#98a2b3]">
-                          {instance.id}
-                        </p>
-                        <p className="mt-2 text-xs font-bold text-[#667085]">
-                          {instance.engine || "Redis"}{" "}
-                          {instance.engineVersion || "-"}
-                        </p>
-                      </td>
-                      <td className="px-5 py-4 align-top">
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-black ${statusTone(instance.status)}`}
-                        >
-                          {instance.status || "UNKNOWN"}
-                        </span>
-                        <p className="mt-2 text-xs font-semibold text-[#667085]">
-                          {instance.chargingMode || "Billing mode not reported"}
-                        </p>
-                      </td>
-                      <td className="px-5 py-4 align-top">
-                        <MemoryGauge instance={instance} />
-                      </td>
-                      <td className="px-5 py-4 align-top font-semibold">
-                        <p className="inline-flex items-center gap-1">
-                          <Gauge className="size-3.5 text-[#15803d]" />
-                          {instance.mode || instance.resourceSpecCode || "-"}
-                        </p>
-                        <p className="mt-1">
-                          {instance.nodeCount ?? "-"} nodes
-                        </p>
-                        <p className="mt-1 text-xs text-[#667085]">
-                          {(instance.availabilityZones ?? []).join(", ") ||
-                            "AZ not reported"}
-                        </p>
-                      </td>
-                      <td className="px-5 py-4 align-top font-semibold">
-                        <p className="break-all">{instance.ip || "-"}</p>
-                        <p className="mt-1 inline-flex items-center gap-1 text-xs text-[#667085]">
-                          <KeyRound className="size-3.5" />
-                          Port {instance.port || "-"}
-                        </p>
-                      </td>
-                      <td className="px-5 py-4 align-top font-semibold">
-                        <p>VPC {instance.vpcId || "-"}</p>
-                        <p className="mt-1">
-                          Subnet {instance.subnetId || "-"}
-                        </p>
-                        <p className="mt-1">
-                          SG {instance.securityGroupId || "-"}
-                        </p>
-                      </td>
-                      <td className="px-5 py-4 align-top font-semibold">
-                        <LocalDateTime value={instance.createdAt || ""} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="grid place-items-center px-6 py-16 text-center">
-              <div>
-                <p className="text-lg font-black">
-                  No DCS Redis instances found
-                </p>
-                <p className="mt-2 text-sm font-semibold text-[#667085]">
-                  No cache instances were returned for the selected projects and
-                  regions.
-                </p>
-              </div>
-            </div>
-          )}
-        </section>
-      </main>
+        <ConsolePanel
+          description={
+            <DataFreshnessText
+              isCached={result.isCached}
+              prefix={`${instances.length} Redis instances`}
+              updatedAt={result.updatedAt}
+            />
+          }
+          title="Cache instances"
+        >
+          <DcsInstancesTable instances={instances} />
+        </ConsolePanel>
+      </ConsoleMain>
     </ConsoleShell>
   );
 }

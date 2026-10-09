@@ -7,6 +7,7 @@ import {
   ServiceInventoryPage,
   type InventoryColumn,
 } from "@/app/services/_components/service-inventory";
+import { ResourceIdentity } from "@/components/console-ui";
 import {
   listFlexusResources,
   type FlexusResource,
@@ -21,10 +22,7 @@ const columns: InventoryColumn<FlexusResource>[] = [
   {
     header: "Resource",
     render: (resource) => (
-      <div>
-        <p className="font-black">{resource.name}</p>
-        <p className="mt-1 break-all text-xs text-[#98a2b3]">{resource.id}</p>
-      </div>
+      <ResourceIdentity id={resource.id} name={resource.name} />
     ),
   },
   { header: "Source", render: (resource) => <InventoryStatus>{resource.sourceService}</InventoryStatus> },

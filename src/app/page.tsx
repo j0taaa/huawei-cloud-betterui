@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   AlertTriangle,
   Boxes,
@@ -13,6 +12,17 @@ import {
 import { RefreshButton } from "@/components/cloud-action-buttons";
 import { CloudRefreshIndicator } from "@/components/cloud-refresh-indicator";
 import { ConsoleShell } from "@/components/console-shell";
+import {
+  ConsoleActionGroup,
+  ConsoleCallout,
+  ConsoleCard,
+  ConsoleCatalogCard,
+  ConsoleIconTile,
+  ConsoleMain,
+  ConsoleStatCard,
+  ConsoleStatCardGrid,
+  ConsoleToolbarButton,
+} from "@/components/console-ui";
 import { loadCloudSummary } from "@/lib/huawei-cloud";
 import { LocalDateTime } from "@/components/local-date-time";
 
@@ -61,7 +71,7 @@ export default async function Home() {
   return (
     <ConsoleShell active="Dashboard">
       <CloudRefreshIndicator show={summary.isRefreshing} />
-      <main className="grid gap-6 p-4 lg:p-8">
+      <ConsoleMain>
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <h1 className="text-3xl font-black tracking-tight">
@@ -71,21 +81,17 @@ export default async function Home() {
               Real Huawei Cloud data for the selected IAM project.
             </p>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <ConsoleActionGroup>
             <RefreshButton />
-            <button
-              className="flex h-11 cursor-not-allowed items-center gap-2 rounded-lg border border-[#d9e0eb] bg-white px-4 text-sm font-bold text-[#98a2b3] shadow-sm"
-              disabled
-              type="button"
-            >
+            <ConsoleToolbarButton disabled>
               <Settings className="size-4" />
               Customize
-            </button>
-          </div>
+            </ConsoleToolbarButton>
+          </ConsoleActionGroup>
         </div>
 
         {summary.error || data.errors.length ? (
-          <section className="rounded-xl border border-[#fed7aa] bg-[#fff7ed] p-4 text-sm font-bold text-[#9a3412]">
+          <ConsoleCallout tone="warning">
             <div className="flex gap-3">
               <AlertTriangle className="mt-0.5 size-5 shrink-0" />
               <div>
@@ -95,37 +101,28 @@ export default async function Home() {
                 </p>
               </div>
             </div>
-          </section>
+          </ConsoleCallout>
         ) : null}
 
-        <section className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+        <ConsoleStatCardGrid>
           {statCards.map((card) => {
             const Icon = card.icon;
             const value = data[card.key];
 
             return (
-              <article
-                className="rounded-xl border border-[#e4e9f2] bg-white p-5 shadow-[0_12px_36px_rgba(16,24,40,0.06)]"
+              <ConsoleStatCard
+                description={card.detail}
+                icon={Icon}
+                iconClassName="bg-[#eef4ff] text-[#2563eb]"
                 key={card.title}
-              >
-                <div className="grid size-12 place-items-center rounded-full bg-[#eef4ff] text-[#2563eb]">
-                  <Icon className="size-6" />
-                </div>
-                <p className="mt-5 text-sm font-bold text-[#344054]">
-                  {card.title}
-                </p>
-                <p className="mt-1 text-3xl font-black tracking-tight">
-                  {value}
-                </p>
-                <p className="mt-3 text-sm font-medium text-[#667085]">
-                  {card.detail}
-                </p>
-              </article>
+                title={card.title}
+                value={value}
+              />
             );
           })}
-        </section>
+        </ConsoleStatCardGrid>
 
-        <section className="rounded-xl border border-[#e4e9f2] bg-white p-5 shadow-[0_12px_36px_rgba(16,24,40,0.06)]">
+        <ConsoleCard>
           <div className="mb-5 flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-black">Infrastructure Overview</h2>
@@ -137,15 +134,11 @@ export default async function Home() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {infrastructure.map(([label, key, href, Icon, color]) => (
-              <Link
-                className="rounded-lg border border-[#e4e9f2] bg-[#fbfcfe] p-4 transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(16,24,40,0.08)]"
-                href={href}
-                key={label}
-              >
+              <ConsoleCatalogCard href={href} key={label}>
                 <div className="flex items-start gap-4">
-                  <div className="grid size-11 place-items-center rounded-full bg-white shadow-sm">
+                  <ConsoleIconTile className="rounded-full bg-white shadow-sm" size="md">
                     <Icon className={`size-6 ${color}`} />
-                  </div>
+                  </ConsoleIconTile>
                   <div>
                     <p className="text-sm font-bold text-[#475467]">
                       {label}
@@ -155,11 +148,11 @@ export default async function Home() {
                     </p>
                   </div>
                 </div>
-              </Link>
+              </ConsoleCatalogCard>
             ))}
           </div>
-        </section>
-      </main>
+        </ConsoleCard>
+      </ConsoleMain>
     </ConsoleShell>
   );
 }

@@ -7,6 +7,7 @@ import {
   ServiceInventoryPage,
   type InventoryColumn,
 } from "@/app/services/_components/service-inventory";
+import { ResourceIdentity } from "@/components/console-ui";
 import {
   listKooGalleryPurchasedApis,
   type KooGalleryPurchasedApi,
@@ -21,11 +22,7 @@ const columns: InventoryColumn<KooGalleryPurchasedApi>[] = [
   {
     header: "Purchased API",
     render: (api) => (
-      <div>
-        <p className="font-black">{api.apiName}</p>
-        <p className="mt-1 break-all text-xs text-[#98a2b3]">{api.id}</p>
-        {api.remark ? <p className="mt-2 text-xs text-[#667085]">{api.remark}</p> : null}
-      </div>
+      <ResourceIdentity description={api.remark} id={api.id} name={api.apiName} />
     ),
   },
   { header: "Status", render: (api) => <InventoryStatus>{api.status}</InventoryStatus> },

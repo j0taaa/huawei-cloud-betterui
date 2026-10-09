@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { ShieldAlert } from "lucide-react";
 
 import { InventoryStatus, ServiceInventoryPage } from "@/app/services/_components/service-inventory";
+import { ResourceIdentity } from "@/components/console-ui";
 import { listCloudFirewalls, type CloudFirewall, withCloudResult } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
@@ -53,10 +54,7 @@ export default async function CfwPage() {
         {
           header: "Firewall",
           render: (firewall) => (
-            <div>
-              <p className="font-black">{firewall.name}</p>
-              <p className="mt-1 break-all text-xs text-[#98a2b3]">{firewall.id}</p>
-            </div>
+            <ResourceIdentity id={firewall.id} name={firewall.name} />
           ),
         },
         {

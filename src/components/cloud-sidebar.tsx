@@ -80,13 +80,13 @@ export function CloudSidebar({
   return (
     <aside
       className={cn(
-        "fixed inset-y-0 left-0 z-30 hidden border-r border-[#e4e9f2] bg-white transition-[width] duration-300 xl:block",
+        "fixed inset-y-0 left-0 z-30 hidden border-r border-[#e4e9f2] bg-white transition-[width] duration-300 dark:border-white/10 dark:bg-[#0b1220] xl:block",
         collapsed ? "w-20" : "w-64",
       )}
     >
       <div
         className={cn(
-          "flex h-20 items-center border-b border-[#e4e9f2]",
+          "flex h-20 items-center border-b border-[#e4e9f2] dark:border-white/10",
           collapsed ? "justify-center px-0" : "gap-3 px-6",
         )}
       >
@@ -102,7 +102,7 @@ export function CloudSidebar({
           <p className="truncate text-lg font-extrabold tracking-tight">
             HUAWEI CLOUD
           </p>
-          <p className="text-xs font-semibold text-[#667085]">
+          <p className="text-xs font-semibold text-[#667085] dark:text-[#98a2b3]">
             Better Console
           </p>
         </div>
@@ -120,7 +120,7 @@ export function CloudSidebar({
                 collapsed ? "justify-center px-0" : "gap-3 px-4",
                 isActive
                   ? "bg-[#2563eb] text-white shadow-[0_10px_24px_rgba(37,99,235,0.22)]"
-                  : "text-[#475467] hover:bg-[#f3f6fb] hover:text-[#101828]",
+                  : "text-[#475467] hover:bg-[#f3f6fb] hover:text-[#101828] dark:text-[#d0d5dd] dark:hover:bg-white/10 dark:hover:text-white",
               )}
               href={href}
               key={label}
@@ -138,7 +138,7 @@ export function CloudSidebar({
       <button
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         className={cn(
-          "absolute bottom-6 grid size-11 place-items-center rounded-full border border-[#d9e0eb] bg-[#101828] text-white shadow-[0_14px_32px_rgba(16,24,40,0.22)] transition",
+          "absolute bottom-6 grid size-11 place-items-center rounded-full border border-[#d9e0eb] bg-[#101828] text-white shadow-[0_14px_32px_rgba(16,24,40,0.22)] transition dark:border-white/10 dark:bg-white dark:text-[#101828]",
           collapsed ? "left-1/2 -translate-x-1/2" : "left-6",
         )}
         onClick={() => setCollapsed(!collapsed)}

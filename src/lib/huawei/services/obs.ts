@@ -9,6 +9,7 @@ import {
   xmlTag,
 } from "@/lib/huawei/parsers";
 import { createHmac } from "node:crypto";
+import { HuaweiApiError } from "@/lib/huawei/http";
 
 export type ObsBucket = {
   createdAt: string;
@@ -31,6 +32,7 @@ export type ObsObject = {
 };
 
 export type ObsBucketDetail = ObsBucket & {
+  currentPrefix: string;
   commonPrefixes: string[];
   isTruncated: boolean;
   objects: ObsObject[];
@@ -118,17 +120,23 @@ export function obsAuthorization({
   date,
   method,
   objectKey,
+  requestHeaders,
+  subresource,
 }: {
   bucket?: string;
   contentType?: string;
   credential: ObsCredential;
   date: string;
-  method: "GET" | "PUT";
+  method: "GET" | "PUT" | "DELETE";
   objectKey?: string;
+  requestHeaders?: HeadersInit;
+  subresource?: string;
 }) {
-  const canonicalHeaders = `x-obs-security-token:${credential.securityToken}\n`;
+  const signedHeaders = new Headers(requestHeaders);
+  signedHeaders.set("x-obs-security-token", credential.securityToken);
+  const canonicalHeaders = [...signedHeaders.entries()].filter(([name]) => name.startsWith("x-obs-")).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([name, value]) => `${name}:${value.trim()}\n`).join("");
   const canonicalResource = bucket
-    ? `/${bucket}/${objectKey ? encodeObsObjectKey(objectKey) : ""}`
+    ? `/${bucket}/${objectKey ? encodeObsObjectKey(objectKey) : ""}${subresource ? `?${subresource}` : ""}`
     : "/";
   const stringToSign = [
     method,
@@ -212,7 +220,7 @@ export async function obsObjectRequest({
   contentType?: string;
   credential: ObsCredential;
   key: string;
-  method: "GET" | "PUT";
+  method: "GET" | "PUT" | "DELETE";
   region: string;
   requestHeaders?: HeadersInit;
 }) {
@@ -225,6 +233,7 @@ export async function obsObjectRequest({
       date,
       method,
       objectKey: key,
+      requestHeaders,
     }),
     Date: date,
     "x-obs-security-token": credential.securityToken,
@@ -234,7 +243,7 @@ export async function obsObjectRequest({
     headers["Content-Type"] = contentType;
   }
 
-  for (const [name, value] of Object.entries(requestHeaders ?? {})) {
+  for (const [name, value] of new Headers(requestHeaders).entries()) {
     headers[name] = value;
   }
 
@@ -247,6 +256,22 @@ export async function obsObjectRequest({
       method,
     },
   );
+}
+
+/** Bucket configuration uses OBS subresource signing, separate from object keys. */
+export async function obsBucketConfigurationRequest(session: BetterUiSession, bucket: string, method: "GET" | "PUT" | "DELETE", subresource?: "acl" | "versioning" | "lifecycle" | "cors" | "policy" | "storageClass", body?: string, requestHeaders?: HeadersInit) {
+  const credential = await createObsCredential(session);
+  const date = new Date().toUTCString();
+  const contentType = body === undefined ? "" : subresource === "policy" ? "application/json" : "application/xml";
+  const headers = new Headers(requestHeaders);
+  headers.set("Date", date);
+  headers.set("x-obs-security-token", credential.securityToken);
+  if (contentType) headers.set("Content-Type", contentType);
+  headers.set("Authorization", obsAuthorization({ bucket, contentType, credential, date, method, requestHeaders: headers, subresource }));
+  const response = await fetch(`https://${obsHost(session.region, bucket)}/${subresource ? `?${subresource}` : ""}`, { method, body, headers, cache: "no-store" });
+  const payload = await response.text();
+  if (!response.ok) throw new HuaweiApiError(`${response.status} ${xmlTag(payload, "Message", response.statusText)}`, response.status);
+  return payload;
 }
 
 export function parseObsBuckets(xml: string): ObsBucket[] {
@@ -451,7 +476,12 @@ export async function listObsBuckets(session: BetterUiSession) {
   return parseObsBuckets(xml);
 }
 
-export async function getObsBucket(session: BetterUiSession, name: string) {
+export async function getObsBucket(
+  session: BetterUiSession,
+  name: string,
+  prefix = "",
+) {
+  const currentPrefix = normalizeObsPrefix(prefix);
   const bucketName = name;
   const credential = await createObsCredential(session);
   const buckets = parseObsBuckets(
@@ -483,6 +513,8 @@ export async function getObsBucket(session: BetterUiSession, name: string) {
       "max-keys": "1000",
       "encoding-type": "url",
     });
+    query.set("delimiter", "/");
+    if (currentPrefix) query.set("prefix", currentPrefix);
     if (marker) query.set("marker", marker);
     const xml = await obsFetchXml(
       credential,
@@ -491,7 +523,16 @@ export async function getObsBucket(session: BetterUiSession, name: string) {
       bucket.name,
     );
     const data = parseObsObjects(xml);
-    objectData.objects.push(...data.objects);
+    objectData.objects.push(
+      ...data.objects.filter(
+        (object) =>
+          !(
+            currentPrefix &&
+            object.key === currentPrefix &&
+            object.sizeBytes === 0
+          ),
+      ),
+    );
     objectData.commonPrefixes.push(...data.commonPrefixes);
     if (!data.isTruncated) break;
     const rawMarker = xmlTag(xml, "NextMarker");
@@ -515,6 +556,7 @@ export async function getObsBucket(session: BetterUiSession, name: string) {
   return {
     ...bucket,
     ...objectData,
+    currentPrefix,
     objectCount: objectData.objects.length,
     size: formatBytes(sizeBytes),
   };
@@ -662,4 +704,145 @@ export async function readObsPreview(response: Response, maxBytes = 65_536) {
     await reader.cancel();
   }
   return new TextDecoder().decode(Buffer.concat(chunks));
+}
+
+function normalizeObsPrefix(prefix: string) {
+  return prefix;
+}
+
+function normalizeObsFolderKey(key: string) {
+  const folderKey = normalizeObsPrefix(key);
+
+  if (!folderKey) {
+    throw new Error("Folder name is required.");
+  }
+
+  return folderKey.endsWith("/") ? folderKey : `${folderKey}/`;
+}
+
+async function obsBucketRequest({
+  bucket,
+  method,
+  region,
+  session,
+}: {
+  bucket: string;
+  method: "DELETE";
+  region: string;
+  session: BetterUiSession;
+}) {
+  const credential = await createObsCredential(session);
+  const date = new Date().toUTCString();
+
+  return fetch(`https://${obsHost(region, bucket)}/`, {
+    cache: "no-store",
+    headers: {
+      Authorization: obsAuthorization({
+        bucket,
+        credential,
+        date,
+        method,
+      }),
+      Date: date,
+      "x-obs-security-token": credential.securityToken,
+    },
+    method,
+  });
+}
+
+export async function createObsFolder(
+  session: BetterUiSession,
+  bucket: string,
+  key: string,
+) {
+  const bucketName = bucket;
+  const objectKey = normalizeObsFolderKey(key);
+  const credential = await createObsCredential(session);
+  const region = await findObsBucketRegion(session, credential, bucketName);
+  const response = await obsObjectRequest({
+    body: "",
+    bucket: bucketName,
+    contentType: "application/x-directory",
+    key: objectKey,
+    method: "PUT",
+    region,
+    credential,
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(
+      `${response.status} ${xmlTag(body, "Message", response.statusText)}`,
+    );
+  }
+
+  return objectKey;
+}
+
+export async function deleteObsObject(
+  session: BetterUiSession,
+  bucket: string,
+  key: string,
+) {
+  const bucketName = bucket;
+  const objectKey = key;
+
+  if (!objectKey.trim()) {
+    throw new Error("Object key is required.");
+  }
+
+  const credential = await createObsCredential(session);
+  const region = await findObsBucketRegion(session, credential, bucketName);
+  const response = await obsObjectRequest({
+    bucket: bucketName,
+    key: objectKey,
+    method: "DELETE",
+    region,
+    credential,
+  });
+
+  if (!response.ok && response.status !== 204) {
+    const body = await response.text().catch(() => "");
+    throw new Error(
+      `${response.status} ${xmlTag(body, "Message", response.statusText)}`,
+    );
+  }
+}
+
+export async function deleteEmptyObsBucket(
+  session: BetterUiSession,
+  bucket: string,
+) {
+  const bucketName = bucket;
+  const detail = await getObsBucket(session, bucketName);
+
+  if (!detail) {
+    throw new Error("Bucket was not found.");
+  }
+
+  if (
+    detail.objects.length ||
+    detail.commonPrefixes.length ||
+    detail.isTruncated
+  ) {
+    throw new Error("Only empty buckets can be deleted.");
+  }
+
+  const region =
+    detail.location && detail.location !== "-"
+      ? detail.location
+      : session.region;
+  const response = await obsBucketRequest({
+    bucket: bucketName,
+    method: "DELETE",
+    region,
+    session,
+  });
+
+  if (!response.ok && response.status !== 204) {
+    const body = await response.text().catch(() => "");
+    throw new Error(
+      `${response.status} ${xmlTag(body, "Message", response.statusText)}`,
+    );
+  }
 }

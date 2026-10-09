@@ -4,22 +4,16 @@ import { Layers3 } from "lucide-react";
 
 import {
   InventoryStatus,
+  inventoryStatusTone,
   type InventoryColumn,
   ServiceInventoryPage,
 } from "@/app/services/_components/service-inventory";
+import { CellStack, ResourceIdentity } from "@/components/console-ui";
 import { listMrsClusters, type MrsCluster, withCloudResult } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
   title: "MRS | Huawei Cloud Better UI",
 };
-
-function statusTone(status: string) {
-  const normalized = status.toLowerCase();
-  if (["running", "normal"].includes(normalized)) return "good";
-  if (["failed", "abnormal", "terminated"].includes(normalized)) return "bad";
-  if (["starting", "scaling-out", "scaling-in", "terminating"].includes(normalized)) return "warn";
-  return "neutral";
-}
 
 export default async function MrsPage() {
   const result = await withCloudResult<MrsCluster[]>([], listMrsClusters, cloudCacheKeys.listMrsClusters);
@@ -34,20 +28,16 @@ export default async function MrsPage() {
     {
       header: "Cluster",
       render: (cluster) => (
-        <div>
-          <p className="font-black text-[#101828]">{cluster.name}</p>
-          <p className="mt-1 break-all text-xs text-[#98a2b3]">{cluster.id}</p>
-        </div>
+        <ResourceIdentity id={cluster.id} name={cluster.name} />
       ),
     },
-    { header: "State", render: (cluster) => <InventoryStatus tone={statusTone(cluster.status)}>{cluster.status}</InventoryStatus> },
+    { header: "State", render: (cluster) => <InventoryStatus tone={inventoryStatusTone(cluster.status)}>{cluster.status}</InventoryStatus> },
     {
       header: "Nodes",
       render: (cluster) => (
-        <div>
-          <p className="font-black">{cluster.totalNodes || "-"} total</p>
-          <p className="mt-1 text-xs text-[#667085]">{cluster.masterNodes} master / {cluster.coreNodes} core</p>
-        </div>
+        <CellStack subValue={`${cluster.masterNodes} master / ${cluster.coreNodes} core`}>
+          {cluster.totalNodes || "-"} total
+        </CellStack>
       ),
     },
     { header: "Components", render: (cluster) => cluster.components },

@@ -4,9 +4,11 @@ import { Workflow } from "lucide-react";
 
 import {
   InventoryStatus,
+  inventoryStatusTone,
   ServiceInventoryPage,
   type InventoryColumn,
 } from "@/app/services/_components/service-inventory";
+import { ResourceIdentity } from "@/components/console-ui";
 import {
   listCodeArtsPipelines,
   type CodeArtsPipelineItem,
@@ -17,25 +19,14 @@ export const metadata: Metadata = {
   title: "CodeArts Pipeline | Huawei Cloud Better UI",
 };
 
-function statusTone(status: string): "bad" | "good" | "neutral" | "warn" {
-  const normalized = status.toLowerCase();
-  if (["completed", "success", "succeeded"].includes(normalized)) return "good";
-  if (["failed", "canceled", "error"].includes(normalized)) return "bad";
-  if (["running", "paused", "suspend"].includes(normalized)) return "warn";
-  return "neutral";
-}
-
 const columns: InventoryColumn<CodeArtsPipelineItem>[] = [
   {
     header: "Pipeline",
     render: (pipeline) => (
-      <div>
-        <p className="font-black">{pipeline.name}</p>
-        <p className="mt-1 break-all text-xs text-[#98a2b3]">{pipeline.id}</p>
-      </div>
+      <ResourceIdentity id={pipeline.id} name={pipeline.name} />
     ),
   },
-  { header: "Status", render: (pipeline) => <InventoryStatus tone={statusTone(pipeline.status)}>{pipeline.status}</InventoryStatus> },
+  { header: "Status", render: (pipeline) => <InventoryStatus tone={inventoryStatusTone(pipeline.status)}>{pipeline.status}</InventoryStatus> },
   { header: "Group", render: (pipeline) => pipeline.groupName },
   { header: "Source", render: (pipeline) => pipeline.source },
   { header: "Creator", render: (pipeline) => pipeline.creator },
@@ -46,7 +37,7 @@ const columns: InventoryColumn<CodeArtsPipelineItem>[] = [
 export default async function CodeArtsPipelinePage() {
   const result = await withCloudResult<CodeArtsPipelineItem[]>([], listCodeArtsPipelines, cloudCacheKeys.listCodeArtsPipelines);
   const pipelines = result.data;
-  const unhealthy = pipelines.filter((pipeline) => statusTone(pipeline.status) === "bad").length;
+  const unhealthy = pipelines.filter((pipeline) => inventoryStatusTone(pipeline.status) === "bad").length;
 
   return (
     <ServiceInventoryPage

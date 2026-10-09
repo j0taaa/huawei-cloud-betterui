@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Monitor } from "lucide-react";
 
 import { InventoryStatus, ServiceInventoryPage } from "@/app/services/_components/service-inventory";
+import { ResourceIdentity } from "@/components/console-ui";
 import { listWorkspaceTenants, type WorkspaceTenant, withCloudResult } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
@@ -45,10 +46,7 @@ export default async function WorkspacePage() {
         {
           header: "Enterprise",
           render: (tenant) => (
-            <div>
-              <p className="font-black">{tenant.enterpriseId}</p>
-              <p className="mt-1 break-all text-xs text-[#98a2b3]">{tenant.id}</p>
-            </div>
+            <ResourceIdentity id={tenant.id} name={tenant.enterpriseId} />
           ),
         },
         { header: "Status", render: (tenant) => <InventoryStatus>{tenant.status}</InventoryStatus> },

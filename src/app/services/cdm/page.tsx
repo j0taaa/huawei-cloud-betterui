@@ -4,21 +4,16 @@ import { DatabaseZap } from "lucide-react";
 
 import {
   InventoryStatus,
+  inventoryStatusTone,
   type InventoryColumn,
   ServiceInventoryPage,
 } from "@/app/services/_components/service-inventory";
+import { CellStack, ResourceIdentity } from "@/components/console-ui";
 import { listCdmClusters, type CdmCluster, withCloudResult } from "@/lib/huawei-cloud";
 
 export const metadata: Metadata = {
   title: "CDM | Huawei Cloud Better UI",
 };
-
-function statusTone(status: string) {
-  if (["200", "normal", "available"].includes(status.toLowerCase())) return "good";
-  if (["300", "303", "failed", "error"].includes(status.toLowerCase())) return "bad";
-  if (["100", "500", "910", "920", "creating", "starting", "stopping"].includes(status.toLowerCase())) return "warn";
-  return "neutral";
-}
 
 export default async function CdmPage() {
   const result = await withCloudResult<CdmCluster[]>([], listCdmClusters, cloudCacheKeys.listCdmClusters);
@@ -31,20 +26,21 @@ export default async function CdmPage() {
     {
       header: "Cluster",
       render: (cluster) => (
-        <div>
-          <p className="font-black text-[#101828]">{cluster.name}</p>
-          <p className="mt-1 break-all text-xs text-[#98a2b3]">{cluster.id}</p>
-        </div>
+        <ResourceIdentity
+          className="text-[#101828]"
+          id={cluster.id}
+          idClassName="font-normal"
+          name={cluster.name}
+        />
       ),
     },
-    { header: "Status", render: (cluster) => <InventoryStatus tone={statusTone(cluster.status)}>{cluster.status}</InventoryStatus> },
+    { header: "Status", render: (cluster) => <InventoryStatus tone={inventoryStatusTone(cluster.status)}>{cluster.status}</InventoryStatus> },
     {
       header: "Runtime",
       render: (cluster) => (
-        <div>
-          <p>{cluster.mode}</p>
-          <p className="mt-1 text-xs text-[#667085]">{cluster.version}</p>
-        </div>
+        <CellStack subValue={cluster.version}>
+          {cluster.mode}
+        </CellStack>
       ),
     },
     { header: "Flavor", render: (cluster) => cluster.flavor },

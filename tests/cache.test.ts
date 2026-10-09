@@ -192,3 +192,39 @@ test("unwritable cache location does not hide a successful API response", async 
   assert.deepEqual(result.data, [1]);
   assert.equal(result.error, null);
 });
+
+test("partial errors from a separately bundled module retain data in the shared cache", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const { runInNewContext } = await import("node:vm");
+  const ts = await import("typescript");
+  const source = await readFile("src/lib/huawei/errors.ts", "utf8");
+  const compiled = ts.transpileModule(source, {
+    compilerOptions: {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2022,
+    },
+  }).outputText;
+  const exports = {} as { CloudLoadError: typeof CloudLoadError };
+  runInNewContext(compiled, { exports, Symbol });
+  const otherError = new exports.CloudLoadError("partial permission denied", {
+    instance: { id: "db-1" },
+    backups: [],
+  });
+  const directory = await mkdtemp(
+    path.join(tmpdir(), "betterui-cross-bundle-"),
+  );
+  try {
+    const cache = createCloudCache({ directory });
+    const result = await cache.get("detail", null, async () => {
+      throw otherError;
+    });
+    assert.deepEqual(JSON.parse(JSON.stringify(result.data)), {
+      instance: { id: "db-1" },
+      backups: [],
+    });
+    assert.match(result.error ?? "", /partial permission denied/);
+    assert.equal(result.isCached, false);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
